@@ -28,6 +28,8 @@ static struct list ready_list;
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
 
+static struct list sleep_list; // threads waiting/sleeping
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -92,6 +94,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  list_init (&sleep_list);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -119,6 +122,7 @@ thread_start (void)
 
 /* Called by the timer interrupt handler at each timer tick.
    Thus, this function runs in an external interrupt context. */
+// OUR IMPLEMENTATION
 void
 thread_tick (void) 
 {
@@ -133,6 +137,8 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
+
+  unblock_thread_awake();
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -582,3 +588,31 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+/************************************************************/
+// OUR IMPLEMENTATION
+void 
+add_thread_sleeplist(struct thread *t){
+  list_push_back(&sleep_list, &t->sleepelem);
+}
+
+void 
+unblock_thread_awake(){
+    ASSERT(intr_get_level() == INTR_OFF);
+
+    struct list_elem *e = list_begin(&sleep_list);
+
+    while (e != list_end(&sleep_list)) {
+        struct thread *t = list_entry(e, struct thread, sleepelem);
+        
+        if (t->sleep_ticks <= 1) {
+            t->sleep_ticks = 0; // clean for next time sleep
+            e = list_remove(e);
+            thread_unblock(t);
+        }
+        else {
+            t->sleep_ticks--;
+            e = list_next(e);
+        }
+    }
+}

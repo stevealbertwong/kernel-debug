@@ -93,6 +93,9 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+    int64_t sleep_ticks;                // number of ticks thread to sleep
+    struct list_elem sleepelem;         // wait/sleep list 
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -138,4 +141,6 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+void add_thread_sleeplist(struct thread *t);
+void unblock_thread_awake();
 #endif /* threads/thread.h */
