@@ -198,6 +198,9 @@ lock_acquire (struct lock *lock)
 
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
+  // TODO : 
+  // recursion -> 2 fixed : base case, function format + 3 changing : args, locals, return
+  // recrusive_donate_priority(thread_holder, highest_waiter_priority)
 }
 
 /* Tries to acquires LOCK and returns true if successful or false

@@ -138,7 +138,7 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-  unblock_thread_awake();
+  unblock_awaken_thread();
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -597,7 +597,7 @@ add_thread_sleeplist(struct thread *t){
 }
 
 void 
-unblock_thread_awake(){
+unblock_awaken_thread(void){
     ASSERT(intr_get_level() == INTR_OFF);
 
     struct list_elem *e = list_begin(&sleep_list);

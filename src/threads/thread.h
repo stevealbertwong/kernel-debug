@@ -142,5 +142,5 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 void add_thread_sleeplist(struct thread *t);
-void unblock_thread_awake();
+void unblock_awaken_thread(void);
 #endif /* threads/thread.h */
