@@ -147,6 +147,14 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+// OUR IMPLEMENTATION
 void add_thread_sleeplist(struct thread *t);
 void unblock_awaken_thread(void);
+
+void thread_clear_donated_priority (void);
+bool is_highest_priority(int priority);
+void thread_donate_priority(struct thread *t, int priority);
+int thread_get_donated_priority (void);
+int thread_pick_higher_priority (struct thread *t);
+
 #endif /* threads/thread.h */

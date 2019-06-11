@@ -332,11 +332,6 @@ int highest_lock_priority(struct lock *lock){
     return max_priority;
 }
 
-
-
-
-
-
 /* Returns true if the current thread holds LOCK, false
    otherwise.  (Note that testing whether some other thread holds
    a lock would be racy.) */

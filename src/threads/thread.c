@@ -352,7 +352,7 @@ thread_set_priority (int new_priority)
 
 // OUR IMPLEMENTATION
 void
-thread_clear_donated_priority (int new_priority) 
+thread_clear_donated_priority (void) 
 {
   if (!thread_mlfqs){
     thread_current ()->donated_priority = PRI_MIN;
