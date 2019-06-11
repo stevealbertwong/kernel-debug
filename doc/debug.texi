@@ -357,9 +357,9 @@ that contains elements of the given @var{type} (without the word
 @code{struct}) in which @var{element} is the @struct{list_elem} member
 that links the elements.
 
-Example: @code{dumplist &all_list thread allelem} prints all elements of
+Example: @code{dumplist &all_list thread all_elem} prints all elements of
 @struct{thread} that are linked in @code{struct list all_list} using the
-@code{struct list_elem allelem} which is part of @struct{thread}.
+@code{struct list_elem all_elem} which is part of @struct{thread}.
 @end deffn
 
 @deffn {GDB Macro} btthread thread
@@ -376,14 +376,14 @@ which the threads are kept.  Specify @var{element} as the
 @struct{list_elem} field used inside @struct{thread} to link the threads
 together.
 
-Example: @code{btthreadlist all_list allelem} shows the backtraces of
+Example: @code{btthreadlist all_list all_elem} shows the backtraces of
 all threads contained in @code{struct list all_list}, linked together by
-@code{allelem}.  This command is useful to determine where your threads
+@code{all_elem}.  This command is useful to determine where your threads
 are stuck when a deadlock occurs.  Please see the example scenario below.
 @end deffn
 
 @deffn {GDB Macro} btthreadall
-Short-hand for @code{btthreadlist all_list allelem}.
+Short-hand for @code{btthreadlist all_list all_elem}.
 @end deffn
 
 @deffn {GDB Macro} btpagefault
@@ -567,12 +567,12 @@ thread.  If I run @code{backtrace}, it shows this backtrace:
 Not terribly useful.  What I really like to know is what's up with the
 other thread (or threads).  Since I keep all threads in a linked list
 called @code{all_list}, linked together by a @struct{list_elem} member
-named @code{allelem}, I can use the @code{btthreadlist} macro from the
+named @code{all_elem}, I can use the @code{btthreadlist} macro from the
 macro library I wrote.  @code{btthreadlist} iterates through the list of
 threads and prints the backtrace for each thread:
 
 @smallexample
-(gdb) @strong{btthreadlist all_list allelem}
+(gdb) @strong{btthreadlist all_list all_elem}
 pintos-debug: dumping backtrace of thread 'main' @@0xc002f000
 #0  0xc0101820 in schedule () at ../../threads/thread.c:722
 #1  0xc0100f8f in thread_block () at ../../threads/thread.c:324

@@ -367,7 +367,7 @@ Pintos as provided ignores thread priorities, but you will implement
 priority scheduling in project 1 (@pxref{Priority Scheduling}).
 @end deftypecv
 
-@deftypecv {Member} {@struct{thread}} {@struct{list_elem}} allelem
+@deftypecv {Member} {@struct{thread}} {@struct{list_elem}} all_elem
 This ``list element'' is used to link the thread into the list of all
 threads.  Each thread is inserted into this list when it is created
 and removed when it exits.  The @func{thread_foreach} function should 
