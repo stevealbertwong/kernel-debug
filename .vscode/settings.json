@@ -1,6 +1,12 @@
 {
     "files.associations": {
         "synch.h": "c",
-        "list.h": "c"
+        "list.h": "c",
+        "flags.h": "c",
+        "intr-stubs.h": "c",
+        "palloc.h": "c",
+        "switch.h": "c",
+        "vaddr.h": "c",
+        "thread.h": "c"
     }
 }

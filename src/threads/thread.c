@@ -545,7 +545,7 @@ next_thread_to_run (void)
     struct list_elem *e;
     struct thread *next_thread;
 
-    for (e = list_begin(next); e != list_end(&ready_list);
+    for (e = list_next(next); e != list_end(&ready_list);
           e = list_next(e)) {
         t = list_entry(e, struct thread, elem);
         
