@@ -286,6 +286,22 @@ void
 thread_exit (void) 
 {
   ASSERT (!intr_context ());
+  struct thread *cur = thread_current();
+  struct list_elem *e;
+
+  // remove() lock->threads[]
+  if (cur->lock_waiting_on != NULL) {
+        list_remove(&cur->lock_elem);
+  }
+  
+  // lock_release() thread->locks[] 
+  while (!list_empty(&cur->locks_acquired)) {
+      e = list_begin(&cur->locks_acquired);
+      struct lock *lock = list_entry(e, struct lock, thread_elem);
+      lock_release(lock);
+  }
+
+
 
 #ifdef USERPROG
   process_exit ();
@@ -300,6 +316,8 @@ thread_exit (void)
   schedule ();
   NOT_REACHED ();
 }
+
+
 
 /* Yields the CPU.  The current thread is not put to sleep and
    may be scheduled again immediately at the scheduler's whim. */
@@ -503,7 +521,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
 
   t->donated_priority = PRI_MIN; // lock(), unlock()
-
+  list_init(&t->locks_acquired);
 
 
 

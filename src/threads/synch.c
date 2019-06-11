@@ -178,6 +178,7 @@ lock_init (struct lock *lock)
   ASSERT (lock != NULL);
 
   lock->holder = NULL;
+  list_init(&lock->blocked_threads);
   sema_init (&lock->semaphore, 1);
 }
 
