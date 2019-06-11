@@ -197,8 +197,7 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  enum intr_level old_level;
-  old_level = intr_disable();
+  enum intr_level old_level = intr_disable();
   
   // separate mlfqs test from priority_donate test
   if(thread_mlfqs) {
@@ -209,10 +208,13 @@ lock_acquire (struct lock *lock)
   }
   
   // 1. nested donation 
-  if((&lock->semaphore)->value == 0){ 
+  // if((&lock->semaphore)->value == 0){ 
+  bool success = sema_try_down(&lock->semaphore);
+  if(!success){
 
     // low_thread chain() to upper_lock -> nested_donate()
     thread_current()->lock_waiting_on = lock;    
+    ASSERT(is_thread(lock->holder));
     thread_donate_priority(lock->holder, thread_pick_higher_priority(thread_current()));
     
     // for holder lock_release() -> 2nd lock highest waiter
@@ -227,6 +229,7 @@ lock_acquire (struct lock *lock)
     thread_current()->lock_waiting_on = NULL;    
   }
   
+  // lock->new_holder, holder_thread->locks[]
   lock->holder = thread_current();
   list_push_back(&thread_current()->locks_acquired, &lock->thread_elem);
     
