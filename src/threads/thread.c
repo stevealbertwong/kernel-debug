@@ -379,7 +379,7 @@ thread_pick_higher_priority (struct thread *t) {
   if (t->donated_priority > t->priority){
     return t->donated_priority;
   }else{
-    t->priority;
+    return t->priority;
   }
 }
 
@@ -540,13 +540,14 @@ next_thread_to_run (void)
   else {
     //for loop ready_list -> highest donated_priority/priority(whichever higher)
     struct list_elem *next = list_begin(&ready_list);
-    int highest_priority_val = thread_pick_higher_priority(thread_current()); 
+    struct thread *t = list_entry(next, struct thread, elem);
+    int highest_priority_val = thread_pick_higher_priority(t);    
     struct list_elem *e;
     struct thread *next_thread;
 
     for (e = list_begin(next); e != list_end(&ready_list);
           e = list_next(e)) {
-        struct thread *t = list_entry(e, struct thread, elem);
+        t = list_entry(e, struct thread, elem);
         
         int curr_priority = thread_pick_higher_priority(t);
 
@@ -717,3 +718,6 @@ bool is_highest_priority(int priority){
   return highest_priority_val >= priority;
 }
 
+bool is_thread(struct thread *t) {
+    return t != NULL && t->magic == THREAD_MAGIC;
+}

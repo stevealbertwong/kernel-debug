@@ -293,17 +293,17 @@ lock_release (struct lock *lock)
   // 3. clear holder's donated_priority / 2nd lock's highest waiter
   
   // thread has no more locks 
-  if (list_empty (&thread_current()->locks_acquired)){
+  if (list_empty (&cur->locks_acquired)){
     thread_clear_donated_priority();
   
   } else { // thread has remaining locks
     // holder loop() thru remaining locks + waiters -> 2nd lock highest priority
-    thread_recv_highest_waiter_priority(thread_current());
+    thread_recv_highest_waiter_priority(cur);
   }
 }
 
 // holder receives highest priority from its locks' waiters
-int thread_recv_highest_waiter_priority(struct thread *holder){
+void thread_recv_highest_waiter_priority(struct thread *holder){
   if (!list_empty(&holder->locks_acquired)) {
         struct list_elem *e;
         for (e = list_begin(&holder->locks_acquired);

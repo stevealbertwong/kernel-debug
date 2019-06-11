@@ -35,7 +35,7 @@ void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
 
 // OUR IMPLEMENTATION
-int thread_recv_highest_waiter_priority(struct thread *holder);
+void thread_recv_highest_waiter_priority(struct thread *holder);
 int highest_lock_priority(struct lock *lock);
 
 /* Condition variable. */
