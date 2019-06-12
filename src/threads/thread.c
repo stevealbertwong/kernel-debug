@@ -678,9 +678,12 @@ add_thread_sleeplist(struct thread *t){
 
 void 
 unblock_awaken_thread(void){
-    ASSERT(intr_get_level() == INTR_OFF);
+    printf ("timer interrupt.\n");
 
+    ASSERT(intr_get_level() == INTR_OFF);
+    printf ("timer interrupt 2.\n");
     struct list_elem *e = list_begin(&sleep_list);
+    printf ("timer interrupt 3.\n");
 
     while (e != list_end(&sleep_list)) {
         struct thread *t = list_entry(e, struct thread, sleep_elem);
