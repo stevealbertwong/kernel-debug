@@ -557,13 +557,13 @@ alloc_frame (struct thread *t, size_t size)
 static struct thread *
 next_thread_to_run (void) 
 {
-  printf("next thread to run \n");
+  // printf("next thread to run \n");
 
   if (list_empty (&ready_list)){
-    printf("next thread to run 1 \n");
+    // printf("next thread to run 1 \n");
     return idle_thread;
   } else {
-    printf("next thread to run 2\n");
+    // printf("next thread to run 2\n");
     //for loop ready_list -> highest donated_priority/priority(whichever higher)
     struct list_elem *next = list_begin(&ready_list);
     struct thread *t = list_entry(next, struct thread, elem);
