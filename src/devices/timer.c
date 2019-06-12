@@ -87,15 +87,17 @@ timer_elapsed (int64_t then)
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
    be turned on. */
 // OUR IMPLEMENTATION
+// called regularly by device drivers
 void
 timer_sleep (int64_t ticks) 
 {  
+  printf ("timer sleep.\n");
   enum intr_level old_level;
   ASSERT(intr_get_level() == INTR_ON);
   old_level = intr_disable();
 
   struct thread *t = thread_current();	
-  t->sleep_ticks = ticks;
+  t->sleep_ticks = timer_ticks() + ticks;
 	
 	add_thread_sleeplist(t);
   thread_block(); // block until sleep_ticks 0

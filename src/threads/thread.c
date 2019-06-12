@@ -30,6 +30,8 @@ static struct list all_list;
 
 static struct list sleep_list; // threads waiting/sleeping
 
+static bool thread_init_finished = false;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -100,6 +102,8 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+
+  thread_init_finished = true;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -137,7 +141,9 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-  unblock_awaken_thread();
+  if(thread_init_finished){
+    unblock_awaken_thread();
+  }  
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -673,6 +679,7 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 /************************************************************/
 void 
 add_thread_sleeplist(struct thread *t){
+  ASSERT (!intr_context ()); // possessing external interrupt
   list_push_back(&sleep_list, &t->sleep_elem);
 }
 
@@ -683,12 +690,14 @@ unblock_awaken_thread(void){
     struct list_elem *e = list_begin(&sleep_list);
 
     while (e != list_end(&sleep_list)) {
-        struct thread *t = list_entry(e, struct thread, sleep_elem);
+        printf ("timer interrupt.\n");
         
+        struct thread *t = list_entry(e, struct thread, sleep_elem);
+        ASSERT(is_thread(t));
         if (t->sleep_ticks <= 1) {
             t->sleep_ticks = 0; // clean for next time sleep
             e = list_remove(e);
-            printf ("timer interrupt.\n");
+            printf ("timer interrupt 1.\n");
             thread_unblock(t);
         }
         else {
