@@ -68,6 +68,7 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   while (sema->value == 0) 
     {
+      // TODO: dequeue() waiter based on priority
       list_push_back (&sema->waiters, &thread_current ()->elem);
       thread_block ();
     }
@@ -114,6 +115,7 @@ sema_up (struct semaphore *sema)
 
   old_level = intr_disable ();
   if (!list_empty (&sema->waiters)) 
+    // TODO: sort before unblock()
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
   sema->value++;
@@ -235,7 +237,7 @@ lock_acquire (struct lock *lock)
   list_push_back(&thread_current()->locks_acquired, &lock->thread_elem);
     
   // new holder receive priority donation 
-  thread_recv_highest_waiter_priority(thread_current());
+  // thread_recv_highest_waiter_priority(thread_current());
   
   intr_set_level(old_level);  
   
@@ -301,6 +303,8 @@ lock_release (struct lock *lock)
     // holder loop() thru remaining locks + waiters -> 2nd lock highest priority
     thread_recv_highest_waiter_priority(cur);
   }
+
+  intr_set_level (old_level);
 }
 
 // holder receives highest priority from its locks' waiters
