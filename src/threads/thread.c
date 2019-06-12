@@ -846,7 +846,7 @@ void print_ready_priorities(void) {
     printf("\n");
 }
 
-void print_all_priorities(void) {
+void print_sleep_priorities(void) {
     struct list_elem *e;
     for (e = list_begin (&sleep_list); 
          e != list_end (&sleep_list); e = list_next (e)) {
