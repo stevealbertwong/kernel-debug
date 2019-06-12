@@ -523,8 +523,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->donated_priority = PRI_MIN; // lock(), unlock()
   list_init(&t->locks_acquired);
 
-
-
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
   intr_set_level (old_level);
