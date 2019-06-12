@@ -158,4 +158,10 @@ int thread_get_donated_priority (void);
 int thread_pick_higher_priority (struct thread *t);
 bool is_thread (struct thread *t);
 
+// DEBUG
+void print_all_queue(void);
+void print_ready_queue(void);
+void print_sleep_queue(void);
+void print_all_priorities(void);
+
 #endif /* threads/thread.h */
