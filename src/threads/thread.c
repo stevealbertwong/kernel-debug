@@ -834,3 +834,25 @@ void print_all_priorities(void) {
     }
     printf("\n");
 }
+
+void print_ready_priorities(void) {
+    struct list_elem *e;
+    for (e = list_begin (&ready_list); 
+         e != list_end (&ready_list); e = list_next (e)) {
+        struct thread *t = list_entry(e, struct thread, all_elem);
+        if (t != idle_thread)
+            printf("%s-p%d-i%d-s%d  ", t->name, t->priority, t->tid, t->status);
+    }
+    printf("\n");
+}
+
+void print_all_priorities(void) {
+    struct list_elem *e;
+    for (e = list_begin (&sleep_list); 
+         e != list_end (&sleep_list); e = list_next (e)) {
+        struct thread *t = list_entry(e, struct thread, all_elem);
+        if (t != idle_thread)
+            printf("%s-p%d-i%d-s%d  ", t->name, t->priority, t->tid, t->status);
+    }
+    printf("\n");
+}

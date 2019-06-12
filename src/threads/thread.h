@@ -163,5 +163,7 @@ void print_all_queue(void);
 void print_ready_queue(void);
 void print_sleep_queue(void);
 void print_all_priorities(void);
+void print_ready_priorities(void);
+void print_sleep_priorities(void);
 
 #endif /* threads/thread.h */
