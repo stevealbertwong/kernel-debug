@@ -19,6 +19,7 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
 
 // mlfqs
 static int load_avg;
