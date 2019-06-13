@@ -801,7 +801,7 @@ void thread_update_mlfqs(void){
              cpu_e = list_next(cpu_e)) {
             struct thread *new_t = list_entry(cpu_e, struct thread, all_elem);
             new_t->recent_cpu =
-                calculate_cpu_usage(new_t->recent_cpu, load_avg, new_t->niceness);
+                compute_cpu_usage(new_t->recent_cpu, load_avg, new_t->niceness);
         }
     }
 
