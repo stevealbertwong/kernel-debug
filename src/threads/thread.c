@@ -643,13 +643,18 @@ next_thread_to_run (void)
   {
     struct thread *t = list_entry(e, struct thread, elem);
     
-    if(!thread_mlfqs && t->priority > highest_pri) {
+    if(thread_mlfqs) {
+      max = t;
+      max_elem = e;
+      highest_pri = t->priority;
+    }
+    else if(!thread_mlfqs && t->priority > highest_pri) {
       max = t;
       max_elem = e;
       highest_pri = t->priority;
     }
   }
-
+  ASSERT(max_elem != NULL);
   list_remove(max_elem);
   return max;
 }
