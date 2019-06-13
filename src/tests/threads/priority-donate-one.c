@@ -47,7 +47,7 @@ static void
 acquire1_thread_func (void *lock_) 
 {
   struct lock *lock = lock_;
-
+  msg ("lock acquired 1");
   lock_acquire (lock);
   msg ("acquire1: got the lock");
   lock_release (lock);
@@ -58,7 +58,7 @@ static void
 acquire2_thread_func (void *lock_) 
 {
   struct lock *lock = lock_;
-
+  msg ("lock acquired 2");
   lock_acquire (lock);
   msg ("acquire2: got the lock");
   lock_release (lock);
