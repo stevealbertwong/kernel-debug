@@ -159,6 +159,20 @@ int thread_get_donated_priority (void);
 int thread_pick_higher_priority (struct thread *t);
 bool is_thread (struct thread *t);
 
+// mlfqs
+int convert_to_fixed_point(int n, int q);
+int convert_to_integer_round_zero(int x, int q);
+int convert_to_integer_round_nearest(int x, int q);
+int multiply_x_by_y(int x, int y, int q);
+int multiply_x_by_n(int x, int n);
+int divide_x_by_y(int x, int y, int q);
+int divide_x_by_n(int x, int n);
+void thread_update_mlfqs(void);
+int calculate_priority(int recent_cpu, int nice);
+int calculate_cpu_usage(int recent_cpu, int load_average, int niceness);
+int calculate_load_avg(int load_average, int ready_threads);
+
+
 // DEBUG
 void print_all_queue(void);
 void print_ready_queue(void);

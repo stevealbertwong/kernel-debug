@@ -787,44 +787,6 @@ bool is_highest_priority(int priority){
 #define FIXED_ONE 1 << 14
 #define fp_f    (2<<(14-1)) /* Using 17.14 fixed point representation. */
 
-int convert_to_fixed_point(int n, int q) {
-    int f = 1 << q;
-    return n * f;
-}
-
-int convert_to_integer_round_zero(int x, int q) {
-    int f = 1 << q;
-    return x / f;
-}
-
-int convert_to_integer_round_nearest(int x, int q) {
-    int f = 1 << q;
-    if (x >= 0) {
-        return (x + f / 2) / f;  
-    }
-    return (x - f / 2) / f;
-}
-
-int multiply_x_by_y(int x, int y, int q) {
-    int f = 1 << q;
-
-    return ((int64_t) x) * y / f;
-}
-
-int multiply_x_by_n(int x, int n) {
-    return x * n;
-}
-
-int divide_x_by_y(int x, int y, int q) {
-    int f = 1 << q;
-
-    return ((int64_t) x) * f / y;
-}
-
-int divide_x_by_n(int x, int n) {
-    return x / n;
-}
-
 // run every thread_tick()
 void thread_update_mlfqs(void){
     /* Increment recent_cpu by 1 for running thread every interrupt. */
@@ -927,6 +889,44 @@ int compute_load_avg(int load_average, int ready_threads) {
     return fraction_multiplication + second_fraction_multiplication;
 }
 
+
+int convert_to_fixed_point(int n, int q) {
+    int f = 1 << q;
+    return n * f;
+}
+
+int convert_to_integer_round_zero(int x, int q) {
+    int f = 1 << q;
+    return x / f;
+}
+
+int convert_to_integer_round_nearest(int x, int q) {
+    int f = 1 << q;
+    if (x >= 0) {
+        return (x + f / 2) / f;  
+    }
+    return (x - f / 2) / f;
+}
+
+int multiply_x_by_y(int x, int y, int q) {
+    int f = 1 << q;
+
+    return ((int64_t) x) * y / f;
+}
+
+int multiply_x_by_n(int x, int n) {
+    return x * n;
+}
+
+int divide_x_by_y(int x, int y, int q) {
+    int f = 1 << q;
+
+    return ((int64_t) x) * f / y;
+}
+
+int divide_x_by_n(int x, int n) {
+    return x / n;
+}
 
 
 
