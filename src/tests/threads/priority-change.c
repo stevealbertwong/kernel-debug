@@ -27,5 +27,5 @@ changing_thread (void *aux UNUSED)
 {
   msg ("Thread 2 now lowering priority.");
   thread_set_priority (PRI_DEFAULT - 1);
-  msg ("Thread 2 exiting.");
+  // msg ("Thread 2 exiting.");
 }

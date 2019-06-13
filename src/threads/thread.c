@@ -390,7 +390,6 @@ thread_set_priority (int new_priority)
         thread_yield();
     }
   }
-
   intr_set_level(old_level);
 }
 
