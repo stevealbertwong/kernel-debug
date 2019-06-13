@@ -168,9 +168,9 @@ int multiply_x_by_n(int x, int n);
 int divide_x_by_y(int x, int y, int q);
 int divide_x_by_n(int x, int n);
 void thread_update_mlfqs(void);
-int calculate_priority(int recent_cpu, int nice);
-int calculate_cpu_usage(int recent_cpu, int load_average, int niceness);
-int calculate_load_avg(int load_average, int ready_threads);
+int compute_priority(int recent_cpu, int nice);
+int compute_cpu_usage(int recent_cpu, int load_average, int niceness);
+int compute_load_avg(int load_average, int ready_threads);
 
 
 // DEBUG

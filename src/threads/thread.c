@@ -95,7 +95,6 @@ thread_init (void)
 {
   ASSERT (intr_get_level () == INTR_OFF);
 
-  load_avg = 0;
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
@@ -107,7 +106,7 @@ thread_init (void)
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
   initial_thread->sleep_ticks = 0;
-
+  load_avg = 0;
   thread_init_finished = true;
 }
 
@@ -797,7 +796,7 @@ void thread_update_mlfqs(void){
     /* Update load_avg and recent_cpu once per second. */
     if (timer_ticks() % TIMER_FREQ == 0) {
         struct list_elem *cpu_e;
-        load_avg = calculate_load_avg(load_avg, listsize(&ready_list));
+        load_avg = compute_load_avg(load_avg, list_size(&ready_list));
         for (cpu_e = list_begin(&all_list); cpu_e != list_end(&all_list);
              cpu_e = list_next(cpu_e)) {
             struct thread *new_t = list_entry(cpu_e, struct thread, all_elem);
@@ -814,7 +813,7 @@ void thread_update_mlfqs(void){
             struct thread *new_t = list_entry(prio_e, struct thread, all_elem);
             ASSERT(is_thread(new_t));
 
-            new_t->priority = calculate_priority(new_t->recent_cpu, new_t->niceness);
+            new_t->priority = compute_priority(new_t->recent_cpu, new_t->niceness);
         }
     }
 }
