@@ -798,44 +798,44 @@ unblock_awaken_thread(void){
     }
 }
 
-void 
-thread_donate_priority(struct thread *t, int priority){
-  
-  if(t->donated_priority < priority){        
-    t->donated_priority = priority; // donate() priority to donated_priority    
-    thread_donate_priority(t->lock_waiting_on->holder, priority); // recur()
-  }
-
-  // accelerated lock_release() !!!!!
-  // locking_thread yield() to upper_lock holder_thread (or any other threads)
-  // after nested_donate() in hopes they lock_release() before locking_thread thread_block() 
-  if (!is_highest_priority(thread_pick_higher_priority(thread_current()))) {
-      thread_yield();
-  }  
-}
-
+//TODO: fix this
 // void 
-// thread_donate_priority(struct thread *holder_thread, int priority){
-//     ASSERT(is_thread(holder_thread));
-//     struct list_elem *e, *f;    
-//     int max = priority;
-//     // holder_thread get highest donation of all waiter_thread
-//     for (e = list_begin(&(holder_thread->locks_acquired)); 
-//          e != list_end(&(holder_thread->locks_acquired)); e = list_next(e)) {
-
-//         struct lock *l = list_entry(e, struct lock, thread_elem);
-//         for (f = list_begin(&(l->blocked_threads)); 
-//              f != list_end(&(l->blocked_threads)); f = list_next(f)) {
-//             struct thread *waiting_thread = list_entry(f, struct thread, elem);
-//             max = MAX(max, waiting_thread->priority);
-//         }
-//     }
-//     holder_thread->donated_priority = max;
-//     if (holder_thread->lock_waiting_on && holder_thread->lock_waiting_on->holder) { 
-//         thread_donate_priority(holder_thread->lock_waiting_on->holder, holder_thread->donated_priority);
-//     }
-//     ASSERT(max >= holder_thread->priority);
+// thread_donate_priority(struct thread *t, int priority){
+//   if(t->donated_priority < priority){        
+//     t->donated_priority = priority; // donate() priority to donated_priority    
+//     thread_donate_priority(t->lock_waiting_on->holder, priority); // recur()
+//   }
+//   // accelerated lock_release() !!!!!
+//   // locking_thread yield() to upper_lock holder_thread (or any other threads)
+//   // after nested_donate() in hopes they lock_release() before locking_thread thread_block() 
+//   if (!is_highest_priority(thread_pick_higher_priority(thread_current()))) {
+//       thread_yield();
+//   }  
 // }
+
+void 
+thread_donate_priority(struct thread *holder_thread, int priority){
+    ASSERT(is_thread(holder_thread));
+    struct list_elem *e, *f;    
+    int max = priority;
+    // holder_thread get highest donation of all waiter_thread
+    for (e = list_begin(&(holder_thread->locks_acquired)); 
+         e != list_end(&(holder_thread->locks_acquired)); e = list_next(e)) {
+
+        struct lock *l = list_entry(e, struct lock, thread_elem);
+        for (f = list_begin(&(l->blocked_threads)); 
+             f != list_end(&(l->blocked_threads)); f = list_next(f)) {
+            
+            struct thread *waiting_thread = list_entry(f, struct thread, elem);
+            max = MAX(max, waiting_thread->priority);
+        }
+    }
+    holder_thread->donated_priority = max;
+    if (holder_thread->lock_waiting_on && holder_thread->lock_waiting_on->holder) { 
+        thread_donate_priority(holder_thread->lock_waiting_on->holder, holder_thread->donated_priority);
+    }
+    ASSERT(max >= holder_thread->priority);
+}
 
 
 
