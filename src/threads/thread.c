@@ -377,7 +377,11 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  enum intr_level old_level;
+  old_level = intr_disable();
+
   if (!thread_mlfqs){
+
     thread_current ()->priority = new_priority;  
     if(thread_current()->lock_waiting_on != NULL){
       thread_donate_priority(thread_current()->lock_waiting_on->holder, thread_pick_higher_priority(thread_current()));
@@ -386,6 +390,8 @@ thread_set_priority (int new_priority)
         thread_yield();
     }
   }
+
+  intr_set_level(old_level);
 }
 
 // OUR IMPLEMENTATION
