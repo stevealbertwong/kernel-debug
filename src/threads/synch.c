@@ -277,6 +277,7 @@ lock_release (struct lock *lock)
   
   enum intr_level old_level;  
   old_level = intr_disable ();
+  
   struct thread *cur = thread_current();
 
   if(thread_mlfqs) {
@@ -293,28 +294,34 @@ lock_release (struct lock *lock)
   lock->holder = NULL;
   list_remove (&lock->thread_elem); // thread's waiting locks
   
-  // 3. clear holder's donated_priority / 2nd lock's highest waiter
-  
-  // thread has no more locks 
+  // 3. clear holder's donated_priority / 2nd lock's highest waiter  
+  // 3.a thread has no more locks 
   if (list_empty (&cur->locks_acquired)){
     thread_clear_donated_priority();
-  
-  } else { // thread has remaining locks
+  // 3.b thread has remaining locks
+  } else { 
     // holder loop() thru remaining locks + waiters -> 2nd lock highest priority
     thread_recv_highest_waiter_priority(cur);
+  }
+
+  if (!is_highest_priority(thread_pick_higher_priority(cur))){
+        thread_yield();
   }
 
   intr_set_level (old_level);
 }
 
+
 // holder receives highest priority from its locks' waiters
 void thread_recv_highest_waiter_priority(struct thread *holder){
   if (!list_empty(&holder->locks_acquired)) {
         struct list_elem *e;
+        // 1st for loop
         for (e = list_begin(&holder->locks_acquired);
                 e != list_end(&holder->locks_acquired);
                 e = list_next(e)) {
             struct lock *waiter_lock = list_entry(e, struct lock, thread_elem);
+            // 2nd for loop
             int highest_priority = highest_lock_priority(waiter_lock);
             if (highest_priority > holder->donated_priority) {
                 holder->donated_priority = highest_priority;

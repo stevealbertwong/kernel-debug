@@ -320,8 +320,6 @@ thread_exit (void)
       lock_release(lock);
   }
 
-
-
 #ifdef USERPROG
   process_exit ();
 #endif
