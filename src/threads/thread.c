@@ -411,7 +411,8 @@ thread_clear_donated_priority (void)
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+  // return thread_current ()->priority;
+  return thread_pick_higher_priority(thread_current ());
 }
 
 // OUR IMPLEMENTATION
