@@ -381,7 +381,6 @@ thread_set_priority (int new_priority)
   old_level = intr_disable();
 
   if (!thread_mlfqs){
-
     thread_current()->priority = new_priority;
 
     if(thread_current()->lock_waiting_on != NULL){
@@ -814,6 +813,7 @@ thread_donate_priority(struct thread *t, int priority){
   }  
 }
 
+// whether arg priority is the highest in ready_list
 bool is_highest_priority(int priority){
   // for loop ready_list -> higher of priority/donated_priority  
   enum intr_level old_level = intr_disable();
@@ -831,7 +831,7 @@ bool is_highest_priority(int priority){
       }
   }
   intr_set_level(old_level);
-  return highest_priority_val >= priority;
+  return priority >= highest_priority_val;
 }
 
 
