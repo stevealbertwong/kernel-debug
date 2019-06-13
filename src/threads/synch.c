@@ -215,14 +215,11 @@ lock_acquire (struct lock *lock)
   bool success = sema_try_down(&lock->semaphore);
   if(!success){
 
-    // DEBUG
-    // list_push_back(&lock->semaphore.waiters, &thread_current()->elem);
-
     // low_thread chain() to upper_lock -> nested_donate()
     thread_current()->lock_waiting_on = lock;    
     ASSERT(is_thread(lock->holder));
     
-    // for holder lock_release() -> 2nd lock highest waiter
+    // lock_release() -> 2nd lock highest waiter + donate_priority()
     list_push_back(&lock->blocked_threads, &thread_current()->lock_elem);
     thread_donate_priority(lock->holder, thread_pick_higher_priority(thread_current()));
     
