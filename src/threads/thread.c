@@ -387,8 +387,10 @@ thread_set_priority (int new_priority)
     if(thread_current()->lock_waiting_on != NULL){
       thread_donate_priority(thread_current()->lock_waiting_on->holder, thread_pick_higher_priority(thread_current()));
     }
-    struct thread *next_thread = list_entry(list_begin(&ready_list), struct thread, elem);
-    if (next_thread->priority > new_priority) {
+
+    if (!is_highest_priority(new_priority)){
+    // struct thread *next_thread = list_entry(list_begin(&ready_list), struct thread, elem);
+    // if (next_thread->priority > new_priority) {
         thread_yield();
     }
   }
