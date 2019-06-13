@@ -379,9 +379,12 @@ thread_set_priority (int new_priority)
 {
   if (!thread_mlfqs){
     thread_current ()->priority = new_priority;  
-    if(thread_current()->lock_waiting_on){
+    if(thread_current()->lock_waiting_on != NULL){
       thread_donate_priority(thread_current()->lock_waiting_on->holder, thread_pick_higher_priority(thread_current()));
-    }    
+    }
+    if (!is_highest_priority(new_priority)) {
+        thread_yield();
+    }
   }
 }
 
