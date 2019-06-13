@@ -395,6 +395,9 @@ thread_set_priority (int new_priority)
   intr_set_level(old_level);
 }
 
+
+
+
 // OUR IMPLEMENTATION
 void
 thread_clear_donated_priority (void) 
@@ -589,35 +592,69 @@ alloc_frame (struct thread *t, size_t size)
    will be in the run queue.)  If the run queue is empty, return
    idle_thread. */
 // OUR IMPLEMENTATION
+// static struct thread *
+// next_thread_to_run (void) 
+// {
+//   if (list_empty (&ready_list)){
+//     return idle_thread;
+//   } else {
+//     //for loop ready_list -> highest donated_priority/priority(whichever higher)
+//     struct list_elem *next = list_begin(&ready_list);
+//     struct thread *t = list_entry(next, struct thread, elem);
+//     int highest_priority_val = thread_pick_higher_priority(t);    
+//     struct list_elem *e;
+//     struct thread *next_thread;
+
+//     for (e = list_next(next); e != list_end(&ready_list);
+//           e = list_next(e)) {
+//         t = list_entry(e, struct thread, elem);
+        
+//         int curr_priority = thread_pick_higher_priority(t);
+
+//         if (curr_priority > highest_priority_val) {
+//             highest_priority_val = curr_priority;
+//             next = e;
+//         }
+//     }
+//     next_thread = list_entry(next, struct thread, elem);
+//     list_remove(next);
+//     return next_thread;
+//   }
+// }
+
 static struct thread *
 next_thread_to_run (void) 
 {
-  if (list_empty (&ready_list)){
+  // NOTE FROM ILYA: This will almost certainly merge conflict, but
+  // I think my version should work for your part too, so you might
+  // want to consider keeping this version.
+
+  if (list_empty (&ready_list)) {
     return idle_thread;
-  } else {
-    //for loop ready_list -> highest donated_priority/priority(whichever higher)
-    struct list_elem *next = list_begin(&ready_list);
-    struct thread *t = list_entry(next, struct thread, elem);
-    int highest_priority_val = thread_pick_higher_priority(t);    
-    struct list_elem *e;
-    struct thread *next_thread;
-
-    for (e = list_next(next); e != list_end(&ready_list);
-          e = list_next(e)) {
-        t = list_entry(e, struct thread, elem);
-        
-        int curr_priority = thread_pick_higher_priority(t);
-
-        if (curr_priority > highest_priority_val) {
-            highest_priority_val = curr_priority;
-            next = e;
-        }
-    }
-    next_thread = list_entry(next, struct thread, elem);
-    list_remove(next);
-    return next_thread;
   }
+
+  int highest_pri = PRI_MIN - 1;
+  struct thread *max;
+  struct list_elem *max_elem;
+  struct list_elem *e;
+
+  for( e = list_begin(&ready_list); e != list_end(&ready_list);
+       e = list_next(e)) 
+  {
+    struct thread *t = list_entry(e, struct thread, elem);
+    
+    if(!thread_mlfqs && t->priority > highest_pri) {
+      max = t;
+      max_elem = e;
+      highest_pri = t->priority;
+    }
+  }
+
+  list_remove(max_elem);
+  return max;
 }
+
+
 
 
 
