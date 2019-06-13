@@ -382,11 +382,13 @@ thread_set_priority (int new_priority)
 
   if (!thread_mlfqs){
 
-    thread_current ()->priority = new_priority;  
+    thread_current()->priority = new_priority;
+
     if(thread_current()->lock_waiting_on != NULL){
       thread_donate_priority(thread_current()->lock_waiting_on->holder, thread_pick_higher_priority(thread_current()));
     }
-    if (!is_highest_priority(new_priority)) {
+    struct thread *next_thread = list_entry(list_begin(&ready_list), struct thread, elem);
+    if (next_thread->priority > new_priority) {
         thread_yield();
     }
   }
@@ -543,11 +545,25 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
-  t->priority = priority;
   t->magic = THREAD_MAGIC;
 
   t->donated_priority = PRI_MIN; // lock(), unlock()
   list_init(&t->locks_acquired);
+
+  if (list_empty(&all_list)) {
+    t->niceness = 0;  /* Set niceness to 0 on initial thread */
+    t->recent_cpu = 0; /* Set cpu_usage to 0 on initial thread */
+  }
+  else {
+    /* Inherit niceness and cpu_usage from parent */
+    t->niceness = thread_current()->niceness;
+    t->recent_cpu = thread_current()->recent_cpu;
+  }
+  if (thread_mlfqs) {
+    t->priority = compute_priority(t->recent_cpu, t->niceness);
+  } else {
+    t->priority = priority;
+  }
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
