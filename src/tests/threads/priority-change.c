@@ -19,13 +19,13 @@ test_priority_change (void)
   thread_create ("thread 2", PRI_DEFAULT + 1, changing_thread, NULL);
   msg ("original: Thread 2 should have just lowered its priority.");
   thread_set_priority (PRI_DEFAULT - 2);
-  msg ("Thread 2 should have just exited.");
+  msg ("original 2: Thread 2 should have just exited.");
 }
 
 static void
 changing_thread (void *aux UNUSED) 
 {
-  msg ("Thread 2 now lowering priority.");
+  msg ("new thread: Thread 2 now lowering priority.");
   thread_set_priority (PRI_DEFAULT - 1);
   msg ("new: Thread 2 exiting.");
 }
