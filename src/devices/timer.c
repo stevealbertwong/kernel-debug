@@ -91,7 +91,6 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {  
-  printf ("timer sleep.\n");
   enum intr_level old_level;
   ASSERT(intr_get_level() == INTR_ON);
   old_level = intr_disable();

@@ -20,6 +20,9 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
+// mlfqs
+static int load_avg;
+
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -92,6 +95,7 @@ thread_init (void)
 {
   ASSERT (intr_get_level () == INTR_OFF);
 
+  load_avg = 0;
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
@@ -145,6 +149,10 @@ thread_tick (void)
   if(thread_init_finished){
     unblock_awaken_thread();
   }  
+
+  if (thread_mlfqs && !list_empty(&all_list)) {
+    thread_update_mlfqs();
+  }
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
@@ -588,45 +596,6 @@ next_thread_to_run (void)
   }
 }
 
-// static struct thread *
-// next_thread_to_run (void) 
-// {
-//   // NOTE FROM ILYA: This will almost certainly merge conflict, but
-//   // I think my version should work for your part too, so you might
-//   // want to consider keeping this version.
-
-//   if (list_empty (&ready_list)) {
-//     return idle_thread;
-//   }
-
-//   int highest_pri = PRI_MIN - 1;
-//   struct thread *max;
-//   struct list_elem *max_elem;
-//   struct list_elem *e;
-
-//   for( e = list_begin(&ready_list); e != list_end(&ready_list);
-//        e = list_next(e)) 
-//   {
-//     struct thread *t = list_entry(e, struct thread, elem);
-
-//     if(!thread_mlfqs && t->priority > highest_pri) {
-//       max = t;
-//       max_elem = e;
-//       highest_pri = t->priority;
-//     }
-//   }
-
-//   list_remove(max_elem);
-//   return max;
-// }
-
-
-
-
-
-
-
-
 
 
 /* Completes a thread switch by activating the new thread's page
@@ -722,6 +691,16 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 
 
+
+
+
+
+
+
+
+
+
+
 /************************************************************/
 void 
 add_thread_sleeplist(struct thread *t){
@@ -729,6 +708,7 @@ add_thread_sleeplist(struct thread *t){
   list_push_back(&sleep_list, &t->sleep_elem);
 }
 
+// add() awake_thread to ready_list. If empty sleep_list, no effect.
 void 
 unblock_awaken_thread(void){
     
@@ -736,19 +716,16 @@ unblock_awaken_thread(void){
     struct list_elem *e = list_begin(&sleep_list);
 
     while (e != list_end(&sleep_list)) {
-        printf ("timer interrupt.\n");
         
         struct thread *t = list_entry(e, struct thread, sleep_elem);
         ASSERT(is_thread(t));
         if (t->sleep_ticks <= 1) {
             t->sleep_ticks = 0; // clean for next time sleep
             e = list_remove(e);
-            printf ("timer interrupt 1.\n");
             thread_unblock(t);
         }
         else {
             t->sleep_ticks--;
-            printf ("timer interrupt 2.\n");
             e = list_next(e);
         }
     }
@@ -792,7 +769,181 @@ bool is_highest_priority(int priority){
 
 
 /************************************************************/
+// compute load_average n recent_cpu
+
+
+
+
+
+
+
+
+
+
+
+/************************************************************/
+
+#define FIXED_POINT_Q 14
+#define FIXED_ONE 1 << 14
+#define fp_f    (2<<(14-1)) /* Using 17.14 fixed point representation. */
+
+int convert_to_fixed_point(int n, int q) {
+    int f = 1 << q;
+    return n * f;
+}
+
+int convert_to_integer_round_zero(int x, int q) {
+    int f = 1 << q;
+    return x / f;
+}
+
+int convert_to_integer_round_nearest(int x, int q) {
+    int f = 1 << q;
+    if (x >= 0) {
+        return (x + f / 2) / f;  
+    }
+    return (x - f / 2) / f;
+}
+
+int multiply_x_by_y(int x, int y, int q) {
+    int f = 1 << q;
+
+    return ((int64_t) x) * y / f;
+}
+
+int multiply_x_by_n(int x, int n) {
+    return x * n;
+}
+
+int divide_x_by_y(int x, int y, int q) {
+    int f = 1 << q;
+
+    return ((int64_t) x) * f / y;
+}
+
+int divide_x_by_n(int x, int n) {
+    return x / n;
+}
+
+// run every thread_tick()
+void thread_update_mlfqs(void){
+    /* Increment recent_cpu by 1 for running thread every interrupt. */
+    if (thread_current() != idle_thread) {
+        thread_current()->recent_cpu += FIXED_ONE;
+    }
+
+    /* Update load_avg and recent_cpu once per second. */
+    if (timer_ticks() % TIMER_FREQ == 0) {
+        struct list_elem *cpu_e;
+        load_avg = calculate_load_avg(load_avg, listsize(&ready_list));
+        for (cpu_e = list_begin(&all_list); cpu_e != list_end(&all_list);
+             cpu_e = list_next(cpu_e)) {
+            struct thread *new_t = list_entry(cpu_e, struct thread, all_elem);
+            new_t->recent_cpu =
+                calculate_cpu_usage(new_t->recent_cpu, load_avg, new_t->niceness);
+        }
+    }
+
+    /* Update priority for all threads every four timer ticks. */
+    if (timer_ticks() % 4 == 0) {
+        struct list_elem *prio_e;
+        for (prio_e = list_begin(&all_list); prio_e != list_end(&all_list);
+             prio_e = list_next(prio_e)) {
+            struct thread *new_t = list_entry(prio_e, struct thread, all_elem);
+            ASSERT(is_thread(new_t));
+
+            new_t->priority = calculate_priority(new_t->recent_cpu, new_t->niceness);
+        }
+    }
+}
+
+/* Calculates the new priority of the thread given cpu usage
+   and a niceness.
+
+   Input:
+   recent_cpu: Fixed Point
+   nice:       Integer
+
+   Return:
+   priority:   Integer
+*/
+int compute_priority(int recent_cpu, int nice){
+    int fixed_PRI_MAX = convert_to_fixed_point(PRI_MAX, FIXED_POINT_Q);
+    int fixed_nice_factor = convert_to_fixed_point(nice * 2, FIXED_POINT_Q);
+    int fixed_priority = fixed_PRI_MAX - (recent_cpu / 4) - fixed_nice_factor;
+    int int_priority = convert_to_integer_round_nearest(fixed_priority, FIXED_POINT_Q);
+    return int_priority;
+}
+
+/* Calculates the new cpu_usage of the thread given cpu usage
+   and a load_average.
+
+   Input:
+   recent_cpu:    Fixed Point
+   load_average:  Fixed Point
+
+   Return:
+   recent_cpu:    Fixed Point
+*/
+int compute_cpu_usage(int recent_cpu, int load_average, int niceness) {
+    int fixed_one = convert_to_fixed_point(1, FIXED_POINT_Q);
+    int fixed_fraction = divide_x_by_y(2 * load_average,
+                                       2 * load_average + fixed_one,
+                                       FIXED_POINT_Q);
+    int fraction_multiplication = multiply_x_by_y(fixed_fraction,
+                                                  recent_cpu,
+                                                  FIXED_POINT_Q);
+    int fixed_niceness = convert_to_fixed_point(niceness, FIXED_POINT_Q);
+    int fixed_new_cpu = fraction_multiplication + fixed_niceness;
+    return fixed_new_cpu;
+}
+
+/* Calculates the new load_average of the thread given previous
+   load_average and number of ready threads.
+
+   Input:
+   load_avg:       Fixed Point
+   ready_threads:  Integer
+
+   Return:
+   load_average:    Fixed Point
+*/
+int compute_load_avg(int load_average, int ready_threads) {
+    int fixed_numerator = convert_to_fixed_point(59, FIXED_POINT_Q);
+    int fixed_one = convert_to_fixed_point(1, FIXED_POINT_Q);
+    int fixed_denominator = convert_to_fixed_point(60, FIXED_POINT_Q);
+    int fixed_threads = convert_to_fixed_point(ready_threads, FIXED_POINT_Q);
+
+    int fixed_fraction = 
+            divide_x_by_y(fixed_numerator, fixed_denominator, FIXED_POINT_Q);
+    int fixed_second_fraction =
+            divide_x_by_y(fixed_one, fixed_denominator, FIXED_POINT_Q);
+
+    int fraction_multiplication = 
+            multiply_x_by_y(fixed_fraction, load_average, FIXED_POINT_Q);
+    int second_fraction_multiplication = multiply_x_by_y(fixed_second_fraction,
+                                                         fixed_threads,
+                                                         FIXED_POINT_Q);
+    return fraction_multiplication + second_fraction_multiplication;
+}
+
+
+
+
+
+
+/************************************************************/
 // DEBUG
+
+
+
+
+
+
+
+
+
+
 
 /************************************************************/
 void print_ready_queue(void) {

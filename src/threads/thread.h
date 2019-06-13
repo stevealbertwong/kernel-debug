@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include <timer.h>
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -98,6 +99,9 @@ struct thread
     struct list_elem elem;              // sema->waiters[], priority queue to unlock()
     struct list_elem lock_elem;         // lock->threads[], lock_release() 2nd lock highest waiter
     struct list locks_acquired;         // thread_exit() free() all locks + lock_release() 2nd lock highest waiter    
+
+    int recent_cpu;                     // mlfqs, moving average of cpu usage
+    int niceness;                       // mlfqs, inflat your recent_cpu, let other threads run
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
