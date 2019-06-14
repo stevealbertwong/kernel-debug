@@ -89,14 +89,14 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
-    struct list_elem all_elem;           /* List element for all threads list. */
+    struct list_elem elem;              // shared by ready_list, sema->waiters[] -> mutually exclusive
+    struct list_elem all_elem;          // all_list
     
     int64_t sleep_ticks;                // number of ticks thread to sleep
     struct list_elem sleep_elem;        // wait/sleep list 
     
     int donated_priority;               // 2nd_lock_highest_waiter() + next_thread_to_run() + is_highest_priority()
     struct lock *lock_waiting_on;       // nested_doante_priority(), traverse() to highest holder 
-    struct list_elem elem;              // sema->waiters[], priority queue to unlock()
     struct list_elem lock_elem;         // lock->threads[], lock_release() 2nd lock highest waiter
     struct list locks_acquired;         // thread_exit() free() all locks + lock_release() 2nd lock highest waiter    
 

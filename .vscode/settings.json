@@ -7,6 +7,7 @@
         "palloc.h": "c",
         "switch.h": "c",
         "vaddr.h": "c",
-        "thread.h": "c"
+        "thread.h": "c",
+        "interrupt.h": "c"
     }
 }
