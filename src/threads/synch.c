@@ -32,6 +32,10 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+// OUR IMPLEMENTATION
+void thread_recv_highest_waiter_priority(struct thread *holder);
+int highest_lock_priority(struct lock *lock);
+static bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux);
 
 
 /************************************************************/
