@@ -86,7 +86,6 @@ sema_down (struct semaphore *sema)
       } else {
         list_push_back (&sema->waiters, &thread_current ()->elem);
       }
-
       thread_block ();
     }
   sema->value--;
@@ -463,11 +462,7 @@ static bool thread_less_func(const struct list_elem *l, const struct list_elem *
   ASSERT (l != NULL && r != NULL);
   lthread = list_entry(l, struct thread, elem);
   rthread = list_entry(r, struct thread, elem);
-  if(!thread_mlfqs) {
-    return (thread_pick_higher_priority(lthread) >= thread_pick_higher_priority(rthread));    
-  } else {
-    return (lthread->priority >= rthread->priority);
-  }
+  return (thread_pick_higher_priority(lthread) >= thread_pick_higher_priority(rthread));
 }
 
 
