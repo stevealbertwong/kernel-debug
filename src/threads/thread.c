@@ -627,8 +627,8 @@ thread_donate_priority(struct thread *holder_thread, int priority){
         for (f = list_begin(&(l->blocked_threads)); 
              f != list_end(&(l->blocked_threads)); f = list_next(f)) {
             
-            struct thread *waiting_thread = list_entry(f, struct thread, elem);
-            max = MAX(max, waiting_thread->priority);
+            struct thread *waiting_thread = list_entry(f, struct thread, lock_elem);
+            max = MAX(max, thread_pick_higher_priority(waiting_thread));
         }
     }
     holder_thread->donated_priority = max;
@@ -637,6 +637,7 @@ thread_donate_priority(struct thread *holder_thread, int priority){
     }
     ASSERT(max >= holder_thread->priority);
 }
+
 
 //TODO: fix this
 // void 
