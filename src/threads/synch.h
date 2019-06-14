@@ -34,9 +34,6 @@ bool lock_try_acquire (struct lock *);
 void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
 
-// OUR IMPLEMENTATION
-void thread_recv_highest_waiter_priority(struct thread *holder);
-int highest_lock_priority(struct lock *lock);
 
 /* Condition variable. */
 struct condition 
@@ -55,5 +52,11 @@ void cond_broadcast (struct condition *, struct lock *);
    optimization barrier.  See "Optimization Barriers" in the
    reference guide for more information.*/
 #define barrier() asm volatile ("" : : : "memory")
+
+
+// OUR IMPLEMENTATION
+void thread_recv_highest_waiter_priority(struct thread *holder);
+int highest_lock_priority(struct lock *lock);
+static bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux);
 
 #endif /* threads/synch.h */

@@ -307,41 +307,6 @@ lock_release (struct lock *lock)
 }
 
 
-// holder receives highest priority from its locks' waiters
-void thread_recv_highest_waiter_priority(struct thread *holder){
-  if (!list_empty(&holder->locks_acquired)) {
-        struct list_elem *e;
-        // 1st for loop
-        for (e = list_begin(&holder->locks_acquired);
-                e != list_end(&holder->locks_acquired);
-                e = list_next(e)) {
-            struct lock *waiter_lock = list_entry(e, struct lock, thread_elem);
-            // 2nd for loop
-            int highest_priority = highest_lock_priority(waiter_lock);
-            if (highest_priority > holder->donated_priority) {
-                holder->donated_priority = highest_priority;
-            }
-        }
-    }
-}
-
-int highest_lock_priority(struct lock *lock){
-    struct list_elem *e;
-    int max_priority = PRI_MIN;
-    if (!list_empty(&lock->blocked_threads)) {
-        for (e = list_begin(&lock->blocked_threads);
-             e != list_end(&lock->blocked_threads);
-             e = list_next(e)) {
-            struct thread *waiter_thread = list_entry(e, struct thread, lock_elem);
-            int cur_priority = thread_pick_higher_priority(waiter_thread);
-            if (cur_priority > max_priority) {
-                max_priority = cur_priority;
-            }
-        }
-    }
-    return max_priority;
-}
-
 /* Returns true if the current thread holds LOCK, false
    otherwise.  (Note that testing whether some other thread holds
    a lock would be racy.) */
@@ -492,4 +457,40 @@ static bool thread_less_func(const struct list_elem *l, const struct list_elem *
   } else {
     return (lthread->priority >= rthread->priority);
   }
+}
+
+
+// holder receives highest priority from its locks' waiters
+void thread_recv_highest_waiter_priority(struct thread *holder){
+  if (!list_empty(&holder->locks_acquired)) {
+        struct list_elem *e;
+        // 1st for loop
+        for (e = list_begin(&holder->locks_acquired);
+                e != list_end(&holder->locks_acquired);
+                e = list_next(e)) {
+            struct lock *waiter_lock = list_entry(e, struct lock, thread_elem);
+            // 2nd for loop
+            int highest_priority = highest_lock_priority(waiter_lock);
+            if (highest_priority > holder->donated_priority) {
+                holder->donated_priority = highest_priority;
+            }
+        }
+    }
+}
+
+int highest_lock_priority(struct lock *lock){
+    struct list_elem *e;
+    int max_priority = PRI_MIN;
+    if (!list_empty(&lock->blocked_threads)) {
+        for (e = list_begin(&lock->blocked_threads);
+             e != list_end(&lock->blocked_threads);
+             e = list_next(e)) {
+            struct thread *waiter_thread = list_entry(e, struct thread, lock_elem);
+            int cur_priority = thread_pick_higher_priority(waiter_thread);
+            if (cur_priority > max_priority) {
+                max_priority = cur_priority;
+            }
+        }
+    }
+    return max_priority;
 }
