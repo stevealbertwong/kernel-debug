@@ -269,18 +269,22 @@ lock_release (struct lock *lock)
   lock->holder = NULL;
   list_remove (&lock->thread_elem); // thread's waiting locks
   
-  // 3. clear holder's donated_priority / 2nd lock's highest waiter  
-  // 3.a thread has no more locks 
-  if (list_empty (&cur->locks_acquired)){
-    thread_clear_donated_priority();
-  // 3.b thread has remaining locks
-  } else { 
-    // holder loop() thru remaining locks + waiters -> 2nd lock highest priority
-    thread_recv_highest_waiter_priority(cur);
-  }
+  // // 3. clear holder's donated_priority / 2nd lock's highest waiter  
+  // // 3.a thread has no more locks 
+  // if (list_empty (&cur->locks_acquired)){
+  //   thread_clear_donated_priority();
+  // // 3.b thread has remaining locks
+  // } else { 
+  //   // holder loop() thru remaining locks + waiters -> 2nd lock highest priority
+  //   thread_recv_highest_waiter_priority(cur);
+  // }
+
+  ASSERT(PRI_MIN <= thread_pick_higher_priority(cur) && thread_pick_higher_priority(cur) <= PRI_MAX);
+  thread_donate_priority(cur, thread_pick_higher_priority(cur));
+
 
   if (!is_highest_priority(thread_pick_higher_priority(cur))){
-        thread_yield();
+    thread_yield();
   }
 
   intr_set_level (old_level);
@@ -298,6 +302,7 @@ lock_try_acquire (struct lock *lock)
   success = sema_try_down (&lock->semaphore);
   if (success)
     lock->holder = thread_current ();
+    list_push_back(&thread_current()->locks_acquired, &lock->thread_elem);
   return success;
 }
 
