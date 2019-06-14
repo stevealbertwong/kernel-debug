@@ -615,10 +615,10 @@ unblock_awaken_thread(void){
 
 
 void 
-thread_donate_priority(struct thread *holder_thread, int priority){
+thread_donate_priority(struct thread *holder_thread){
     ASSERT(is_thread(holder_thread));
     struct list_elem *e, *f;    
-    int max = priority;
+    int max = 0;
     // holder_thread get highest donation of all waiter_thread
     for (e = list_begin(&(holder_thread->locks_acquired)); 
          e != list_end(&(holder_thread->locks_acquired)); e = list_next(e)) {
@@ -633,7 +633,7 @@ thread_donate_priority(struct thread *holder_thread, int priority){
     }
     holder_thread->donated_priority = max;
     if (holder_thread->lock_waiting_on && holder_thread->lock_waiting_on->holder) { 
-        thread_donate_priority(holder_thread->lock_waiting_on->holder, thread_pick_higher_priority(holder_thread));
+        thread_donate_priority(holder_thread->lock_waiting_on->holder);
     }
     ASSERT(max >= holder_thread->priority);
 }

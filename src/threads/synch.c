@@ -220,7 +220,7 @@ lock_acquire (struct lock *lock)
     
     // lock_release() -> 2nd lock highest waiter + donate_priority()
     list_push_back(&lock->blocked_threads, &thread_current()->lock_elem);
-    thread_donate_priority(lock->holder, thread_pick_higher_priority(thread_current()));
+    thread_donate_priority(lock->holder);
     
     // 2. acquire() lock
     sema_down(&lock->semaphore); // <- end point where thread_block()
@@ -280,7 +280,7 @@ lock_release (struct lock *lock)
   // }
 
   ASSERT(PRI_MIN <= thread_pick_higher_priority(cur) && thread_pick_higher_priority(cur) <= PRI_MAX);
-  thread_donate_priority(cur, thread_pick_higher_priority(cur));
+  thread_donate_priority(cur);
 
 
   if (!is_highest_priority(thread_pick_higher_priority(cur))){
