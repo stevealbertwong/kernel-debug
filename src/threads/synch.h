@@ -53,4 +53,11 @@ void cond_broadcast (struct condition *, struct lock *);
    reference guide for more information.*/
 #define barrier() asm volatile ("" : : : "memory")
 
+
+// OUR IMPLEMENTATION
+void thread_recv_highest_waiter_priority(struct thread *holder);
+int highest_lock_priority(struct lock *lock);
+bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux);
+
+
 #endif /* threads/synch.h */

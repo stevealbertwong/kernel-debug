@@ -32,12 +32,6 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
-// OUR IMPLEMENTATION
-void thread_recv_highest_waiter_priority(struct thread *holder);
-int highest_lock_priority(struct lock *lock);
-static bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux);
-
-
 /************************************************************/
 // semaphore
 
@@ -457,7 +451,7 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 
 /************************************************************/
 
-static bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux) {
+bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux) {
   struct thread *lthread, *rthread;
   ASSERT (l != NULL && r != NULL);
   lthread = list_entry(l, struct thread, elem);
