@@ -633,7 +633,7 @@ thread_donate_priority(struct thread *holder_thread, int priority){
     }
     holder_thread->donated_priority = max;
     if (holder_thread->lock_waiting_on && holder_thread->lock_waiting_on->holder) { 
-        thread_donate_priority(holder_thread->lock_waiting_on->holder, holder_thread->donated_priority);
+        thread_donate_priority(holder_thread->lock_waiting_on->holder, thread_pick_higher_priority(holder_thread));
     }
     ASSERT(max >= holder_thread->priority);
 }
