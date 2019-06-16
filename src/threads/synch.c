@@ -260,14 +260,10 @@ lock_release (struct lock *lock)
     return;
   }
 
-  // 1. thread_unblock()
-  sema_up (&lock->semaphore);
-
-  // 2. update() 2 (holder x lock_waiting_on + no change in lock's waiting threads)
   lock->holder = NULL;
+  sema_up (&lock->semaphore);
   list_remove (&lock->thread_elem); // thread's waiting locks
 
-  ASSERT(PRI_MIN <= cur->priority && cur->priority <= PRI_MAX);
   thread_set_priority(cur->original_priority); // already thread_yield()
   intr_set_level (old_level);
 }
