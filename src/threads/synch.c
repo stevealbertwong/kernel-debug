@@ -97,7 +97,6 @@ sema_up (struct semaphore *sema)
   ASSERT (sema != NULL);
   enum intr_level old_level;
   old_level = intr_disable ();
-  sema->value++;
 
   ASSERT(list_begin(&sema->waiters) != NULL);
   if (!list_empty (&sema->waiters)){
@@ -114,7 +113,7 @@ sema_up (struct semaphore *sema)
     struct thread *t = list_entry(max, struct thread, elem);
     thread_unblock(t);
   }
-  
+  sema->value++;
   thread_yield_if_not_highest_priority();
   intr_set_level (old_level);
 }
@@ -197,9 +196,7 @@ void
 lock_init (struct lock *lock)
 {
   ASSERT (lock != NULL);
-
   lock->holder = NULL;
-  list_init(&lock->blocked_threads);
   sema_init (&lock->semaphore, 1);
 }
 
