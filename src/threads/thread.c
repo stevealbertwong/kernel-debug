@@ -652,6 +652,9 @@ thread_tick (void)
   else
     kernel_ticks++;
 
+  enum intr_level old_level;
+  old_level = intr_disable();
+
   if (thread_mlfqs) {
     thread_update_mlfqs();
   }
@@ -664,6 +667,8 @@ thread_tick (void)
   //   unblock_awaken_thread();
   // }  
   thread_foreach((thread_action_func *) &thread_wake, NULL);
+
+  intr_set_level(old_level);
 
 }
 
