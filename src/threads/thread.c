@@ -79,7 +79,7 @@ void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
 static struct thread * thread_get_ready_max(void);
-static void thread_wake(struct thread *t, void *aux UNUSED)
+static void thread_wake(struct thread *t, void *aux UNUSED);
 
 /************************************************************/
 // setup thread system
