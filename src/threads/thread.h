@@ -96,7 +96,7 @@ struct thread
     struct list_elem sleep_elem;        // wait/sleep list 
     
     int mlfq_priority;
-    int original_priority;               // 2nd_lock_highest_waiter() + next_thread_to_run() + is_highest_priority()
+    int original_priority;               // 2nd_lock_highest_waiter() + next_thread_to_run()
     struct lock *lock_waiting_on;       // nested_doante_priority(), traverse() to highest holder 
     struct list_elem lock_elem;         // lock->block_threads[], lock_release() 2nd lock highest waiter
     struct list locks_acquired;         // thread_exit() free() all locks + lock_release() 2nd lock highest waiter    
@@ -154,7 +154,7 @@ void add_thread_sleeplist(struct thread *t);
 void unblock_awaken_thread(void);
 
 void thread_clear_donated_priority (void);
-bool is_highest_priority(int priority);
+bool thread_yield_if_not_highest_priority();
 void thread_donate_priority(struct thread *t);
 int thread_get_donated_priority (void);
 // int thread_pick_higher_priority (struct thread *t);

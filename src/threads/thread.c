@@ -685,9 +685,7 @@ thread_set_priority (int new_priority)
     if(thread_current()->lock_waiting_on != NULL){
       thread_donate_priority(thread_current());
     }
-    if (!is_highest_priority(cur->priority)){
-        thread_yield();
-    }
+    thread_yield_if_not_highest_priority();
   }
   intr_set_level(old_level);
 }
@@ -721,9 +719,7 @@ thread_set_nice (int nice UNUSED)
     struct thread *cur = thread_current();
     cur->niceness = nice;
     cur->priority = compute_priority(cur->recent_cpu, cur->niceness);
-    if (!is_highest_priority(cur->priority)) {
-        thread_yield();
-    }
+    thread_yield_if_not_highest_priority();
     intr_set_level(old_level);
 }
 
@@ -944,24 +940,31 @@ int divide_x_by_n(int x, int n) {
 
 
 // whether arg priority is the highest in ready_list
-bool is_highest_priority(int priority){
+bool thread_yield_if_not_highest_priority(){
   // for loop ready_list -> higher of priority/donated_priority  
   enum intr_level old_level = intr_disable();
   
-  int highest_priority_val = thread_current()->priority; 
-  struct list_elem *e;
-  for (e = list_begin(&ready_list); e != list_end(&ready_list);
-        e = list_next(e)) {
-      struct thread *t = list_entry(e, struct thread, elem);
-      ASSERT(is_thread(t));
-      int curr_priority = t->priority;
+  if (!list_empty(&ready_list)) {
+    int highest_priority_val = thread_current()->priority; 
+    struct list_elem *e;
+    for (e = list_begin(&ready_list); e != list_end(&ready_list);
+          e = list_next(e)) {
+        struct thread *t = list_entry(e, struct thread, elem);
+        ASSERT(is_thread(t));
+        int curr_priority = t->priority;
 
-      if (curr_priority > highest_priority_val) {
-          highest_priority_val = curr_priority;
-      }
+        if (curr_priority > highest_priority_val) {
+            highest_priority_val = curr_priority;
+        }
+    }
+    if (highest_priority_val > thread_current()->priority ){
+      if (intr_context()) { // external interrupt
+          intr_yield_on_return(); // yield after interrupt handler
+      } else {
+          thread_yield(); // yield immediately
+    }
   }
   intr_set_level(old_level);
-  return priority >= highest_priority_val;
 }
 
 
