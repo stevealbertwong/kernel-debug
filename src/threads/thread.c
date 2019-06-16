@@ -624,8 +624,8 @@ thread_donate_priority(struct thread *holder_thread){
          e != list_end(&(holder_thread->locks_acquired)); e = list_next(e)) {
 
         struct lock *l = list_entry(e, struct lock, thread_elem);
-        for (f = list_begin(&(l->blocked_threads)); 
-             f != list_end(&(l->blocked_threads)); f = list_next(f)) {
+        for (f = list_begin(&(l->semaphore.waiters)); 
+             f != list_end(&(l->semaphore.waiters)); f = list_next(f)) {
             
             struct thread *waiting_thread = list_entry(f, struct thread, lock_elem);
             max = MAX(max, thread_pick_higher_priority(waiting_thread));
@@ -780,7 +780,7 @@ thread_get_recent_cpu (void)
 
 
 /************************************************************/
-// compute mlfqs, load_average n recent_cpu
+// compute mlfqs, load_average n recent_cpu + fixed point arithemetic 
 
 
 
@@ -794,7 +794,7 @@ thread_get_recent_cpu (void)
 
 /************************************************************/
 
-#define FIXED_POINT_Q 14
+#define SCALE 14
 #define FIXED_ONE 1 << 14
 #define fp_f    (2<<(14-1)) /* Using 17.14 fixed point representation. */
 
@@ -841,10 +841,10 @@ void thread_update_mlfqs(void){
    priority:   Integer
 */
 int compute_priority(int recent_cpu, int nice){
-    int fixed_PRI_MAX = convert_to_fixed_point(PRI_MAX, FIXED_POINT_Q);
-    int fixed_nice_factor = convert_to_fixed_point(nice * 2, FIXED_POINT_Q);
+    int fixed_PRI_MAX = double_to_fixed_point(PRI_MAX, SCALE);
+    int fixed_nice_factor = double_to_fixed_point(nice * 2, SCALE);
     int fixed_priority = fixed_PRI_MAX - (recent_cpu / 4) - fixed_nice_factor;
-    int int_priority = convert_to_integer_round_nearest(fixed_priority, FIXED_POINT_Q);
+    int int_priority = convert_to_integer_round_nearest(fixed_priority, SCALE);
     return int_priority;
 }
 
@@ -859,14 +859,14 @@ int compute_priority(int recent_cpu, int nice){
    recent_cpu:    Fixed Point
 */
 int compute_cpu_usage(int recent_cpu, int load_average, int niceness) {
-    int fixed_one = convert_to_fixed_point(1, FIXED_POINT_Q);
+    int fixed_one = double_to_fixed_point(1, SCALE);
     int fixed_fraction = divide_x_by_y(2 * load_average,
                                        2 * load_average + fixed_one,
-                                       FIXED_POINT_Q);
+                                       SCALE);
     int fraction_multiplication = multiply_x_by_y(fixed_fraction,
                                                   recent_cpu,
-                                                  FIXED_POINT_Q);
-    int fixed_niceness = convert_to_fixed_point(niceness, FIXED_POINT_Q);
+                                                  SCALE);
+    int fixed_niceness = double_to_fixed_point(niceness, SCALE);
     int fixed_new_cpu = fraction_multiplication + fixed_niceness;
     return fixed_new_cpu;
 }
@@ -882,26 +882,26 @@ int compute_cpu_usage(int recent_cpu, int load_average, int niceness) {
    load_average:    Fixed Point
 */
 int compute_load_avg(int load_average, int ready_threads) {
-    int fixed_numerator = convert_to_fixed_point(59, FIXED_POINT_Q);
-    int fixed_one = convert_to_fixed_point(1, FIXED_POINT_Q);
-    int fixed_denominator = convert_to_fixed_point(60, FIXED_POINT_Q);
-    int fixed_threads = convert_to_fixed_point(ready_threads, FIXED_POINT_Q);
+    int fixed_numerator = double_to_fixed_point(59, SCALE);
+    int fixed_one = double_to_fixed_point(1, SCALE);
+    int fixed_denominator = double_to_fixed_point(60, SCALE);
+    int fixed_threads = double_to_fixed_point(ready_threads, SCALE);
 
     int fixed_fraction = 
-            divide_x_by_y(fixed_numerator, fixed_denominator, FIXED_POINT_Q);
+            divide_x_by_y(fixed_numerator, fixed_denominator, SCALE);
     int fixed_second_fraction =
-            divide_x_by_y(fixed_one, fixed_denominator, FIXED_POINT_Q);
+            divide_x_by_y(fixed_one, fixed_denominator, SCALE);
 
     int fraction_multiplication = 
-            multiply_x_by_y(fixed_fraction, load_average, FIXED_POINT_Q);
+            multiply_x_by_y(fixed_fraction, load_average, SCALE);
     int second_fraction_multiplication = multiply_x_by_y(fixed_second_fraction,
                                                          fixed_threads,
-                                                         FIXED_POINT_Q);
+                                                         SCALE);
     return fraction_multiplication + second_fraction_multiplication;
 }
 
 
-int convert_to_fixed_point(int n, int q) {
+int double_to_fixed_point(int n, int q) {
     int f = 1 << q;
     return n * f;
 }

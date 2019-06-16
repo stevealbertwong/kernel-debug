@@ -71,12 +71,14 @@ sema_down (struct semaphore *sema)
       if(!thread_mlfqs){
         // 1st option: sort() !!!!! to make sure donated_thread run first !!!!
         ASSERT(list_begin(&sema->waiters) != NULL);
+
+         // 1. remove from ready_list[], add to lock->semaphore->waiters[]
+        if (is_interior(&thread_current()->elem)){
+          list_remove(&thread_current()->elem);
+        }
+        // 2. stored in lock->sema->waiters[]
         list_insert_ordered(&sema->waiters, &thread_current()->elem, 
                             thread_less_func, NULL);
-        
-        // 2nd option: delete() from ready_list n stored in sema->waiters[]
-        // list_remove(&thread_current()->elem);
-        // list_push_back (&sema->waiters, &thread_current ()->elem);
       } else {
         list_push_back (&sema->waiters, &thread_current ()->elem);
       }
@@ -85,6 +87,7 @@ sema_down (struct semaphore *sema)
   sema->value--;
   intr_set_level (old_level);
 }
+
 
 void
 sema_up (struct semaphore *sema) 
@@ -207,37 +210,31 @@ lock_acquire (struct lock *lock)
     lock->holder = thread_current();
     intr_set_level(old_level);
     return;
-  }
+  } 
   
   // 1. nested donation 
   // if((&lock->semaphore)->value == 0){ 
   bool success = sema_try_down(&lock->semaphore);
   if(!success){
-
-    // low_thread chain() to upper_lock -> nested_donate()
-    thread_current()->lock_waiting_on = lock;    
     ASSERT(is_thread(lock->holder));
+
+    thread_current()->lock_waiting_on = lock;
     
-    // lock_release() -> 2nd lock highest waiter + donate_priority()
-    list_push_back(&lock->blocked_threads, &thread_current()->lock_elem);
+    // 1. donate_priority()
+    list_push_back(&lock->semaphore.waiters, &thread_current()->lock_elem);
     thread_donate_priority(lock->holder);
     
     // 2. acquire() lock
     sema_down(&lock->semaphore); // <- end point where thread_block()
-        
-    // 3. update() 4 
-    // <- start point when thread switch back in (holder lock_release())
-    list_remove(&thread_current()->lock_elem); // for lock_release()
-    thread_current()->lock_waiting_on = NULL;    
   }
   
-  // lock->new_holder, holder_thread->locks[]
+  // <- start point when thread switch back in (holder lock_release())
+  
+  // 3. u() 4
+  thread_current()->lock_waiting_on = NULL;
   lock->holder = thread_current();
   list_push_back(&thread_current()->locks_acquired, &lock->thread_elem);
-    
-  // new holder receive priority donation 
-  // thread_recv_highest_waiter_priority(thread_current());
-  
+
   intr_set_level(old_level);  
   
 }
@@ -281,8 +278,6 @@ lock_release (struct lock *lock)
 
   ASSERT(PRI_MIN <= thread_pick_higher_priority(cur) && thread_pick_higher_priority(cur) <= PRI_MAX);
   thread_donate_priority(cur);
-
-
   if (!is_highest_priority(thread_pick_higher_priority(cur))){
     thread_yield();
   }

@@ -97,7 +97,7 @@ struct thread
     
     int donated_priority;               // 2nd_lock_highest_waiter() + next_thread_to_run() + is_highest_priority()
     struct lock *lock_waiting_on;       // nested_doante_priority(), traverse() to highest holder 
-    struct list_elem lock_elem;         // lock->threads[], lock_release() 2nd lock highest waiter
+    struct list_elem lock_elem;         // lock->block_threads[], lock_release() 2nd lock highest waiter
     struct list locks_acquired;         // thread_exit() free() all locks + lock_release() 2nd lock highest waiter    
 
     int recent_cpu;                     // mlfqs, moving average of cpu usage
@@ -160,7 +160,7 @@ int thread_pick_higher_priority (struct thread *t);
 bool is_thread (struct thread *t);
 
 // mlfqs
-int convert_to_fixed_point(int n, int q);
+int double_to_fixed_point(int n, int q);
 int convert_to_integer_round_zero(int x, int q);
 int convert_to_integer_round_nearest(int x, int q);
 int multiply_x_by_y(int x, int y, int q);
