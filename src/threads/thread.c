@@ -106,7 +106,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-  list_init (&sleep_list);
+  // list_init (&sleep_list);
   load_avg = 0;
 
   // initial_thread-wsie
@@ -671,7 +671,6 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 //   intr_set_level(old_level);
 
 // }
-
 
 
 
