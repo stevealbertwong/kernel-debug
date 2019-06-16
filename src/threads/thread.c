@@ -1234,7 +1234,7 @@ struct kernel_thread_frame {
 /* Statistics. */
 static long long idle_ticks;    /*!< # of timer ticks spent idle. */
 static long long kernel_ticks;  /*!< # of timer ticks in kernel threads. */
-// static long long user_ticks;    /*!< # of timer ticks in user programs. */
+static long long user_ticks;    /*!< # of timer ticks in user programs. */
 
 /* Scheduling. */
 #define TIME_SLICE 4            /*!< # of timer ticks to give each thread. */
@@ -1309,9 +1309,9 @@ void thread_tick(void) {
         intr_yield_on_return();
 
 
-    if (thread_mlfqs) {
-        thread_update_mlfqs();
-    }
+    // if (thread_mlfqs) {
+    //     thread_update_mlfqs();
+    // }
 
     thread_foreach((thread_action_func *) &thread_wake, NULL);
 
@@ -1958,3 +1958,10 @@ thread_start (void)
 }
 
 
+
+void
+thread_print_stats (void) 
+{
+  printf ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
+          idle_ticks, kernel_ticks, user_ticks);
+}
