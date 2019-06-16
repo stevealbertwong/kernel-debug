@@ -77,8 +77,10 @@ sema_down (struct semaphore *sema)
           list_remove(&thread_current()->elem);
         }
         // 2. stored in lock->sema->waiters[]
-        list_insert_ordered(&sema->waiters, &thread_current()->elem, 
-                            thread_less_func, NULL);
+        // list_insert_ordered(&sema->waiters, &thread_current()->elem, 
+        //                     thread_less_func, NULL);
+        list_push_back (&sema->waiters, &thread_current ()->elem);
+        
       } else {
         list_push_back (&sema->waiters, &thread_current ()->elem);
       }
@@ -104,6 +106,7 @@ sema_up (struct semaphore *sema)
       list_sort(&(sema->waiters), thread_less_func, NULL);
     }
     // move from sema->waiters to ready_list
+
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
   }
