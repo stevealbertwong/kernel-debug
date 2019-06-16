@@ -633,24 +633,6 @@ thread_donate_priority(struct thread *holder_thread){
 }
 
 
-//TODO: fix this
-// void 
-// thread_donate_priority(struct thread *t, int priority){
-//   if(t->donated_priority < priority){        
-//     t->donated_priority = priority; // donate() priority to donated_priority    
-//     thread_donate_priority(t->lock_waiting_on->holder, priority); // recur()
-//   }
-//   // accelerated lock_release() !!!!!
-//   // locking_thread yield() to upper_lock holder_thread (or any other threads)
-//   // after nested_donate() in hopes they lock_release() before locking_thread thread_block() 
-//   if (!is_highest_priority(thread_pick_higher_priority(thread_current()))) {
-//       thread_yield();
-//   }  
-// }
-
-
-
-
 
 
 /************************************************************/
@@ -676,12 +658,13 @@ thread_set_priority (int new_priority)
   old_level = intr_disable();
   struct thread *cur = thread_current();
   if (!thread_mlfqs){
-    if(cur->priority == cur->original_priority){
-      cur->original_priority = new_priority;
-      cur->priority = new_priority;
-    }else {
-      cur->priority = new_priority;
-    }
+    // if(cur->priority == cur->original_priority){
+    //   cur->original_priority = new_priority;
+    //   cur->priority = new_priority;
+    // }else {
+    //   cur->priority = new_priority;
+    // }
+    cur->original_priority = new_priority;
     if(thread_current()->lock_waiting_on != NULL){
       thread_donate_priority(thread_current());
     }
@@ -965,7 +948,7 @@ void thread_yield_if_not_highest_priority(){
       }
     }
   }
-  
+
   intr_set_level(old_level);
 }
 

@@ -200,8 +200,6 @@ lock_init (struct lock *lock)
   sema_init (&lock->semaphore, 1);
 }
 
-
-
 void
 lock_acquire (struct lock *lock)
 {
@@ -211,7 +209,6 @@ lock_acquire (struct lock *lock)
 
   enum intr_level old_level = intr_disable();
   
-  // separate mlfqs test from priority_donate test
   if(thread_mlfqs) {
     sema_down(&lock->semaphore);
     lock->holder = thread_current();
@@ -219,8 +216,6 @@ lock_acquire (struct lock *lock)
     return;
   } 
   
-  // 1. nested donation 
-  // if((&lock->semaphore)->value == 0){ 
   bool success = sema_try_down(&lock->semaphore);
   if(!success){
     ASSERT(is_thread(lock->holder));
@@ -236,7 +231,6 @@ lock_acquire (struct lock *lock)
   }
   
   // <- start point when thread switch back in (holder lock_release())
-  
   // 3. u() 4
   thread_current()->lock_waiting_on = NULL;
   lock->holder = thread_current();
