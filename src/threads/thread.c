@@ -940,7 +940,7 @@ int divide_x_by_n(int x, int n) {
 
 
 // whether arg priority is the highest in ready_list
-bool thread_yield_if_not_highest_priority(){
+void thread_yield_if_not_highest_priority(){
   // for loop ready_list -> higher of priority/donated_priority  
   enum intr_level old_level = intr_disable();
   
@@ -962,11 +962,12 @@ bool thread_yield_if_not_highest_priority(){
           intr_yield_on_return(); // yield after interrupt handler
       } else {
           thread_yield(); // yield immediately
+      }
     }
   }
+  
   intr_set_level(old_level);
 }
-
 
 
 void

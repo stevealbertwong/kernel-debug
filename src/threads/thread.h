@@ -154,7 +154,7 @@ void add_thread_sleeplist(struct thread *t);
 void unblock_awaken_thread(void);
 
 void thread_clear_donated_priority (void);
-bool thread_yield_if_not_highest_priority();
+void thread_yield_if_not_highest_priority();
 void thread_donate_priority(struct thread *t);
 int thread_get_donated_priority (void);
 // int thread_pick_higher_priority (struct thread *t);
