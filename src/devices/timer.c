@@ -98,7 +98,7 @@ timer_sleep (int64_t ticks)
   struct thread *t = thread_current();	
   t->sleep_ticks = timer_ticks() + ticks;
 	
-	add_thread_sleeplist(t);
+	// add_thread_sleeplist(t);
   thread_block(); // block until sleep_ticks 0
 
   intr_set_level(old_level);

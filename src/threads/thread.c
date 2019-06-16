@@ -379,7 +379,32 @@ thread_exit (void)
 }
 
 
-
+void 
+thread_donate_priority(struct thread *holder_thread){
+    ASSERT(is_thread(holder_thread));
+    struct list_elem *e, *f;    
+    int max = holder_thread->original_priority;
+    // holder_thread get highest donation of all waiter_thread
+    for (e = list_begin(&(holder_thread->locks_acquired)); 
+         e != list_end(&(holder_thread->locks_acquired)); e = list_next(e)) {
+
+        struct lock *l = list_entry(e, struct lock, thread_elem);
+        for (f = list_begin(&(l->semaphore.waiters)); 
+             f != list_end(&(l->semaphore.waiters)); f = list_next(f)) {
+            
+            struct thread *waiting_thread = list_entry(f, struct thread, lock_elem);
+            max = MAX(max, waiting_thread->priority);
+        }
+    }
+    holder_thread->priority = max;
+    if (holder_thread->lock_waiting_on && holder_thread->lock_waiting_on->holder) { 
+        thread_donate_priority(holder_thread->lock_waiting_on->holder);
+    }
+    ASSERT(max >= holder_thread->original_priority);
+}
+
+
+
 
 
 
@@ -595,7 +620,7 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 
 /************************************************************/
-// major APIs - for timer interrupt + lock_acquire()
+// major APIs - for timer interrupt 
 
 
 
@@ -626,9 +651,10 @@ thread_tick (void)
   else
     kernel_ticks++;
 
-  if(thread_init_finished){
-    unblock_awaken_thread();
-  }  
+  // if(thread_init_finished){
+  //   unblock_awaken_thread();
+  // }  
+  thread_foreach((thread_action_func *) &thread_wake, NULL);
 
   if (thread_mlfqs && !list_empty(&all_list)) {
     thread_update_mlfqs();
@@ -638,62 +664,57 @@ thread_tick (void)
     intr_yield_on_return ();
 }
 
-
-void 
-add_thread_sleeplist(struct thread *t){
-  ASSERT (!intr_context ()); // possessing external interrupt
-  list_push_back(&sleep_list, &t->sleep_elem);
-}
-
-
-// add() awake_thread to ready_list. If empty sleep_list, no effect.
-void 
-unblock_awaken_thread(void){
+static void thread_wake(struct thread *t, void *aux UNUSED) {
+    /* Check if the thread has a timer interrupt. */
+    if (t->sleep_ticks == THREAD_AWAKE) {
+        return;
+    }
     
-    ASSERT(intr_get_level() == INTR_OFF);
-    struct list_elem *e = list_begin(&sleep_list);
+    /* A thread should only have a time until awake if it is  asleep/blocked. */
+    ASSERT(t->status == THREAD_BLOCKED);
 
-    while (e != list_end(&sleep_list)) {
+    /* wake_thread() is called every tick, so decrement time until wakeup. */
+    t->sleep_ticks--;
+
+    /* Wake up if it is time to wakeup (sleep time left is 0) */
+    if (t->sleep_ticks <= 0) {
+        t->sleep_ticks = THREAD_AWAKE;
+        thread_unblock(t);
+    }
+}
+
+
+
+// void 
+// add_thread_sleeplist(struct thread *t){
+//   ASSERT (!intr_context ()); // possessing external interrupt
+//   // list_remove(&thread_current()->elem);
+//   list_push_back(&sleep_list, &t->sleep_elem);
+// }
+
+
+// // add() awake_thread to ready_list. If empty sleep_list, no effect.
+// void 
+// unblock_awaken_thread(void){
+    
+//     ASSERT(intr_get_level() == INTR_OFF);
+//     struct list_elem *e = list_begin(&sleep_list);
+
+//     while (e != list_end(&sleep_list)) {
         
-        struct thread *t = list_entry(e, struct thread, sleep_elem);
-        ASSERT(is_thread(t));
-        if (t->sleep_ticks <= 1) {
-            t->sleep_ticks = 0; // clean for next time sleep
-            e = list_remove(e);
-            thread_unblock(t);
-        }
-        else {
-            t->sleep_ticks--;
-            e = list_next(e);
-        }
-    }
-}
-
-
-void 
-thread_donate_priority(struct thread *holder_thread){
-    ASSERT(is_thread(holder_thread));
-    struct list_elem *e, *f;    
-    int max = holder_thread->original_priority;
-    // holder_thread get highest donation of all waiter_thread
-    for (e = list_begin(&(holder_thread->locks_acquired)); 
-         e != list_end(&(holder_thread->locks_acquired)); e = list_next(e)) {
-
-        struct lock *l = list_entry(e, struct lock, thread_elem);
-        for (f = list_begin(&(l->semaphore.waiters)); 
-             f != list_end(&(l->semaphore.waiters)); f = list_next(f)) {
-            
-            struct thread *waiting_thread = list_entry(f, struct thread, lock_elem);
-            max = MAX(max, waiting_thread->priority);
-        }
-    }
-    holder_thread->priority = max;
-    if (holder_thread->lock_waiting_on && holder_thread->lock_waiting_on->holder) { 
-        thread_donate_priority(holder_thread->lock_waiting_on->holder);
-    }
-    ASSERT(max >= holder_thread->original_priority);
-}
-
+//         struct thread *t = list_entry(e, struct thread, sleep_elem);
+//         ASSERT(is_thread(t));
+//         if (t->sleep_ticks <= 1) {
+//             t->sleep_ticks = 0; // clean for next time sleep
+//             e = list_remove(e);
+//             thread_unblock(t);
+//         }
+//         else {
+//             t->sleep_ticks--;
+//             e = list_next(e);
+//         }
+//     }
+// }
 
 
 
