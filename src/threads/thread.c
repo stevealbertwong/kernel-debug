@@ -1256,7 +1256,7 @@ static void schedule(void);
 void thread_schedule_tail(struct thread *prev);
 static tid_t allocate_tid(void);
 
-bool thread_more_function(const struct list_elem *a,
+bool thread_more_func(const struct list_elem *a,
                              const struct list_elem *b,
                              void *aux);
 
@@ -1567,7 +1567,7 @@ void thread_foreach(thread_action_func *func, void *aux) {
 
 
 
-bool thread_more_function(const struct list_elem *l, const struct list_elem *r, void *aux) {
+bool thread_more_func(const struct list_elem *l, const struct list_elem *r, void *aux) {
   struct thread *lthread, *rthread;
   ASSERT (l != NULL && r != NULL);
   lthread = list_entry(l, struct thread, elem);
@@ -1939,7 +1939,7 @@ uint32_t thread_stack_ofs = offsetof(struct thread, stack);
 /* Returns the max-priority thread in tthe ready queue without popping it. */
 static inline struct thread * thread_get_ready_max(void) {
     return list_entry(list_max(&ready_list, 
-        (list_less_func*) thread_more_function, NULL), struct thread, elem);
+        (list_less_func*) thread_more_func, NULL), struct thread, elem);
 }
 
 
