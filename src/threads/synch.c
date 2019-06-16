@@ -57,6 +57,7 @@ sema_init (struct semaphore *sema, unsigned value)
 }
 
 
+// sema->waiters[] <-> ready_list[]
 void
 sema_down (struct semaphore *sema) 
 {
@@ -91,6 +92,7 @@ sema_down (struct semaphore *sema)
 }
 
 
+// sema->waiters[] <-> ready_list[]
 void
 sema_up (struct semaphore *sema) 
 {
@@ -200,6 +202,7 @@ lock_init (struct lock *lock)
   sema_init (&lock->semaphore, 1);
 }
 
+// update() 4 -> nested_donate()
 void
 lock_acquire (struct lock *lock)
 {
@@ -219,10 +222,9 @@ lock_acquire (struct lock *lock)
   bool success = sema_try_down(&lock->semaphore);
   if(!success){
     ASSERT(is_thread(lock->holder));
-
-    thread_current()->lock_waiting_on = lock;
     
     // 1. donate_priority()
+    thread_current()->lock_waiting_on = lock;
     list_push_back(&lock->semaphore.waiters, &thread_current()->lock_elem);
     thread_donate_priority(lock->holder);
     
@@ -241,7 +243,7 @@ lock_acquire (struct lock *lock)
 }
 
 
-// OUR IMPLEMENTATION
+// update() 4 -> nested_donate()
 void
 lock_release (struct lock *lock) 
 {
@@ -259,11 +261,12 @@ lock_release (struct lock *lock)
     intr_set_level (old_level);
     return;
   }
-
+  
+  // 1. update() 4 
   lock->holder = NULL;
   sema_up (&lock->semaphore);
   list_remove (&lock->thread_elem); // thread's waiting locks
-
+  // 2. nested_donate()
   thread_set_priority(cur->original_priority); // already thread_yield()
   intr_set_level (old_level);
 }
