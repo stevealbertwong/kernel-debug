@@ -1266,11 +1266,6 @@ void print_all_priorities(void);
 static struct thread * thread_get_ready_max(void);
 static void thread_wake(struct thread *t, void *aux UNUSED);
 
-/* Multi-level feedback queue scheduling */
-static void thread_update_mlfqs(void);
-static void thread_update_priority_in_mlfqs(struct thread *t, void *aux UNUSED);
-static void thread_update_recent_cpu(struct thread *t, void *aux UNUSED);
-static int thread_get_num_ready_and_run(void);
 
 
 
@@ -1845,7 +1840,7 @@ struct thread * running_thread(void) {
 }
 
 /*! Returns true if T appears to point to a valid thread. */
-static bool is_thread(struct thread *t) {
+bool is_thread(struct thread *t) {
     return t != NULL && t->magic == THREAD_MAGIC;
 }
 
@@ -1940,41 +1935,6 @@ static tid_t allocate_tid(void) {
 uint32_t thread_stack_ofs = offsetof(struct thread, stack);
 
 
-/*! Prints thread statistics. */
-void thread_print_stats(void) {
-    printf("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
-           idle_ticks, kernel_ticks, user_ticks);
-}
-
-
-/* Prints threads in the ready queue with their priorities. */
-void print_ready_queue(void) {
-    struct list_elem *e;
-    printf("READY_QUEUE: \n");
-    for (e = list_begin (&ready_list); 
-         e != list_end (&ready_list); e = list_next (e)) {
-        struct thread *t = list_entry(e, struct thread, elem);
-        printf("%s(%d) ", t->name, t->priority);
-    }
-    printf("\n");
-}
-
-
-/* Prints name, priority, and recent cpu for all threads. */
-void print_all_priorities(void) {
-    struct list_elem *e;
-    for (e = list_begin (&all_list); 
-         e != list_end (&all_list); e = list_next (e)) {
-        struct thread *t = list_entry(e, struct thread, elem);
-        if (t != idle_thread)
-            printf("n%s-p%d-c%d  ", t->name, t->priority, t->recent_cpu);
-    }
-    printf("\n");
-}
-
-void sort_ready_list(void) {
-    list_sort(&ready_list, (list_less_func*) thread_more_function, NULL);
-}
 
 /* Returns the max-priority thread in tthe ready queue without popping it. */
 static inline struct thread * thread_get_ready_max(void) {
