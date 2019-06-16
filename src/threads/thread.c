@@ -1403,7 +1403,7 @@ thread_init (void)
       initial_thread->recent_cpu = 0;
     // initial_thread->recent_cpu = fixedp_from_int(RECENT_CPU_INIT);
       // initial_thread->priority = calculate_priority(initial_thread->recent_cpu, initial_thread->niceness);
-      initial_thread->priority = priority;
+      initial_thread->priority = PRI_MAX;
     // thread_update_priority_in_mlfqs(initial_thread, NULL);
   }
 //   thread_init_finished = true;
