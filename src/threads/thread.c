@@ -1617,7 +1617,7 @@ static struct thread * next_thread_to_run(void) {
     if (list_empty(&ready_list))
       return idle_thread;
     else
-      max = list_max(&ready_list, (list_less_func*) thread_more_function, NULL);
+      max = list_max(&ready_list, (list_less_func*) thread_more_func, NULL);
       list_remove(max); /* Basically pop_max, but less overhead. */
       return list_entry(max, struct thread, elem);
 }
