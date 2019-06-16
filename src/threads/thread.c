@@ -945,11 +945,12 @@ void thread_yield_if_not_highest_priority(){
         }
     }
     if (highest_priority_val > thread_current()->priority ){
-      if (intr_context()) { // external interrupt
-          intr_yield_on_return(); // yield after interrupt handler
-      } else {
-          thread_yield(); // yield immediately
-      }
+      // if (intr_context()) { // external interrupt
+      //     intr_yield_on_return(); // yield after interrupt handler
+      // } else {
+      //     thread_yield(); // yield immediately
+      // }
+      thread_yield();
     }
   }
 
