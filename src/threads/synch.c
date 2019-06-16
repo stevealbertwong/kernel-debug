@@ -103,8 +103,13 @@ sema_up (struct semaphore *sema)
       // see sema_down()
       list_sort(&(sema->waiters), thread_less_func, NULL);
     }
+    // move from sema->waiters to ready_list
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
+  }
+  
+  if (!is_highest_priority(thread_pick_higher_priority(thread_current()))){
+    thread_yield();
   }
   intr_set_level (old_level);
 }
