@@ -665,10 +665,13 @@ thread_set_priority (int new_priority)
     //   cur->priority = new_priority;
     // }
     cur->original_priority = new_priority;
+    int old_priority = cur->priority;
     if(thread_current()->lock_waiting_on != NULL){
       thread_donate_priority(thread_current());
     }
-    thread_yield_if_not_highest_priority();
+    if (new_priority < old_priority){
+      thread_yield_if_not_highest_priority();
+    }
   }
   intr_set_level(old_level);
 }
