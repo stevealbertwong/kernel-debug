@@ -404,33 +404,6 @@ thread_exit (void)
 /************************************************************/
 
 
-// timer interrupt handler (external interrupt)
-void
-thread_tick (void) 
-{
-  struct thread *t = thread_current ();
-  if (t == idle_thread)
-    idle_ticks++;
-#ifdef USERPROG
-  else if (t->pagedir != NULL)
-    user_ticks++;
-#endif
-  else
-    kernel_ticks++;
-
-  if(thread_init_finished){
-    unblock_awaken_thread();
-  }  
-
-  if (thread_mlfqs && !list_empty(&all_list)) {
-    thread_update_mlfqs();
-  }
-
-  if (++thread_ticks >= TIME_SLICE) // preemption !!!!!
-    intr_yield_on_return ();
-}
-
-
 static void
 idle (void *idle_started_ UNUSED) 
 {
@@ -638,11 +611,40 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 
 /************************************************************/
+
+// timer interrupt handler (external interrupt)
+void
+thread_tick (void) 
+{
+  struct thread *t = thread_current ();
+  if (t == idle_thread)
+    idle_ticks++;
+#ifdef USERPROG
+  else if (t->pagedir != NULL)
+    user_ticks++;
+#endif
+  else
+    kernel_ticks++;
+
+  if(thread_init_finished){
+    unblock_awaken_thread();
+  }  
+
+  if (thread_mlfqs && !list_empty(&all_list)) {
+    thread_update_mlfqs();
+  }
+
+  if (++thread_ticks >= TIME_SLICE) // preemption !!!!!
+    intr_yield_on_return ();
+}
+
+
 void 
 add_thread_sleeplist(struct thread *t){
   ASSERT (!intr_context ()); // possessing external interrupt
   list_push_back(&sleep_list, &t->sleep_elem);
 }
+
 
 // add() awake_thread to ready_list. If empty sleep_list, no effect.
 void 

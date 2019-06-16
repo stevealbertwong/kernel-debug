@@ -221,7 +221,7 @@ lock_acquire (struct lock *lock)
   
   bool success = sema_try_down(&lock->semaphore);
   if(!success){
-    ASSERT(is_thread(lock->holder));
+    // ASSERT(is_thread(lock->holder));
     
     // 1. donate_priority()
     thread_current()->lock_waiting_on = lock;
