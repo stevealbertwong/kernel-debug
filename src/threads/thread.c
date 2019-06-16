@@ -260,12 +260,13 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
-  if(thread_mlfqs){
-    list_push_back (&ready_list, &cur->elem);
-  }else{
-    list_insert_ordered(&ready_list, &cur->elem, thread_less_func, 
-                        NULL);
+  if (cur != idle_thread) {
+    if(thread_mlfqs){
+      list_push_back (&ready_list, &cur->elem);
+    }else{
+      list_insert_ordered(&ready_list, &cur->elem, thread_less_func, 
+                          NULL);
+    }
   }
   cur->status = THREAD_READY;
   schedule ();

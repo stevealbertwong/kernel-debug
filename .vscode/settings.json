@@ -8,6 +8,7 @@
         "switch.h": "c",
         "vaddr.h": "c",
         "thread.h": "c",
-        "interrupt.h": "c"
+        "interrupt.h": "c",
+        "string.h": "c"
     }
 }
