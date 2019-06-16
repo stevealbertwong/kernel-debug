@@ -80,7 +80,7 @@ sema_down (struct semaphore *sema)
         // list_insert_ordered(&sema->waiters, &thread_current()->elem, 
         //                     thread_less_func, NULL);
         list_push_back (&sema->waiters, &thread_current ()->elem);
-        
+
       } else {
         list_push_back (&sema->waiters, &thread_current ()->elem);
       }
@@ -101,17 +101,21 @@ sema_up (struct semaphore *sema)
 
   ASSERT(list_begin(&sema->waiters) != NULL);
   if (!list_empty (&sema->waiters)){
-    if(!thread_mlfqs){
-      // see sema_down()
-      list_sort(&(sema->waiters), thread_less_func, NULL);
-    }
-    // move from sema->waiters to ready_list
-
-    thread_unblock (list_entry (list_pop_front (&sema->waiters),
-                                struct thread, elem));
+    // if(!thread_mlfqs){
+    //   // see sema_down()
+    //   list_sort(&(sema->waiters), thread_less_func, NULL);
+    // }
+    // // move from sema->waiters[] to ready_list[]
+    // thread_unblock (list_entry (list_pop_front (&sema->waiters),
+    //                             struct thread, elem));
+    struct list_elem *max = list_max(&sema->waiters, 
+                (list_less_func*) thread_more_func, NULL);
+    list_remove(max);
+    struct thread *t = list_entry(max, struct thread, elem);
+    thread_unblock(t);
   }
   
-  if (!is_highest_priority(thread_pick_higher_priority(thread_current()))){
+  if (!is_highest_priority(thread_current()->priority)){
     thread_yield();
   }
   intr_set_level (old_level);
@@ -284,9 +288,9 @@ lock_release (struct lock *lock)
   //   thread_recv_highest_waiter_priority(cur);
   // }
 
-  ASSERT(PRI_MIN <= thread_pick_higher_priority(cur) && thread_pick_higher_priority(cur) <= PRI_MAX);
+  ASSERT(PRI_MIN <= cur->priority && cur->priority <= PRI_MAX);
   thread_donate_priority(cur);
-  if (!is_highest_priority(thread_pick_higher_priority(cur))){
+  if (!is_highest_priority(cur->priority)){
     thread_yield();
   }
 
@@ -451,41 +455,48 @@ bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void
   ASSERT (l != NULL && r != NULL);
   lthread = list_entry(l, struct thread, elem);
   rthread = list_entry(r, struct thread, elem);
-  return (thread_pick_higher_priority(lthread) >= thread_pick_higher_priority(rthread));
+  return (lthread->priority >= rthread->priority);
 }
 
-
-// holder receives highest priority from its locks' waiters
-void thread_recv_highest_waiter_priority(struct thread *holder){
-  if (!list_empty(&holder->locks_acquired)) {
-        struct list_elem *e;
-        // 1st for loop
-        for (e = list_begin(&holder->locks_acquired);
-                e != list_end(&holder->locks_acquired);
-                e = list_next(e)) {
-            struct lock *waiter_lock = list_entry(e, struct lock, thread_elem);
-            // 2nd for loop
-            int highest_priority = highest_lock_priority(waiter_lock);
-            if (highest_priority > holder->donated_priority) {
-                holder->donated_priority = highest_priority;
-            }
-        }
-    }
+bool thread_more_func(const struct list_elem *l, const struct list_elem *r, void *aux) {
+  struct thread *lthread, *rthread;
+  ASSERT (l != NULL && r != NULL);
+  lthread = list_entry(l, struct thread, elem);
+  rthread = list_entry(r, struct thread, elem);
+  return (lthread->priority < rthread->priority);
 }
 
-int highest_lock_priority(struct lock *lock){
-    struct list_elem *e;
-    int max_priority = PRI_MIN;
-    if (!list_empty(&lock->blocked_threads)) {
-        for (e = list_begin(&lock->blocked_threads);
-             e != list_end(&lock->blocked_threads);
-             e = list_next(e)) {
-            struct thread *waiter_thread = list_entry(e, struct thread, lock_elem);
-            int cur_priority = thread_pick_higher_priority(waiter_thread);
-            if (cur_priority > max_priority) {
-                max_priority = cur_priority;
-            }
-        }
-    }
-    return max_priority;
-}
+// // holder receives highest priority from its locks' waiters
+// void thread_recv_highest_waiter_priority(struct thread *holder){
+//   if (!list_empty(&holder->locks_acquired)) {
+//         struct list_elem *e;
+//         // 1st for loop
+//         for (e = list_begin(&holder->locks_acquired);
+//                 e != list_end(&holder->locks_acquired);
+//                 e = list_next(e)) {
+//             struct lock *waiter_lock = list_entry(e, struct lock, thread_elem);
+//             // 2nd for loop
+//             int highest_priority = highest_lock_priority(waiter_lock);
+//             if (highest_priority > holder->priority) {
+//                 holder->priority = highest_priority;
+//             }
+//         }
+//     }
+// }
+
+// int highest_lock_priority(struct lock *lock){
+//     struct list_elem *e;
+//     int max_priority = PRI_MIN;
+//     if (!list_empty(&lock->blocked_threads)) {
+//         for (e = list_begin(&lock->blocked_threads);
+//              e != list_end(&lock->blocked_threads);
+//              e = list_next(e)) {
+//             struct thread *waiter_thread = list_entry(e, struct thread, lock_elem);
+//             int cur_priority = waiter_thread->priority;
+//             if (cur_priority > max_priority) {
+//                 max_priority = cur_priority;
+//             }
+//         }
+//     }
+//     return max_priority;
+// }

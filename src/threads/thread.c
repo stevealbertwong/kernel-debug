@@ -142,7 +142,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->sleep_ticks = 0;
   t->lock_waiting_on = NULL;
 
-  t->donated_priority = PRI_MIN; // lock(), unlock()
+  t->original_priority = priority;
   list_init(&t->locks_acquired);
 
   if (list_empty(&all_list)) {
@@ -155,8 +155,9 @@ init_thread (struct thread *t, const char *name, int priority)
     t->recent_cpu = thread_current()->recent_cpu;
   }
   if (thread_mlfqs) {
-    // t->priority = 0;
-    t->priority = compute_priority(t->recent_cpu, t->niceness);
+    t->priority = 0;
+    t->mlfq_priority = 0;
+    // t->mlfq_priority = compute_priority(t->recent_cpu, t->niceness);
   } else {
     t->priority = priority;
   }
@@ -261,12 +262,8 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) {
-    if(thread_mlfqs){
-      list_push_back (&ready_list, &cur->elem);
-    }else{
-      list_insert_ordered(&ready_list, &cur->elem, thread_less_func, 
-                          NULL);
-    }
+    list_push_back (&ready_list, &cur->elem);    
+    // list_insert_ordered(&ready_list, &cur->elem, thread_less_func, NULL);
   }
   cur->status = THREAD_READY;
   schedule ();
@@ -295,12 +292,8 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  if(thread_mlfqs){
-    list_push_back (&ready_list, &t->elem);
-  }else{
-    list_insert_ordered(&ready_list, &t->elem, thread_less_func, 
-                        NULL);
-  }
+  list_push_back (&ready_list, &t->elem);
+  // list_insert_ordered(&ready_list, &cur->elem, thread_less_func, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -448,14 +441,14 @@ next_thread_to_run (void)
     struct thread *next_thread;
     struct list_elem *next_thread_pointer = list_begin(&ready_list);
     struct thread *t = list_entry(next_thread_pointer, struct thread, elem);
-    int highest_priority_val = thread_pick_higher_priority(t);    
+    int highest_priority_val = t->priority;    
 
 
     for (e = list_next(next_thread_pointer); e != list_end(&ready_list);
           e = list_next(e)) {
         t = list_entry(e, struct thread, elem);
         
-        int curr_priority = thread_pick_higher_priority(t);
+        int curr_priority = t->priority;
 
         if (curr_priority > highest_priority_val) {
             highest_priority_val = curr_priority;
@@ -619,7 +612,7 @@ void
 thread_donate_priority(struct thread *holder_thread){
     ASSERT(is_thread(holder_thread));
     struct list_elem *e, *f;    
-    int max = holder_thread->priority;
+    int max = holder_thread->original_priority;
     // holder_thread get highest donation of all waiter_thread
     for (e = list_begin(&(holder_thread->locks_acquired)); 
          e != list_end(&(holder_thread->locks_acquired)); e = list_next(e)) {
@@ -629,14 +622,14 @@ thread_donate_priority(struct thread *holder_thread){
              f != list_end(&(l->semaphore.waiters)); f = list_next(f)) {
             
             struct thread *waiting_thread = list_entry(f, struct thread, lock_elem);
-            max = MAX(max, thread_pick_higher_priority(waiting_thread));
+            max = MAX(max, waiting_thread->priority);
         }
     }
-    holder_thread->donated_priority = max;
+    holder_thread->priority = max;
     if (holder_thread->lock_waiting_on && holder_thread->lock_waiting_on->holder) { 
         thread_donate_priority(holder_thread->lock_waiting_on->holder);
     }
-    ASSERT(max >= holder_thread->priority);
+    ASSERT(max >= holder_thread->original_priority);
 }
 
 
@@ -681,54 +674,44 @@ thread_set_priority (int new_priority)
 {
   enum intr_level old_level;
   old_level = intr_disable();
-
+  struct thread *cur = thread_current();
   if (!thread_mlfqs){
-    thread_current()->priority = new_priority;
-
-    if(thread_current()->lock_waiting_on != NULL){
-      thread_donate_priority(thread_current()->lock_waiting_on->holder);
+    if(cur->priority == cur->original_priority){
+      cur->original_priority = new_priority;
+      cur->priority = new_priority;
+    }else {
+      cur->priority = new_priority;
     }
-
-    if (!is_highest_priority(new_priority)){
+    if(thread_current()->lock_waiting_on != NULL){
+      thread_donate_priority(thread_current());
+    }
+    if (!is_highest_priority(cur->priority)){
         thread_yield();
     }
   }
-
   intr_set_level(old_level);
 }
 
 
-void
-thread_clear_donated_priority (void) 
-{
-  if (!thread_mlfqs){
-    thread_current ()->donated_priority = PRI_MIN;
-  }
-}
-
 int
 thread_get_priority (void) 
 {
-  // return thread_current ()->priority;
-  return thread_pick_higher_priority(thread_current ());
-}
-
-
-int
-thread_get_donated_priority (void) 
-{
-  return thread_current ()->donated_priority;
-}
-
-
-int
-thread_pick_higher_priority (struct thread *t) {  
-  if (t->donated_priority > t->priority){
-    return t->donated_priority;
-  }else{
-    return t->priority;
+  if(thread_mlfqs) {
+    return thread_current ()->mlfq_priority;
+  } else {
+    return thread_current ()->priority;
   }
 }
+
+
+// int
+// thread_pick_higher_priority (struct thread *t) {  
+//   if (t->donated_priority > t->priority){
+//     return t->donated_priority;
+//   }else{
+//     return t->priority;
+//   }
+// }
 
 
 void
@@ -965,13 +948,13 @@ bool is_highest_priority(int priority){
   // for loop ready_list -> higher of priority/donated_priority  
   enum intr_level old_level = intr_disable();
   
-  int highest_priority_val = thread_pick_higher_priority(thread_current()); 
+  int highest_priority_val = thread_current()->priority; 
   struct list_elem *e;
   for (e = list_begin(&ready_list); e != list_end(&ready_list);
         e = list_next(e)) {
       struct thread *t = list_entry(e, struct thread, elem);
       ASSERT(is_thread(t));
-      int curr_priority = thread_pick_higher_priority(t);
+      int curr_priority = t->priority;
 
       if (curr_priority > highest_priority_val) {
           highest_priority_val = curr_priority;
