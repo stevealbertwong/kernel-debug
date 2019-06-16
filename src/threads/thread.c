@@ -145,12 +145,11 @@ init_thread (struct thread *t, const char *name, int priority)
   t->original_priority = priority;
   list_init(&t->locks_acquired);
 
-  if (list_empty(&all_list)) {
+  if (list_empty(&all_list)) { // initial_thread
     t->niceness = 0;  /* Set niceness to 0 on initial thread */
     t->recent_cpu = 0; /* Set cpu_usage to 0 on initial thread */
   }
-  else {
-    /* Inherit niceness and cpu_usage from parent */
+  else { // inherit niceness and cpu_usage from parent
     t->niceness = thread_current()->niceness;
     t->recent_cpu = thread_current()->recent_cpu;
   }
@@ -650,7 +649,7 @@ thread_donate_priority(struct thread *holder_thread){
 
 /************************************************************/
 
-
+// set() original_priority -> then donate() ori_pri to priority
 void
 thread_set_priority (int new_priority) 
 {
@@ -658,18 +657,18 @@ thread_set_priority (int new_priority)
   old_level = intr_disable();
   struct thread *cur = thread_current();
   if (!thread_mlfqs){
-    // if(cur->priority == cur->original_priority){
-    //   cur->original_priority = new_priority;
-    //   cur->priority = new_priority;
-    // }else {
-    //   cur->priority = new_priority;
-    // }
-    cur->original_priority = new_priority;
-    int old_priority = cur->priority;
+    if(cur->priority == cur->original_priority){
+      cur->original_priority = new_priority;
+      cur->priority = new_priority;
+    }else {
+      cur->original_priority = new_priority;
+    }
+    
+    int donated_priority = cur->priority;
     if(thread_current()->lock_waiting_on != NULL){
       thread_donate_priority(thread_current());
     }
-    if (new_priority < old_priority){
+    if (donated_priority > new_priority){
       thread_yield_if_not_highest_priority();
     }
   }
