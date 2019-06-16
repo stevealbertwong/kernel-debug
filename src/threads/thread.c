@@ -78,7 +78,7 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
-
+static struct thread * thread_get_ready_max(void);
 
 /************************************************************/
 // setup thread system
@@ -251,39 +251,54 @@ thread_create (const char *name, int priority,
 }
 
 
-//
-void thread_yield_if_not_highest_priority(){
-  // for loop ready_list -> higher of priority/donated_priority  
-  enum intr_level old_level = intr_disable();
+// void thread_yield_if_not_highest_priority(){
+//   // for loop ready_list -> higher of priority/donated_priority  
+//   enum intr_level old_level = intr_disable();
   
-  if (!list_empty(&ready_list)) {
-    int highest_priority_val = thread_current()->priority; 
-    struct list_elem *e;
-    for (e = list_begin(&ready_list); e != list_end(&ready_list);
-          e = list_next(e)) {
-        struct thread *t = list_entry(e, struct thread, elem);
-        ASSERT(is_thread(t));
-        int curr_priority = t->priority;
+//   if (!list_empty(&ready_list)) {
+//     int highest_priority_val = thread_current()->priority; 
+//     struct list_elem *e;
+//     for (e = list_begin(&ready_list); e != list_end(&ready_list);
+//           e = list_next(e)) {
+//         struct thread *t = list_entry(e, struct thread, elem);
+//         ASSERT(is_thread(t));
+//         int curr_priority = t->priority;
 
-        if (curr_priority > highest_priority_val) {
-            highest_priority_val = curr_priority;
+//         if (curr_priority > highest_priority_val) {
+//             highest_priority_val = curr_priority;
+//         }
+//     }
+    
+//     if (highest_priority_val > thread_current()->priority ){
+//       if (intr_context()) { // external interrupt
+//           intr_yield_on_return(); // yield after interrupt handler
+//       } else {
+//           thread_yield(); // yield immediately
+//       }
+//       // thread_yield();
+//     }
+//   }
+
+//   intr_set_level(old_level);
+// }
+
+
+void thread_yield_if_not_highest_priority(void) {
+    if (!list_empty(&ready_list)) {
+        if (thread_get_ready_max()->priority > thread_current()->priority) {
+            if (intr_context()) {
+                intr_yield_on_return();
+            } else {
+                thread_yield();
+            }
         }
     }
-    
-    if (highest_priority_val > thread_current()->priority ){
-      if (intr_context()) { // external interrupt
-          intr_yield_on_return(); // yield after interrupt handler
-      } else {
-          thread_yield(); // yield immediately
-      }
-      // thread_yield();
-    }
-  }
-
-  intr_set_level(old_level);
 }
 
-
+static inline struct thread * thread_get_ready_max(void) {
+    return list_entry(list_max(&ready_list, 
+        (list_less_func*) thread_more_func, NULL), struct thread, elem);
+}
 
 void
 thread_yield (void) 
@@ -719,7 +734,7 @@ thread_set_priority (int new_priority)
       thread_yield_if_not_highest_priority();
     }
   }
-  
+
   intr_set_level(old_level);
 }
 
