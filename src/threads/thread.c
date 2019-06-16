@@ -1965,3 +1965,31 @@ thread_print_stats (void)
   printf ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
           idle_ticks, kernel_ticks, user_ticks);
 }
+
+
+
+void
+thread_set_nice (int nice UNUSED) 
+{
+}
+
+int
+thread_get_nice (void) 
+{
+  return thread_current()->niceness;  
+}
+
+
+int
+thread_get_load_avg (void) 
+{
+  return 1;
+}
+
+
+int
+thread_get_recent_cpu (void) 
+{
+return 1;
+}
+
