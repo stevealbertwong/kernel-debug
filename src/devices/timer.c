@@ -89,6 +89,10 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {  
+  /* Cannot sleep for negative of zero time. */
+  if (ticks <= 0) {
+        return;
+  }
   enum intr_level old_level;
   ASSERT(intr_get_level() == INTR_ON);
   old_level = intr_disable();
