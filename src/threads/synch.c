@@ -277,23 +277,9 @@ lock_release (struct lock *lock)
   // 2. update() 2 (holder x lock_waiting_on + no change in lock's waiting threads)
   lock->holder = NULL;
   list_remove (&lock->thread_elem); // thread's waiting locks
-  
-  // // 3. clear holder's donated_priority / 2nd lock's highest waiter  
-  // // 3.a thread has no more locks 
-  // if (list_empty (&cur->locks_acquired)){
-  //   thread_clear_donated_priority();
-  // // 3.b thread has remaining locks
-  // } else { 
-  //   // holder loop() thru remaining locks + waiters -> 2nd lock highest priority
-  //   thread_recv_highest_waiter_priority(cur);
-  // }
 
   ASSERT(PRI_MIN <= cur->priority && cur->priority <= PRI_MAX);
-  thread_set_priority(cur->original_priority);
-  if (!is_highest_priority(cur->priority)){
-    thread_yield();
-  }
-
+  thread_set_priority(cur->original_priority); // already thread_yield()
   intr_set_level (old_level);
 }
 

@@ -9,6 +9,7 @@
         "vaddr.h": "c",
         "thread.h": "c",
         "interrupt.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "tests.h": "c"
     }
 }
