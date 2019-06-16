@@ -1179,6 +1179,9 @@
 // }
 
 
+
+
+
 #include "threads/thread.h"
 #include <debug.h>
 #include <stddef.h>
@@ -1567,13 +1570,13 @@ void thread_foreach(thread_action_func *func, void *aux) {
 
 
 
-bool thread_more_func(const struct list_elem *l, const struct list_elem *r, void *aux) {
-  struct thread *lthread, *rthread;
-  ASSERT (l != NULL && r != NULL);
-  lthread = list_entry(l, struct thread, elem);
-  rthread = list_entry(r, struct thread, elem);
-  return (lthread->priority < rthread->priority);
-}
+// bool thread_more_func(const struct list_elem *l, const struct list_elem *r, void *aux) {
+//   struct thread *lthread, *rthread;
+//   ASSERT (l != NULL && r != NULL);
+//   lthread = list_entry(l, struct thread, elem);
+//   rthread = list_entry(r, struct thread, elem);
+//   return (lthread->priority < rthread->priority);
+// }
 
 
 /*! Does basic initialization of T as a blocked thread named NAME. */
