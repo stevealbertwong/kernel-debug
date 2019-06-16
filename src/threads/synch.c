@@ -264,10 +264,10 @@ lock_release (struct lock *lock)
   
   // 1. update() 4 
   lock->holder = NULL;
-  sema_up (&lock->semaphore);
-  list_remove (&lock->thread_elem); // thread's waiting locks
+  sema_up (&lock->semaphore); // semaphore->waiters[] <-> ready_list
+  list_remove (&lock->thread_elem); // thread{}->acquired_locks[]
   // 2. nested_donate()
-  thread_set_priority(cur->original_priority); // already thread_yield()
+  thread_set_priority(cur->original_priority); // set() ori_pri -> then nested_donate() ori_pri to priority
   intr_set_level (old_level);
 }
 

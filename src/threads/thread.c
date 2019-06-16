@@ -695,26 +695,31 @@ thread_donate_priority(struct thread *holder_thread){
 
 /************************************************************/
 
-// set() ori_pri first -> then nested_donate() ori_pri to priority
+// set() ori_pri -> then nested_donate() ori_pri to priority
 void
 thread_set_priority (int new_priority) 
 {
   enum intr_level old_level;
   old_level = intr_disable();
+  ASSERT(PRI_MIN <= new_priority && new_priority <= PRI_MAX);
+
   struct thread *cur = thread_current();
   if (!thread_mlfqs){
-    if(cur->priority == cur->original_priority){
-      cur->original_priority = new_priority;
-      cur->priority = new_priority;
-    }else {
-      cur->original_priority = new_priority;
-    }
+    // if(cur->priority == cur->original_priority){
+    //   cur->original_priority = new_priority;
+    //   cur->priority = new_priority;
+    // }else {
+    //   cur->original_priority = new_priority;
+    // }
+    
     int donated_priority = cur->priority;
+    cur->original_priority = new_priority;
     thread_donate_priority(thread_current());
     if (donated_priority > new_priority){
       thread_yield_if_not_highest_priority();
     }
   }
+  
   intr_set_level(old_level);
 }
 
