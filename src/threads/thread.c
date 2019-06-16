@@ -1258,7 +1258,7 @@ static tid_t allocate_tid(void);
 
 bool thread_more_function(const struct list_elem *a,
                              const struct list_elem *b,
-                             void *aux UNUSED);
+                             void *aux);
 
 void print_ready_queue(void);
 void print_all_priorities(void);
