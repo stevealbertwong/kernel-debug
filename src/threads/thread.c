@@ -652,32 +652,32 @@ thread_tick (void)
   else
     kernel_ticks++;
 
+  if (thread_mlfqs) {
+    thread_update_mlfqs();
+  }
+  
+  if (++thread_ticks >= TIME_SLICE){  // preemption !!!!!
+    intr_yield_on_return ();
+  }
+    
   // if(thread_init_finished){
   //   unblock_awaken_thread();
   // }  
   thread_foreach((thread_action_func *) &thread_wake, NULL);
 
-  if (thread_mlfqs && !list_empty(&all_list)) {
-    thread_update_mlfqs();
-  }
-
-  if (++thread_ticks >= TIME_SLICE) // preemption !!!!!
-    intr_yield_on_return ();
 }
 
+
+
 static void thread_wake(struct thread *t, void *aux UNUSED) {
-    /* Check if the thread has a timer interrupt. */
     if (t->sleep_ticks == THREAD_AWAKE) {
         return;
     }
     
-    /* A thread should only have a time until awake if it is  asleep/blocked. */
     ASSERT(t->status == THREAD_BLOCKED);
 
-    /* wake_thread() is called every tick, so decrement time until wakeup. */
     t->sleep_ticks--;
 
-    /* Wake up if it is time to wakeup (sleep time left is 0) */
     if (t->sleep_ticks <= 0) {
         t->sleep_ticks = THREAD_AWAKE;
         thread_unblock(t);
