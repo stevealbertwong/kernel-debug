@@ -619,7 +619,7 @@ void
 thread_donate_priority(struct thread *holder_thread){
     ASSERT(is_thread(holder_thread));
     struct list_elem *e, *f;    
-    int max = 0;
+    int max = holder_thread->priority;
     // holder_thread get highest donation of all waiter_thread
     for (e = list_begin(&(holder_thread->locks_acquired)); 
          e != list_end(&(holder_thread->locks_acquired)); e = list_next(e)) {
