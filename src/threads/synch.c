@@ -289,7 +289,7 @@ lock_release (struct lock *lock)
   // }
 
   ASSERT(PRI_MIN <= cur->priority && cur->priority <= PRI_MAX);
-  thread_donate_priority(cur);
+  thread_set_priority(cur->original_priority);
   if (!is_highest_priority(cur->priority)){
     thread_yield();
   }
