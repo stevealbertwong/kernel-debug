@@ -450,7 +450,7 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 
 /************************************************************/
 
-bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux) {
+bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux UNUSED) {
   struct thread *lthread, *rthread;
   ASSERT (l != NULL && r != NULL);
   lthread = list_entry(l, struct thread, elem);
@@ -458,7 +458,7 @@ bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void
   return (lthread->priority >= rthread->priority);
 }
 
-bool thread_more_func(const struct list_elem *l, const struct list_elem *r, void *aux) {
+bool thread_more_func(const struct list_elem *l, const struct list_elem *r, void *aux UNUSED) {
   struct thread *lthread, *rthread;
   ASSERT (l != NULL && r != NULL);
   lthread = list_entry(l, struct thread, elem);
