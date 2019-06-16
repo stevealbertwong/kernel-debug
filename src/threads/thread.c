@@ -638,38 +638,72 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 /************************************************************/
 
-// timer interrupt handler (external interrupt)
-void
-thread_tick (void) 
-{
-  struct thread *t = thread_current ();
-  if (t == idle_thread)
-    idle_ticks++;
-#ifdef USERPROG
-  else if (t->pagedir != NULL)
-    user_ticks++;
-#endif
-  else
-    kernel_ticks++;
+// // timer interrupt handler (external interrupt)
+// void
+// thread_tick (void) 
+// {
+//   struct thread *t = thread_current ();
+//   if (t == idle_thread)
+//     idle_ticks++;
+// #ifdef USERPROG
+//   else if (t->pagedir != NULL)
+//     user_ticks++;
+// #endif
+//   else
+//     kernel_ticks++;
 
-  enum intr_level old_level;
-  old_level = intr_disable();
+//   enum intr_level old_level;
+//   old_level = intr_disable();
 
-  if (thread_mlfqs) {
-    thread_update_mlfqs();
-  }
+//   if (thread_mlfqs) {
+//     thread_update_mlfqs();
+//   }
   
-  if (++thread_ticks >= TIME_SLICE){  // preemption !!!!!
-    intr_yield_on_return ();
-  }
+//   if (++thread_ticks >= TIME_SLICE){  // preemption !!!!!
+//     intr_yield_on_return ();
+//   }
     
-  // if(thread_init_finished){
-  //   unblock_awaken_thread();
-  // }  
-  thread_foreach((thread_action_func *) &thread_wake, NULL);
+//   // if(thread_init_finished){
+//   //   unblock_awaken_thread();
+//   // }  
+//   thread_foreach((thread_action_func *) &thread_wake, NULL);
 
-  intr_set_level(old_level);
+//   intr_set_level(old_level);
 
+// }
+
+
+
+
+void thread_tick(void) {
+    struct thread *t = thread_current();
+
+    if (t == idle_thread)
+        idle_ticks++;
+#ifdef USERPROG
+    else if (t->pagedir != NULL)
+        user_ticks++;
+#endif
+    else
+        kernel_ticks++;
+
+    /* Update all priorities in mlfq mode here and prevent this from being 
+    interrupted by disabling interrupts (include tick increment with priority 
+    update so a kernel never receives ticks that do not match priority). */
+    enum intr_level old_level;
+    old_level = intr_disable();
+
+    if (++thread_ticks >= TIME_SLICE)
+        intr_yield_on_return();
+
+
+    if (thread_mlfqs) {
+        thread_update_mlfqs();
+    }
+
+    thread_foreach((thread_action_func *) &thread_wake, NULL);
+
+    intr_set_level(old_level);
 }
 
 
@@ -680,7 +714,6 @@ static void thread_wake(struct thread *t, void *aux UNUSED) {
     }
     
     ASSERT(t->status == THREAD_BLOCKED);
-
     t->sleep_ticks--;
 
     if (t->sleep_ticks <= 0) {

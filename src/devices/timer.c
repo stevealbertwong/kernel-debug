@@ -85,28 +85,57 @@ timer_elapsed (int64_t then)
 }
 
 
-// called regularly by device drivers
-void
-timer_sleep (int64_t ticks) 
-{  
-  /* Cannot sleep for negative of zero time. */
-  if (ticks <= 0) {
-        return;
-  }
-  enum intr_level old_level;
-  ASSERT(intr_get_level() == INTR_ON);
-  old_level = intr_disable();
+// // called regularly by device drivers
+// void
+// timer_sleep (int64_t ticks) 
+// {  
+//   /* Cannot sleep for negative of zero time. */
+//   if (ticks <= 0) {
+//         return;
+//   }
+//   enum intr_level old_level;
+//   ASSERT(intr_get_level() == INTR_ON);
+//   old_level = intr_disable();
 
-  struct thread *t = thread_current();	
-  // t->sleep_ticks = timer_ticks() + ticks;
-  t->sleep_ticks = ticks;
+//   struct thread *t = thread_current();	
+//   // t->sleep_ticks = timer_ticks() + ticks;
+//   t->sleep_ticks = ticks;
 	
-	// add_thread_sleeplist(t);
-  thread_block(); // block until sleep_ticks 0
+// 	// add_thread_sleeplist(t);
+//   thread_block(); // block until sleep_ticks 0
 
-  intr_set_level(old_level);
-  // intr_enable();
+//   intr_set_level(old_level);
+//   // intr_enable();
+// }
+
+
+
+/*! Sleeps for approximately TICKS timer ticks.  Interrupts must
+    be turned on. */
+void timer_sleep(int64_t ticks) {
+    /* Cannot sleep for negative of zero time. */
+    if (ticks <= 0) {
+        return;
+    }
+
+    ASSERT(intr_get_level() == INTR_ON);
+
+    /* Disable interrupts so this block of code is always executed together and 
+    blocking works correctly. */
+    intr_disable();
+
+    /* Set flag in thread that will cause blocked thread to be moved to ready 
+    queue once the timer interrupt handler has passed "ticks" time. */
+    thread_current()->sleep_ticks = ticks;
+
+    /* Block this thread. */
+    thread_block();
+
+    /* Thread has been awoken, so renable interrupts. */
+    intr_enable();
 }
+
+
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
    turned on. */
