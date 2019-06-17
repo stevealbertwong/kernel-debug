@@ -140,7 +140,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->magic = THREAD_MAGIC;
 
-  t->sleep_ticks = 0;
+  t->sleep_ticks = THREAD_AWAKE; // bug, -1 instead of 0
   t->lock_waiting_on = NULL;
 
   t->original_priority = priority;
@@ -154,6 +154,7 @@ init_thread (struct thread *t, const char *name, int priority)
     t->niceness = thread_current()->niceness;
     t->recent_cpu = thread_current()->recent_cpu;
   }
+
   if (thread_mlfqs) {
     t->priority = 0;
     t->mlfq_priority = 0;
@@ -166,6 +167,8 @@ init_thread (struct thread *t, const char *name, int priority)
   list_push_back (&all_list, &t->all_elem);
   intr_set_level (old_level);
 }
+
+
 
 // init() idle_thread + starts preemptive thread scheduling 
 void
@@ -1088,7 +1091,7 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
-/* Returns true if T appears to point to a valid thread. */
+
 bool
 is_thread (struct thread *t)
 {
