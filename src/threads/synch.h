@@ -38,7 +38,7 @@ bool lock_held_by_current_thread (const struct lock *);
 /* Condition variable. */
 struct condition 
   {
-    struct list waiters;        /* List of waiting threads. */
+    struct list waiters; // waiter_semaphores[]
   };
 
 void cond_init (struct condition *);
@@ -55,7 +55,7 @@ void cond_broadcast (struct condition *, struct lock *);
 
 
 // OUR IMPLEMENTATION
-void thread_recv_highest_waiter_priority(struct thread *holder);
+// void thread_recv_highest_waiter_priority(struct thread *holder);
 int highest_lock_priority(struct lock *lock);
 bool thread_less_func(const struct list_elem *l, const struct list_elem *r, void *aux);
 bool thread_more_func(const struct list_elem *l, const struct list_elem *r, void *aux);

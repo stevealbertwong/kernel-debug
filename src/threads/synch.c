@@ -32,6 +32,9 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+static bool
+cv_more_func(const struct list_elem* a, const struct list_elem *b, void* aux UNUSED);
+
 /************************************************************/
 // semaphore
 
@@ -300,7 +303,8 @@ lock_held_by_current_thread (const struct lock *lock)
 
 
 /************************************************************/
-// CV
+// CV 
+// add priority to existing waiter_semaphores[] data structure
 
 
 
@@ -314,46 +318,23 @@ lock_held_by_current_thread (const struct lock *lock)
 
 /************************************************************/
 
+// weird hack to string()semaphore into list[] -> coz they want you to add priority
+struct semaphore_elem // each item in cond->waiters[]
+{ 
+  struct list_elem elem;
+  struct semaphore semaphore; // 1 sema 1 blocked thread
+  int priority;
+};
 
-/* One semaphore in a list. */
-struct semaphore_elem 
-  {
-    struct list_elem elem;              /* List element. */
-    struct semaphore semaphore;         /* This semaphore. */
-  };
 
-
-/* Initializes condition variable COND.  A condition variable
-   allows one piece of code to signal a condition and cooperating
-   code to receive the signal and act upon it. */
 void
 cond_init (struct condition *cond)
 {
   ASSERT (cond != NULL);
-
-  list_init (&cond->waiters);
+  list_init (&cond->waiters); // waiter_semaphores[]
 }
 
-/* Atomically releases LOCK and waits for COND to be signaled by
-   some other piece of code.  After COND is signaled, LOCK is
-   reacquired before returning.  LOCK must be held before calling
-   this function.
 
-   The monitor implemented by this function is "Mesa" style, not
-   "Hoare" style, that is, sending and receiving a signal are not
-   an atomic operation.  Thus, typically the caller must recheck
-   the condition after the wait completes and, if necessary, wait
-   again.
-
-   A given condition variable is associated with only a single
-   lock, but one lock may be associated with any number of
-   condition variables.  That is, there is a one-to-many mapping
-   from locks to condition variables.
-
-   This function may sleep, so it must not be called within an
-   interrupt handler.  This function may be called with
-   interrupts disabled, but interrupts will be turned back on if
-   we need to sleep. */
 void
 cond_wait (struct condition *cond, struct lock *lock) 
 {
@@ -365,19 +346,17 @@ cond_wait (struct condition *cond, struct lock *lock)
   ASSERT (lock_held_by_current_thread (lock));
   
   sema_init (&waiter.semaphore, 0);
-  list_push_back (&cond->waiters, &waiter.elem);
+  
+  // list_push_back (&cond->waiters, &waiter.elem); // waiter.elem == semaphore_elem
+  waiter.priority = thread_current()->priority;
+  list_insert_ordered (&cond->waiters, &(waiter.elem), cv_more_func, NULL);
+  
   lock_release (lock);
-  sema_down (&waiter.semaphore);
+  sema_down (&waiter.semaphore); // ready_list --> semaphore.waiters[]
   lock_acquire (lock);
 }
 
-/* If any threads are waiting on COND (protected by LOCK), then
-   this function signals one of them to wake up from its wait.
-   LOCK must be held before calling this function.
 
-   An interrupt handler cannot acquire a lock, so it does not
-   make sense to try to signal a condition variable within an
-   interrupt handler. */
 void
 cond_signal (struct condition *cond, struct lock *lock UNUSED) 
 {
@@ -391,12 +370,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
                           struct semaphore_elem, elem)->semaphore);
 }
 
-/* Wakes up all threads, if any, waiting on COND (protected by
-   LOCK).  LOCK must be held before calling this function.
 
-   An interrupt handler cannot acquire a lock, so it does not
-   make sense to try to signal a condition variable within an
-   interrupt handler. */
 void
 cond_broadcast (struct condition *cond, struct lock *lock) 
 {
@@ -407,7 +381,14 @@ cond_broadcast (struct condition *cond, struct lock *lock)
     cond_signal (cond, lock);
 }
 
-
+static bool
+cv_more_func(const struct list_elem* a, const struct list_elem *b, void* aux UNUSED)
+{
+  const struct semaphore_elem* x = list_entry(a, struct semaphore_elem, elem);
+  const struct semaphore_elem* y = list_entry(b, struct semaphore_elem, elem);
+  ASSERT(x != NULL && y != NULL);
+  return x->priority > y->priority;
+}
 
 
 
