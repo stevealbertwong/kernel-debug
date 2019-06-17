@@ -225,7 +225,7 @@ lock_acquire (struct lock *lock)
     
     // 1. donate_priority()
     thread_current()->lock_waiting_on = lock;
-    list_push_back(&lock->semaphore.waiters, &thread_current()->lock_elem);
+    list_push_back(&lock->semaphore.waiters, &thread_current()->elem);
     thread_donate_priority(lock->holder);
     
     // 2. acquire() lock
