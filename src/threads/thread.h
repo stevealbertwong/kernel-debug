@@ -1,254 +1,33 @@
-// #ifndef THREADS_THREAD_H
-// #define THREADS_THREAD_H
-
-// #include <debug.h>
-// #include <list.h>
-// #include <stdint.h>
-// #include "devices/timer.h"
-
-// /* States in a thread's life cycle. */
-// enum thread_status
-//   {
-//     THREAD_RUNNING,     /* Running thread. */
-//     THREAD_READY,       /* Not running but ready to run. */
-//     THREAD_BLOCKED,     /* Waiting for an event to trigger. */
-//     THREAD_DYING        /* About to be destroyed. */
-//   };
-
-// /* Thread identifier type.
-//    You can redefine this to whatever type you like. */
-// typedef int tid_t;
-// #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
-
-// #define THREAD_AWAKE -1
-
-// /* Thread priorities. */
-// #define PRI_MIN 0                       /* Lowest priority. */
-// #define PRI_DEFAULT 31                  /* Default priority. */
-// #define PRI_MAX 63                      /* Highest priority. */
-
-// /* A kernel thread or user process.
-
-//    Each thread structure is stored in its own 4 kB page.  The
-//    thread structure itself sits at the very bottom of the page
-//    (at offset 0).  The rest of the page is reserved for the
-//    thread's kernel stack, which grows downward from the top of
-//    the page (at offset 4 kB).  Here's an illustration:
-
-//         4 kB +---------------------------------+
-//              |          kernel stack           |
-//              |                |                |
-//              |                |                |
-//              |                V                |
-//              |         grows downward          |
-//              |                                 |
-//              |                                 |
-//              |                                 |
-//              |                                 |
-//              |                                 |
-//              |                                 |
-//              |                                 |
-//              |                                 |
-//              +---------------------------------+
-//              |              magic              |
-//              |                :                |
-//              |                :                |
-//              |               name              |
-//              |              status             |
-//         0 kB +---------------------------------+
-
-//    The upshot of this is twofold:
-
-//       1. First, `struct thread' must not be allowed to grow too
-//          big.  If it does, then there will not be enough room for
-//          the kernel stack.  Our base `struct thread' is only a
-//          few bytes in size.  It probably should stay well under 1
-//          kB.
-
-//       2. Second, kernel stacks must not be allowed to grow too
-//          large.  If a stack overflows, it will corrupt the thread
-//          state.  Thus, kernel functions should not allocate large
-//          structures or arrays as non-static local variables.  Use
-//          dynamic allocation with malloc() or palloc_get_page()
-//          instead.
-
-//    The first symptom of either of these problems will probably be
-//    an assertion failure in thread_current(), which checks that
-//    the `magic' member of the running thread's `struct thread' is
-//    set to THREAD_MAGIC.  Stack overflow will normally change this
-//    value, triggering the assertion. */
-// /* The `elem' member has a dual purpose.  It can be an element in
-//    the run queue (thread.c), or it can be an element in a
-//    semaphore wait list (synch.c).  It can be used these two ways
-//    only because they are mutually exclusive: only a thread in the
-//    ready state is on the run queue, whereas only a thread in the
-//    blocked state is on a semaphore wait list. */
-// struct thread
-//   {
-//     /* Owned by thread.c. */
-//     tid_t tid;                          /* Thread identifier. */
-//     enum thread_status status;          /* Thread state. */
-//     char name[16];                      /* Name (for debugging purposes). */
-//     uint8_t *stack;                     /* Saved stack pointer. */
-//     int priority;                       /* Priority. */
-//     struct list_elem elem;              // shared by ready_list, sema->waiters[] -> mutually exclusive
-//     struct list_elem all_elem;          // all_list
-    
-//     int64_t sleep_ticks;                // number of ticks thread to sleep
-//     struct list_elem sleep_elem;        // wait/sleep list 
-    
-//     int mlfq_priority;
-//     int original_priority;               // 2nd_lock_highest_waiter() + next_thread_to_run()
-//     struct lock *lock_waiting_on;       // nested_doante_priority(), traverse() to highest holder 
-//     struct list_elem lock_elem;         // lock->block_threads[], lock_release() 2nd lock highest waiter
-//     struct list locks_acquired;         // thread_exit() free() all locks + lock_release() 2nd lock highest waiter    
-
-//     int recent_cpu;                     // mlfqs, moving average of cpu usage
-//     int niceness;                       // mlfqs, inflat your recent_cpu, let other threads run
-
-// #ifdef USERPROG
-//     /* Owned by userprog/process.c. */
-//     uint32_t *pagedir;                  /* Page directory. */
-// #endif
-
-//     /* Owned by thread.c. */
-//     unsigned magic;                     /* Detects stack overflow. */
-//   };
-
-// /* If false (default), use round-robin scheduler.
-//    If true, use multi-level feedback queue scheduler.
-//    Controlled by kernel command-line option "-o mlfqs". */
-// extern bool thread_mlfqs;
-
-// void thread_init (void);
-// void thread_start (void);
-
-// void thread_tick (void);
-// void thread_print_stats (void);
-
-// typedef void thread_func (void *aux);
-// tid_t thread_create (const char *name, int priority, thread_func *, void *);
-
-// void thread_block (void);
-// void thread_unblock (struct thread *);
-
-// struct thread *thread_current (void);
-// tid_t thread_tid (void);
-// const char *thread_name (void);
-
-// void thread_exit (void) NO_RETURN;
-// void thread_yield (void);
-
-// /* Performs some operation on thread t, given auxiliary data AUX. */
-// typedef void thread_action_func (struct thread *t, void *aux);
-// void thread_foreach (thread_action_func *, void *);
-
-// int thread_get_priority (void);
-// void thread_set_priority (int);
-
-// int thread_get_nice (void);
-// void thread_set_nice (int);
-// int thread_get_recent_cpu (void);
-// int thread_get_load_avg (void);
-
-// // OUR IMPLEMENTATION
-// void add_thread_sleeplist(struct thread *t);
-// void unblock_awaken_thread(void);
-
-// void thread_clear_donated_priority (void);
-// void thread_yield_if_not_highest_priority(void);
-// void thread_donate_priority(struct thread *t);
-// int thread_get_donated_priority (void);
-// // int thread_pick_higher_priority (struct thread *t);
-// bool is_thread (struct thread *t);
-
-// // mlfqs
-// int double_to_fixed_point(int n, int q);
-// int convert_to_integer_round_zero(int x, int q);
-// int convert_to_integer_round_nearest(int x, int q);
-// int multiply_x_by_y(int x, int y, int q);
-// int multiply_x_by_n(int x, int n);
-// int divide_x_by_y(int x, int y, int q);
-// int divide_x_by_n(int x, int n);
-// void thread_update_mlfqs(void);
-// int compute_priority(int recent_cpu, int nice);
-// int compute_cpu_usage(int recent_cpu, int load_average, int niceness);
-// int compute_load_avg(int load_average, int ready_threads);
-
-
-// // DEBUG
-// void print_all_queue(void);
-// void print_ready_queue(void);
-// void print_sleep_queue(void);
-// void print_all_priorities(void);
-// void print_ready_priorities(void);
-// void print_sleep_priorities(void);
-
-// #endif /* threads/thread.h */
-
-
-
-
-
-
-
-
-
-/*! \file thread.h
- *
- * Declarations for the kernel threading functionality in PintOS.
- */
-
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
 
 #include <debug.h>
 #include <list.h>
-#include <fixedp.h>
 #include <stdint.h>
+#include "devices/timer.h"
 
-/*! States in a thread's life cycle. */
-enum thread_status {
-    THREAD_RUNNING,     /*!< Running thread. */
-    THREAD_READY,       /*!< Not running but ready to run. */
-    THREAD_BLOCKED,     /*!< Waiting for an event to trigger. */
-    THREAD_DYING        /*!< About to be destroyed. */
-};
+/* States in a thread's life cycle. */
+enum thread_status
+  {
+    THREAD_RUNNING,     /* Running thread. */
+    THREAD_READY,       /* Not running but ready to run. */
+    THREAD_BLOCKED,     /* Waiting for an event to trigger. */
+    THREAD_DYING        /* About to be destroyed. */
+  };
 
-/*! Thread identifier type.
-    You can redefine this to whatever type you like. */
+/* Thread identifier type.
+   You can redefine this to whatever type you like. */
 typedef int tid_t;
-#define TID_ERROR ((tid_t) -1)          /*!< Error value for tid_t. */
+#define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
+
+#define THREAD_AWAKE -1
 
 /* Thread priorities. */
-#define PRI_MIN 0                       /*!< Lowest priority. */
-#define PRI_DEFAULT 31                  /*!< Default priority. */
-#define PRI_MAX 63                      /*!< Highest priority. */
+#define PRI_MIN 0                       /* Lowest priority. */
+#define PRI_DEFAULT 31                  /* Default priority. */
+#define PRI_MAX 63                      /* Highest priority. */
 
-/* Value of thread->sleep_ticks when not asleep */
-#define THREAD_AWAKE -1                     
-
-/* Thread niceness values. */
-#define NICE_MIN -20                    /*!< Lowest niceness. */
-#define NICE_INIT 0                     /*!< Niceness of init thread. */
-#define NICE_MAX 20                     /*!< Highest niceness. */
-
-/* Multi-level feedback queue scheduling. */
-/* Number of ticks between recalculations of priority. */
-#define PRI_RECALC_PERIOD 4
-/* Initial values of load_avg and recent_cpu in initial thread. */
-#define LOAD_AVG_INIT 0
-#define RECENT_CPU_INIT 0
-/* Number of ticks in interval used for averaging load into load_avg. */
-#define LOAD_AVG_PERIOD 6000
-/* Coefficient of momentum in calculating load_avg. */
-#define LOAD_AVG_MOMENTUM fixedp_divide( \
-fixedp_from_int(LOAD_AVG_PERIOD - TIMER_FREQ), fixedp_from_int(LOAD_AVG_PERIOD))
-/* Coefficient of decay in calculating load_avg. */
-#define LOAD_AVG_DECAY    \
-  fixedp_divide(fixedp_from_int(TIMER_FREQ), fixedp_from_int(LOAD_AVG_PERIOD))
-
-/*! A kernel thread or user process.
+/* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
    thread structure itself sits at the very bottom of the page
@@ -256,7 +35,6 @@ fixedp_from_int(LOAD_AVG_PERIOD - TIMER_FREQ), fixedp_from_int(LOAD_AVG_PERIOD))
    thread's kernel stack, which grows downward from the top of
    the page (at offset 4 kB).  Here's an illustration:
 
-\verbatim
         4 kB +---------------------------------+
              |          kernel stack           |
              |                |                |
@@ -277,9 +55,7 @@ fixedp_from_int(LOAD_AVG_PERIOD - TIMER_FREQ), fixedp_from_int(LOAD_AVG_PERIOD))
              |                :                |
              |               name              |
              |              status             |
-             |               tid               |
         0 kB +---------------------------------+
-\endverbatim
 
    The upshot of this is twofold:
 
@@ -300,103 +76,120 @@ fixedp_from_int(LOAD_AVG_PERIOD - TIMER_FREQ), fixedp_from_int(LOAD_AVG_PERIOD))
    an assertion failure in thread_current(), which checks that
    the `magic' member of the running thread's `struct thread' is
    set to THREAD_MAGIC.  Stack overflow will normally change this
-   value, triggering the assertion.
-
-   The `elem' member has a dual purpose.  It can be an element in
+   value, triggering the assertion. */
+/* The `elem' member has a dual purpose.  It can be an element in
    the run queue (thread.c), or it can be an element in a
    semaphore wait list (synch.c).  It can be used these two ways
    only because they are mutually exclusive: only a thread in the
    ready state is on the run queue, whereas only a thread in the
-   blocked state is on a semaphore wait list.
-*/
-struct thread {
-    /*! Owned by thread.c. */
-    /**@{*/
-    tid_t tid;                          /*!< Thread identifier. */
-    enum thread_status status;          /*!< Thread state. */
-    char name[16];                      /*!< Name (for debugging purposes). */
-    uint8_t *stack;                     /*!< Saved stack pointer. */
-    int priority;                       /*!< Priority. */
-    struct list_elem allelem;         /*!< List element for all threads list. */
-    /**@}*/
+   blocked state is on a semaphore wait list. */
+struct thread
+  {
+    /* Owned by thread.c. */
+    tid_t tid;                          /* Thread identifier. */
+    enum thread_status status;          /* Thread state. */
+    char name[16];                      /* Name (for debugging purposes). */
+    uint8_t *stack;                     /* Saved stack pointer. */
+    int priority;                       /* Priority. */
+    struct list_elem elem;              // shared by ready_list, sema->waiters[] -> mutually exclusive
+    struct list_elem all_elem;          // all_list
+    
+    int64_t sleep_ticks;                // number of ticks thread to sleep
+    struct list_elem sleep_elem;        // wait/sleep list 
+    
+    int mlfq_priority;
+    int original_priority;               // 2nd_lock_highest_waiter() + next_thread_to_run()
+    struct lock *lock_waiting_on;       // nested_doante_priority(), traverse() to highest holder 
+    struct list_elem lock_elem;         // lock->block_threads[], lock_release() 2nd lock highest waiter
+    struct list locks_acquired;         // thread_exit() free() all locks + lock_release() 2nd lock highest waiter    
 
-    /* User-added stuff. */
-    int64_t sleep_ticks;           /*!< Ticks until done sleeping. */
-    int nice;                           /*!< Nice value. */
-    int recent_cpu;                  /*!< Recent cpu time. */
-
-    int original_priority;                   /*!< Stores original priority when
-                                             when elevated. */
-    struct list locks_acquired;                  /*!< Locks which thread owns. */
-    struct lock *lock_waiting_on;           /*!< Lock which thread wants. */
-
-    /*! Shared between thread.c and synch.c. */
-    /**@{*/
-    struct list_elem elem;              /*!< List element. */
-    /**@}*/
+    int recent_cpu;                     // mlfqs, moving average of cpu usage
+    int niceness;                       // mlfqs, inflat your recent_cpu, let other threads run
 
 #ifdef USERPROG
-    /*! Owned by userprog/process.c. */
-    /**@{*/
-    uint32_t *pagedir;                  /*!< Page directory. */
-    /**@{*/
+    /* Owned by userprog/process.c. */
+    uint32_t *pagedir;                  /* Page directory. */
 #endif
 
-    /*! Owned by thread.c. */
-    /**@{*/
+    /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
-    /**@}*/
-};
+  };
 
-/*! If false (default), use round-robin scheduler.
-    If true, use multi-level feedback queue scheduler.
-    Controlled by kernel command-line option "-o mlfqs". */
+/* If false (default), use round-robin scheduler.
+   If true, use multi-level feedback queue scheduler.
+   Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
 
-void thread_init(void);
-void thread_start(void);
+void thread_init (void);
+void thread_start (void);
 
-void thread_tick(void);
-void thread_print_stats(void);
+void thread_tick (void);
+void thread_print_stats (void);
 
-typedef void thread_func(void *aux);
-tid_t thread_create(const char *name, int priority, thread_func *, void *);
+typedef void thread_func (void *aux);
+tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
-void thread_block(void);
-void thread_unblock(struct thread *);
+void thread_block (void);
+void thread_unblock (struct thread *);
 
 struct thread *thread_current (void);
-tid_t thread_tid(void);
-const char *thread_name(void);
+tid_t thread_tid (void);
+const char *thread_name (void);
 
-void thread_exit(void) NO_RETURN;
-void thread_yield(void);
+void thread_exit (void) NO_RETURN;
+void thread_yield (void);
 
-/*! Performs some operation on thread t, given auxiliary data AUX. */
-typedef void thread_action_func(struct thread *t, void *aux);
+/* Performs some operation on thread t, given auxiliary data AUX. */
+typedef void thread_action_func (struct thread *t, void *aux);
+void thread_foreach (thread_action_func *, void *);
 
-void thread_foreach(thread_action_func *, void *);
+int thread_get_priority (void);
+void thread_set_priority (int);
 
-int thread_get_priority(void);
-void thread_set_priority(int);
+int thread_get_nice (void);
+void thread_set_nice (int);
+int thread_get_recent_cpu (void);
+int thread_get_load_avg (void);
 
-int thread_get_nice(void);
-void thread_set_nice(int);
-int thread_get_recent_cpu(void);
-int thread_get_load_avg(void);
+// OUR IMPLEMENTATION
+void add_thread_sleeplist(struct thread *t);
+void unblock_awaken_thread(void);
 
-void sort_ready_list(void);
-
-void print_ready_queue(void);
-void print_all_priorities(void);
-
-void thread_donate_priority(struct thread *t);
-
-bool thread_more_function(const struct list_elem *a,
-                             const struct list_elem *b,
-                             void *aux UNUSED);
-
+void thread_clear_donated_priority (void);
 void thread_yield_if_not_highest_priority(void);
+void thread_donate_priority(struct thread *t);
+int thread_get_donated_priority (void);
+// int thread_pick_higher_priority (struct thread *t);
+bool is_thread (struct thread *t);
+
+// mlfqs
+int double_to_fixed_point(int n, int q);
+int convert_to_integer_round_zero(int x, int q);
+int convert_to_integer_round_nearest(int x, int q);
+int multiply_x_by_y(int x, int y, int q);
+int multiply_x_by_n(int x, int n);
+int divide_x_by_y(int x, int y, int q);
+int divide_x_by_n(int x, int n);
+void thread_update_mlfqs(void);
+int compute_priority(int recent_cpu, int nice);
+int compute_cpu_usage(int recent_cpu, int load_average, int niceness);
+int compute_load_avg(int load_average, int ready_threads);
+
+
+// DEBUG
+void print_all_queue(void);
+void print_ready_queue(void);
+void print_sleep_queue(void);
+void print_all_priorities(void);
+void print_ready_priorities(void);
+void print_sleep_priorities(void);
 
 #endif /* threads/thread.h */
+
+
+
+
+
+
+
 
