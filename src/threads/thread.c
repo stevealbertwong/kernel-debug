@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "devices/timer.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -139,8 +140,8 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->magic = THREAD_MAGIC;
-
-  t->sleep_ticks = THREAD_AWAKE; // bug, -1 instead of 0
+  // BUG!!!!!!! -1 instead of 0 ===> not affected by timer_interrupt()/thread_tick()
+  t->sleep_ticks = THREAD_AWAKE;
   t->lock_waiting_on = NULL;
 
   t->original_priority = priority;
@@ -361,7 +362,7 @@ thread_exit (void)
 
   // remove() lock->threads[]
   if (cur->lock_waiting_on != NULL) {
-        list_remove(&cur->lock_elem);
+        list_remove(&cur->elem);
   }
   
   // lock_release() thread->locks[] 
@@ -396,7 +397,7 @@ thread_donate_priority(struct thread *holder_thread){
         for (f = list_begin(&(l->semaphore.waiters)); 
              f != list_end(&(l->semaphore.waiters)); f = list_next(f)) {
             
-            struct thread *waiting_thread = list_entry(f, struct thread, lock_elem);
+            struct thread *waiting_thread = list_entry(f, struct thread, elem);
             max = MAX(max, waiting_thread->priority);
         }
     }

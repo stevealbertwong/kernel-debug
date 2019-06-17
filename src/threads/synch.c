@@ -481,11 +481,3 @@ bool thread_more_func(const struct list_elem *l, const struct list_elem *r, void
 //     }
 //     return max_priority;
 // }
-
-
-
-
-
-
-
-
