@@ -594,31 +594,6 @@ static void thread_wake(struct thread *t, void *aux UNUSED) {
 
 
 
-
-
-
-/************************************************************/
-// major APIs - getter, setter
-
-
-
-
-
-
-
-
-
-
-
-/************************************************************/
-
-
-
-
-
-
-
-
 /************************************************************/
 // compute mlfqs, load_average n recent_cpu + fixed point arithemetic 
 
@@ -766,13 +741,13 @@ int compute_cpu_usage(int recent_cpu, int load_average, int niceness) {
    load_average:    Fixed Point
 */
 int compute_load_avg(int load_average, int ready_threads) {
-    int fixed_numerator = double_to_fixed_point(59, SCALE);
+    int fp_numerator = double_to_fixed_point(59, SCALE);
     int fixed_one = double_to_fixed_point(1, SCALE);
     int fixed_denominator = double_to_fixed_point(60, SCALE);
     int fixed_threads = double_to_fixed_point(ready_threads, SCALE);
 
     int fixed_fraction = 
-            divide_x_by_y(fixed_numerator, fixed_denominator, SCALE);
+            fp_divide_x_by_y(fp_numerator, fixed_denominator, SCALE);
     int fixed_second_fraction =
             divide_x_by_y(fixed_one, fixed_denominator, SCALE);
 
@@ -813,7 +788,7 @@ int multiply_x_by_n(int x, int n) {
     return x * n;
 }
 
-int divide_x_by_y(int x, int y, int q) {
+int fp_divide_x_by_y(int x, int y, int q) {
     int f = 1 << q;
 
     return ((int64_t) x) * f / y;
