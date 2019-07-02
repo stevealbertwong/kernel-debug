@@ -1,31 +1,3 @@
-/* This file is derived from source code for the Nachos
-   instructional operating system.  The Nachos copyright notice
-   is reproduced in full below. */
-
-/* Copyright (c) 1992-1996 The Regents of the University of California.
-   All rights reserved.
-
-   Permission to use, copy, modify, and distribute this software
-   and its documentation for any purpose, without fee, and
-   without written agreement is hereby granted, provided that the
-   above copyright notice and the following two paragraphs appear
-   in all copies of this software.
-
-   IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO
-   ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR
-   CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OF THIS SOFTWARE
-   AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF CALIFORNIA
-   HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-   THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY
-   WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-   PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS"
-   BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
-   PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
-   MODIFICATIONS.
-*/
-
 #include "threads/synch.h"
 #include <stdio.h>
 #include <string.h>
@@ -37,7 +9,7 @@ cv_more_func(const struct list_elem* a, const struct list_elem *b, void* aux UNU
 
 /************************************************************/
 // semaphore
-
+// ready_list[] <-> sema->waiters[] 
 
 
 
@@ -59,17 +31,16 @@ sema_init (struct semaphore *sema, unsigned value)
   list_init (&sema->waiters);
 }
 
-
-// sema->waiters[] <-> ready_list[]
+// temperarily store threads in semaphore
+// ready_list[] -> sema->waiters[] 
 void
 sema_down (struct semaphore *sema) 
 {
-  enum intr_level old_level;
-
   ASSERT (sema != NULL);
   ASSERT (!intr_context ());
-
+  enum intr_level old_level;
   old_level = intr_disable ();
+
   while (sema->value == 0) 
     {
       if(!thread_mlfqs){
@@ -85,17 +56,18 @@ sema_down (struct semaphore *sema)
         //                     thread_less_func, NULL);
         list_push_back (&sema->waiters, &thread_current ()->elem);
 
-      } else {
+      } else { // mlfqs
         list_push_back (&sema->waiters, &thread_current ()->elem);
       }
       thread_block ();
     }
   sema->value--;
+
   intr_set_level (old_level);
 }
 
-
-// sema->waiters[] <-> ready_list[]
+// pop threads from sema to ready_list, based on priority
+// ready_list[] <- sema->waiters[] 
 void
 sema_up (struct semaphore *sema) 
 {
@@ -160,9 +132,6 @@ sema_test_helper (void *sema_)
 }
 
 
-/* Self-test for semaphores that makes control "ping-pong"
-   between a pair of threads.  Insert calls to printf() to see
-   what's going on. */
 void
 sema_self_test (void) 
 {

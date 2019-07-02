@@ -18,136 +18,31 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 
-static thread_func start_process NO_RETURN;
-static bool load (const char *cmdline, void (**eip) (void), void **esp);
-
-/* Starts a new thread running a user program loaded from
-   FILENAME.  The new thread may be scheduled (and may even exit)
-   before process_execute() returns.  Returns the new process's
-   thread id, or TID_ERROR if the thread cannot be created. */
-tid_t
-process_execute (const char *file_name) 
-{
-  char *fn_copy;
-  tid_t tid;
-
-  /* Make a copy of FILE_NAME.
-     Otherwise there's a race between the caller and load(). */
-  fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL)
-    return TID_ERROR;
-  strlcpy (fn_copy, file_name, PGSIZE);
-
-  /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
-  return tid;
-}
-
-/* A thread function that loads a user process and starts it
-   running. */
-static void
-start_process (void *file_name_)
-{
-  char *file_name = file_name_;
-  struct intr_frame if_;
-  bool success;
-
-  /* Initialize interrupt frame and load executable. */
-  memset (&if_, 0, sizeof if_);
-  if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
-  if_.cs = SEL_UCSEG;
-  if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
-
-  /* If load failed, quit. */
-  palloc_free_page (file_name);
-  if (!success) 
-    thread_exit ();
-
-  /* Start the user process by simulating a return from an
-     interrupt, implemented by intr_exit (in
-     threads/intr-stubs.S).  Because intr_exit takes all of its
-     arguments on the stack in the form of a `struct intr_frame',
-     we just point the stack pointer (%esp) to our stack frame
-     and jump to it. */
-  asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
-  NOT_REACHED ();
-}
-
-/* Waits for thread TID to die and returns its exit status.  If
-   it was terminated by the kernel (i.e. killed due to an
-   exception), returns -1.  If TID is invalid or if it was not a
-   child of the calling process, or if process_wait() has already
-   been successfully called for the given TID, returns -1
-   immediately, without waiting.
-
-   This function will be implemented in problem 2-2.  For now, it
-   does nothing. */
-int
-process_wait (tid_t child_tid UNUSED) 
-{
-  return -1;
-}
-
-/* Free the current process's resources. */
-void
-process_exit (void)
-{
-  struct thread *cur = thread_current ();
-  uint32_t *pd;
-
-  /* Destroy the current process's page directory and switch back
-     to the kernel-only page directory. */
-  pd = cur->pagedir;
-  if (pd != NULL) 
-    {
-      /* Correct ordering here is crucial.  We must set
-         cur->pagedir to NULL before switching page directories,
-         so that a timer interrupt can't switch back to the
-         process page directory.  We must activate the base page
-         directory before destroying the process's page
-         directory, or our active page directory will be one
-         that's been freed (and cleared). */
-      cur->pagedir = NULL;
-      pagedir_activate (NULL);
-      pagedir_destroy (pd);
-    }
-}
-
-/* Sets up the CPU for running user code in the current
-   thread.
-   This function is called on every context switch. */
-void
-process_activate (void)
-{
-  struct thread *t = thread_current ();
-
-  /* Activate thread's page tables. */
-  pagedir_activate (t->pagedir);
-
-  /* Set thread's kernel stack for use in processing
-     interrupts. */
-  tss_update ();
-}
-
-/* We load ELF binaries.  The following definitions are taken
-   from the ELF specification, [ELF1], more-or-less verbatim.  */
-
-/* ELF types.  See [ELF1] 1-2. */
 typedef uint32_t Elf32_Word, Elf32_Addr, Elf32_Off;
 typedef uint16_t Elf32_Half;
 
-/* For use with ELF types in printf(). */
+// ELF types in printf(). 
 #define PE32Wx PRIx32   /* Print Elf32_Word in hexadecimal. */
 #define PE32Ax PRIx32   /* Print Elf32_Addr in hexadecimal. */
 #define PE32Ox PRIx32   /* Print Elf32_Off in hexadecimal. */
 #define PE32Hx PRIx16   /* Print Elf32_Half in hexadecimal. */
 
-/* Executable header.  See [ELF1] 1-4 to 1-8.
-   This appears at the very beginning of an ELF binary. */
-struct Elf32_Ehdr
+// p_type
+#define PT_NULL    0            /* Ignore. */
+#define PT_LOAD    1            /* Loadable segment. */
+#define PT_DYNAMIC 2            /* Dynamic linking info. */
+#define PT_INTERP  3            /* Name of dynamic loader. */
+#define PT_NOTE    4            /* Auxiliary info. */
+#define PT_SHLIB   5            /* Reserved. */
+#define PT_PHDR    6            /* Program header table. */
+#define PT_STACK   0x6474e551   /* Stack segment. */
+
+// p_flags
+#define PF_X 1          /* Executable. */
+#define PF_W 2          /* Writable. */
+#define PF_R 4          /* Readable. */
+
+struct Elf32_Ehdr // Executable header, beginning of an ELF binary
   {
     unsigned char e_ident[16];
     Elf32_Half    e_type;
@@ -165,9 +60,7 @@ struct Elf32_Ehdr
     Elf32_Half    e_shstrndx;
   };
 
-/* Program header.  See [ELF1] 2-2 to 2-4.
-   There are e_phnum of these, starting at file offset e_phoff
-   (see [ELF1] 1-6). */
+// Program header, There are e_phnum of these, starting at file offset e_phoff   
 struct Elf32_Phdr
   {
     Elf32_Word p_type;
@@ -180,31 +73,188 @@ struct Elf32_Phdr
     Elf32_Word p_align;
   };
 
-/* Values for p_type.  See [ELF1] 2-3. */
-#define PT_NULL    0            /* Ignore. */
-#define PT_LOAD    1            /* Loadable segment. */
-#define PT_DYNAMIC 2            /* Dynamic linking info. */
-#define PT_INTERP  3            /* Name of dynamic loader. */
-#define PT_NOTE    4            /* Auxiliary info. */
-#define PT_SHLIB   5            /* Reserved. */
-#define PT_PHDR    6            /* Program header table. */
-#define PT_STACK   0x6474e551   /* Stack segment. */
-
-/* Flags for p_flags.  See [ELF3] 2-3 and 2-4. */
-#define PF_X 1          /* Executable. */
-#define PF_W 2          /* Writable. */
-#define PF_R 4          /* Readable. */
-
-static bool setup_stack (void **esp);
+static thread_func start_process NO_RETURN;
+static bool load (const char *cmdline, void (**eip) (void), void **esp);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
                           bool writable);
 
-/* Loads an ELF executable from FILE_NAME into the current thread.
-   Stores the executable's entry point into *EIP
-   and its initial stack pointer into *ESP.
-   Returns true if successful, false otherwise. */
+/*******************************************************************/
+// APIs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*******************************************************************/
+
+// synch with start_process(), wait until ELF finishes loading
+tid_t
+process_execute (const char *file_name) 
+{
+  char *fn_copy;
+  tid_t tid;
+
+
+  // make a copy, otherwise race between caller and load()
+  fn_copy = palloc_get_page (0);
+  if (fn_copy == NULL)
+    return TID_ERROR;
+  strlcpy (fn_copy, file_name, PGSIZE);
+
+
+  // load ELF + interrupt switch to start running
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  if (tid == TID_ERROR)
+    palloc_free_page (fn_copy); 
+
+
+  // TODO -> wait for start_process() to finish since threaded 
+
+
+  return tid;
+}
+
+
+
+
+
+// parent wait for children to die before it exits
+// kernel requires child ps to notify its parents before it dies -> parent ps does it w wait()
+// but if parent ps forgets to wait(), kernel make child ps init’s child
+int
+process_wait (tid_t child_tid UNUSED) 
+{
+  // TODO
+  // store parent thread in child sema 
+  // pop from sema when all children die
+
+  // wait(exec("elf_file")) -> child thread runs ELF, parent thread runs wait()
+
+
+
+  return -1;
+}
+
+
+
+
+// free resources + notify process_wait() child has died
+// thread->fd_list, thread->mmap_list, children_list->threads ??
+// dir_close(cur->cwd), vm_supt_destroy ??
+void
+process_exit (void)
+{
+  struct thread *child = thread_current ();
+  uint32_t *pd;
+
+
+
+
+  // destroy current thread's pagedir, switch to kernel only pagedir
+  pd = cur->pagedir;
+  if (pd != NULL) 
+    {
+      cur->pagedir = NULL; // timer interrupt can't switch back
+      pagedir_activate (NULL);
+      pagedir_destroy (pd);
+    }
+}
+
+
+
+
+
+void
+process_activate (void)
+{
+  struct thread *t = thread_current ();
+
+  /* Activate thread's page tables. */
+  pagedir_activate (t->pagedir);
+
+  /* Set thread's kernel stack for use in processing
+     interrupts. */
+  tss_update ();
+}
+
+
+
+
+/*******************************************************************/
+// major helpers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*******************************************************************/
+
+// threaded function that loads ELF
+static void
+start_process (void *file_name_)
+{
+  char *file_name = file_name_;
+  struct intr_frame if_;
+  bool success;
+
+  // 1. init() interrupt_frame{} 
+  memset (&if_, 0, sizeof if_);
+  if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
+  if_.cs = SEL_UCSEG;
+  if_.eflags = FLAG_IF | FLAG_MBS;
+
+  // 2. load() executable + populate() interrupt_frame{}
+  success = load (file_name, &if_.eip, &if_.esp);
+  // if load() failed, quit.
+  palloc_free_page (file_name);
+  if (!success) 
+    thread_exit ();
+
+  // 3. w() kernel args to user_stack + populate() interrupt_frame{}
+  // TODO
+
+
+  // 4. kernel "context switch" to user ps
+  // see: intr_exit() in threads/intr-stubs.S
+  // start ps by simulating a return from interrupt -> jmp intr_exit(&if)
+  // intr_exit() passes intr_frame{}/stack_frame to user ps 
+  // intr_frame{}->%esp == cmdline on user_stack
+  asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
+  NOT_REACHED ();
+}
+
+
+
+
+
+
+
+
+
+// load() ELF from fs into current_thread
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
@@ -215,19 +265,18 @@ load (const char *file_name, void (**eip) (void), void **esp)
   bool success = false;
   int i;
 
-  /* Allocate and activate page directory. */
+  // init() pagedir + supt + file
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
-
-  /* Open executable file. */
   file = filesys_open (file_name);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
+
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -316,69 +365,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   return success;
 }
 
-/* load() helpers. */
 
-static bool install_page (void *upage, void *kpage, bool writable);
 
-/* Checks whether PHDR describes a valid, loadable segment in
-   FILE and returns true if so, false otherwise. */
-static bool
-validate_segment (const struct Elf32_Phdr *phdr, struct file *file) 
-{
-  /* p_offset and p_vaddr must have the same page offset. */
-  if ((phdr->p_offset & PGMASK) != (phdr->p_vaddr & PGMASK)) 
-    return false; 
-
-  /* p_offset must point within FILE. */
-  if (phdr->p_offset > (Elf32_Off) file_length (file)) 
-    return false;
-
-  /* p_memsz must be at least as big as p_filesz. */
-  if (phdr->p_memsz < phdr->p_filesz) 
-    return false; 
-
-  /* The segment must not be empty. */
-  if (phdr->p_memsz == 0)
-    return false;
-  
-  /* The virtual memory region must both start and end within the
-     user address space range. */
-  if (!is_user_vaddr ((void *) phdr->p_vaddr))
-    return false;
-  if (!is_user_vaddr ((void *) (phdr->p_vaddr + phdr->p_memsz)))
-    return false;
-
-  /* The region cannot "wrap around" across the kernel virtual
-     address space. */
-  if (phdr->p_vaddr + phdr->p_memsz < phdr->p_vaddr)
-    return false;
-
-  /* Disallow mapping page 0.
-     Not only is it a bad idea to map page 0, but if we allowed
-     it then user code that passed a null pointer to system calls
-     could quite likely panic the kernel by way of null pointer
-     assertions in memcpy(), etc. */
-  if (phdr->p_vaddr < PGSIZE)
-    return false;
-
-  /* It's okay. */
-  return true;
-}
-
-/* Loads a segment starting at offset OFS in FILE at address
-   UPAGE.  In total, READ_BYTES + ZERO_BYTES bytes of virtual
-   memory are initialized, as follows:
-
-        - READ_BYTES bytes at UPAGE must be read from FILE
-          starting at offset OFS.
-
-        - ZERO_BYTES bytes at UPAGE + READ_BYTES must be zeroed.
-
-   The pages initialized by this function must be writable by the
-   user process if WRITABLE is true, read-only otherwise.
-
-   Return true if successful, false if a memory allocation error
-   or disk read error occurs. */
 static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable) 
@@ -424,6 +412,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   return true;
 }
 
+
+
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
@@ -444,15 +434,9 @@ setup_stack (void **esp)
   return success;
 }
 
-/* Adds a mapping from user virtual address UPAGE to kernel
-   virtual address KPAGE to the page table.
-   If WRITABLE is true, the user process may modify the page;
-   otherwise, it is read-only.
-   UPAGE must not already be mapped.
-   KPAGE should probably be a page obtained from the user pool
-   with palloc_get_page().
-   Returns true on success, false if UPAGE is already mapped or
-   if memory allocation fails. */
+
+
+
 static bool
 install_page (void *upage, void *kpage, bool writable)
 {
@@ -463,3 +447,72 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
+
+
+
+
+
+/*******************************************************************/
+// helpers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*******************************************************************/
+/* Checks whether PHDR describes a valid, loadable segment in
+   FILE and returns true if so, false otherwise. */
+static bool
+validate_segment (const struct Elf32_Phdr *phdr, struct file *file) 
+{
+  /* p_offset and p_vaddr must have the same page offset. */
+  if ((phdr->p_offset & PGMASK) != (phdr->p_vaddr & PGMASK)) 
+    return false; 
+
+  /* p_offset must point within FILE. */
+  if (phdr->p_offset > (Elf32_Off) file_length (file)) 
+    return false;
+
+  /* p_memsz must be at least as big as p_filesz. */
+  if (phdr->p_memsz < phdr->p_filesz) 
+    return false; 
+
+  /* The segment must not be empty. */
+  if (phdr->p_memsz == 0)
+    return false;
+  
+  /* The virtual memory region must both start and end within the
+     user address space range. */
+  if (!is_user_vaddr ((void *) phdr->p_vaddr))
+    return false;
+  if (!is_user_vaddr ((void *) (phdr->p_vaddr + phdr->p_memsz)))
+    return false;
+
+  /* The region cannot "wrap around" across the kernel virtual
+     address space. */
+  if (phdr->p_vaddr + phdr->p_memsz < phdr->p_vaddr)
+    return false;
+
+  /* Disallow mapping page 0.
+     Not only is it a bad idea to map page 0, but if we allowed
+     it then user code that passed a null pointer to system calls
+     could quite likely panic the kernel by way of null pointer
+     assertions in memcpy(), etc. */
+  if (phdr->p_vaddr < PGSIZE)
+    return false;
+
+  /* It's okay. */
+  return true;
+}
+
+
+

@@ -15,6 +15,15 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
+  // TODO 
+  // read from intr_frame->esp
+
+
+
   printf ("system call!\n");
   thread_exit ();
 }
+
+
+// TODO
+// syscalls implementation
