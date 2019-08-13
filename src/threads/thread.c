@@ -32,21 +32,13 @@ static struct list ready_list;
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
-
 static struct list sleep_list; // threads waiting/sleeping
-
 static bool thread_init_finished = false;
 
-/* Idle thread. */
 static struct thread *idle_thread;
+static struct thread *initial_thread; // init.c:main()
+static struct lock tid_lock; // allocate_tid()
 
-/* Initial thread, the thread running init.c:main(). */
-static struct thread *initial_thread;
-
-/* Lock used by allocate_tid(). */
-static struct lock tid_lock;
-
-/* Stack frame for kernel_thread(). */
 struct kernel_thread_frame 
   {
     void *eip;                  /* Return address. */
@@ -125,7 +117,11 @@ thread_init (void)
 }
 
 
-// init() any thread (except initial_thread)
+
+
+
+
+// init() thread (except initial_thread)
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
@@ -163,6 +159,16 @@ init_thread (struct thread *t, const char *name, int priority)
   } else {
     t->priority = priority;
   }
+
+  sema_init(&t->sema_blocked_parent, 0);
+	sema_init(&t->sema_blocked_child, 0);
+	sema_init(&t->sema_load_elf, 0);
+
+	t->load_ELF_status = 0;	// normal
+	t->exited = false;
+	t->waited = false;
+	t->parent = thread_current();
+  t->total_fd = 2;
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
@@ -213,6 +219,8 @@ thread_current (void)
 }
 
 
+// kernel thread create a user child thread, called only by process_execute() n testing code
+// allocate() page + populate() thread and stack + register() threads list
 tid_t
 thread_create (const char *name, int priority,
                thread_func *function, void *aux) 
@@ -225,35 +233,33 @@ thread_create (const char *name, int priority,
 
   ASSERT (function != NULL);
 
-  /* Allocate thread. */
+  // 1. allocate() page for struct thread{} and stack + populate()
   t = palloc_get_page (PAL_ZERO);
   if (t == NULL)
     return TID_ERROR;
-  init_thread (t, name, priority);
+  init_thread (t, name, priority); // populate() thread
   tid = t->tid = allocate_tid ();
-
-  /* Stack frame for kernel_thread(). */
-  kf = alloc_frame (t, sizeof *kf);
+  kf = alloc_frame (t, sizeof *kf); // alloc stack space for kernel_thread
   kf->eip = NULL;
-  kf->function = function;
-  kf->aux = aux;
-
-  /* Stack frame for switch_entry(). */
-  ef = alloc_frame (t, sizeof *ef);
+  kf->function = function; // start_process()
+  kf->aux = aux; // cmdline
+  ef = alloc_frame (t, sizeof *ef); // switch_entry
   ef->eip = (void (*) (void)) kernel_thread;
-
-  /* Stack frame for switch_threads(). */
-  sf = alloc_frame (t, sizeof *sf);
+  sf = alloc_frame (t, sizeof *sf); // switch_threads
   sf->eip = switch_entry;
   sf->ebp = 0;
 
-  thread_unblock (t); // add to run queue.
-
+  // 2. add to run queue + kernel context_switch() to user
+  thread_unblock (t); 
   if (!thread_mlfqs && priority >= thread_current()->priority) {
     thread_yield();
   }
   return tid;
 }
+
+
+
+
 
 
 // void thread_yield_if_not_highest_priority(){

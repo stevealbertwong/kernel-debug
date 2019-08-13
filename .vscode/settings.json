@@ -10,6 +10,10 @@
         "thread.h": "c",
         "interrupt.h": "c",
         "string.h": "c",
-        "tests.h": "c"
+        "tests.h": "c",
+        "array": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "malloc.h": "c"
     }
 }

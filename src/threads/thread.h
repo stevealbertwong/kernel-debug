@@ -5,7 +5,6 @@
 #include <list.h>
 #include <stdint.h>
 
-/* States in a thread's life cycle. */
 enum thread_status
   {
     THREAD_RUNNING,     /* Running thread. */
@@ -16,13 +15,11 @@ enum thread_status
 
 typedef int tid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
-
 #define THREAD_AWAKE -1
-
-/* Thread priorities. */
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
 
 struct thread
   {
@@ -39,26 +36,43 @@ struct thread
     int64_t sleep_ticks;                // number of ticks thread to sleep
     struct list_elem sleep_elem;        // wait/sleep list 
     
-    int mlfq_priority;
-    int original_priority;               // 2nd_lock_highest_waiter() + next_thread_to_run()
+    int original_priority;              // 2nd_lock_highest_waiter() + next_thread_to_run()
     struct lock *lock_waiting_on;       // nested_doante_priority(), traverse() to highest holder 
-    // struct list_elem lock_elem;         // lock->block_threads[], lock_release() 2nd lock highest waiter
     struct list locks_acquired;         // thread_exit() free() all locks + lock_release() 2nd lock highest waiter    
+    // struct list_elem lock_elem;         // lock->block_threads[], lock_release() 2nd lock highest waiter
 
+    int mlfq_priority;
     int recent_cpu;                     // mlfqs, moving average of cpu usage
     int niceness;                       // mlfqs, inflat your recent_cpu, let other threads run
 
-#ifdef USERPROG
-    /* Owned by userprog/process.c. */
-    uint32_t *pagedir;                  /* Page directory. */
-#endif
+    struct thread *parent;              // check parent, child lineage
+    struct semaphore sema_blocked_parent;    // process_wait() -> store parent until all children exits
+    struct semaphore sema_blocked_child;     // process_exit() -> store child until parent get child's exit_status 
+    struct semaphore sema_load_elf;    // process_execute() wait til start_process() done loading ELF -> load_ELF_status
+    int load_ELF_status;                // kernel knows whether user thread load_elf successfully 
+    bool exited;                        // parent wont wait on already exited child 
+    bool waited;                        // wait() twice error
+    struct file *elf_file;              // disable/allow write
+    struct list fd_list;
+    int total_fd;
+
+    uint32_t *pagedir;                  
 
   };
 
-/* If false (default), use round-robin scheduler.
-   If true, use multi-level feedback queue scheduler.
-   Controlled by kernel command-line option "-o mlfqs". */
-extern bool thread_mlfqs;
+// 1 fd == 1 "open file"
+struct file_desc
+{
+	int id;
+	struct list_elem fd_list_elem;
+	struct file *f;
+	struct dir *d;
+};
+
+
+
+
+extern bool thread_mlfqs;               // round-robin vs mlfqs scheduler, kernel command-line option "-o mlfqs"
 
 void thread_init (void);
 void thread_start (void);

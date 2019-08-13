@@ -20,7 +20,7 @@
 #define PGSIZE  (1 << PGBITS)              /* Bytes in a page. */
 #define PGMASK  BITMASK(PGSHIFT, PGBITS)   /* Page offset bits (0:12). */
 
-/* Offset within a page. */
+// page offset bits (0:12)
 static inline unsigned pg_ofs (const void *va) {
   return (uintptr_t) va & PGMASK;
 }
@@ -66,24 +66,18 @@ is_kernel_vaddr (const void *vaddr)
   return vaddr >= PHYS_BASE;
 }
 
-/* Returns kernel virtual address at which physical address PADDR
-   is mapped. */
 static inline void *
-ptov (uintptr_t paddr)
+ptov (uintptr_t paddr) // 0.4GB
 {
   ASSERT ((void *) paddr < PHYS_BASE);
-
-  return (void *) (paddr + PHYS_BASE);
+  return (void *) (paddr + PHYS_BASE); // 3.4GB
 }
 
-/* Returns physical address at which kernel virtual address VADDR
-   is mapped. */
 static inline uintptr_t
-vtop (const void *vaddr)
+vtop (const void *vaddr) // 3.4GB 
 {
   ASSERT (is_kernel_vaddr (vaddr));
-
-  return (uintptr_t) vaddr - (uintptr_t) PHYS_BASE;
+  return (uintptr_t) vaddr - (uintptr_t) PHYS_BASE; // 0.4GB
 }
 
 #endif /* threads/vaddr.h */

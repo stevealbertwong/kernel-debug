@@ -3,12 +3,8 @@
 
 #include "threads/vaddr.h"
 
-/* Functions and macros for working with x86 hardware page
-   tables.
+/* Functions and macros for working with x86 hardware page tables.
 
-   See vaddr.h for more generic functions and macros for virtual
-   addresses.
-   
    Virtual addresses are structured as follows:
 
     31                  22 21                  12 11                   0
@@ -28,12 +24,10 @@
 #define PDBITS  10                         /* Number of page dir bits. */
 #define PDMASK  BITMASK(PDSHIFT, PDBITS)   /* Page directory bits (22:31). */
 
-/* Obtains page table index from a virtual address. */
 static inline unsigned pt_no (const void *va) {
   return ((uintptr_t) va & PTMASK) >> PTSHIFT;
 }
 
-/* Obtains page directory index from a virtual address. */
 static inline uintptr_t pd_no (const void *va) {
   return (uintptr_t) va >> PDSHIFT;
 }
@@ -67,40 +61,43 @@ static inline uintptr_t pd_no (const void *va) {
 #define PTE_A 0x20              /* 1=accessed, 0=not acccessed. */
 #define PTE_D 0x40              /* 1=dirty, 0=not dirty (PTEs only). */
 
-/* Returns a PDE that points to page table PT. */
-static inline uint32_t pde_create (uint32_t *pt) {
-  ASSERT (pg_ofs (pt) == 0);
-  return vtop (pt) | PTE_U | PTE_P | PTE_W;
+/**
+ * Page Directory Entry
+ * 
+ */
+static inline uint32_t pde_create (uint32_t *pt) { // 3.4GB
+  ASSERT (pg_ofs (pt) == 0); // 0-12 bits, since 4KB when palloc()
+  return vtop (pt) | PTE_U | PTE_P | PTE_W; // 0.4GB
 }
 
-/* Returns a pointer to the page table that page directory entry
-   PDE, which must "present", points to. */
-static inline uint32_t *pde_get_pt (uint32_t pde) {
+static inline uint32_t *pde_get_pt (uint32_t pde) { // 0.4GB
   ASSERT (pde & PTE_P);
-  return ptov (pde & PTE_ADDR);
+  return ptov (pde & PTE_ADDR); // 3.4GB & 32-12 bits 
 }
 
-/* Returns a PTE that points to PAGE.
-   The PTE's page is readable.
-   If WRITABLE is true then it will be writable as well.
-   The page will be usable only by ring 0 code (the kernel). */
+/**
+ * Page Table Entry
+ * 
+ */
+
+// create() kernel pte -> VA to PA
+// returns a PTE that points to page(kpage/frame page) of actual data
+// flags 3 bits: user, writable, present
+// only call once when init() kernel page_dir
+// e.g. page = 3.7GB (kpage)
 static inline uint32_t pte_create_kernel (void *page, bool writable) {
   ASSERT (pg_ofs (page) == 0);
-  return vtop (page) | PTE_P | (writable ? PTE_W : 0);
+  return vtop (page) | PTE_P | (writable ? PTE_W : 0); // 0.7 GB
 }
 
-/* Returns a PTE that points to PAGE.
-   The PTE's page is readable.
-   If WRITABLE is true then it will be writable as well.
-   The page will be usable by both user and kernel code. */
+// call when create() user page_dir
 static inline uint32_t pte_create_user (void *page, bool writable) {
   return pte_create_kernel (page, writable) | PTE_U;
 }
 
-/* Returns a pointer to the page that page table entry PTE points
-   to. */
-static inline void *pte_get_page (uint32_t pte) {
-  return ptov (pte & PTE_ADDR);
+// return VA, with only the first 20 bits
+static inline void *pte_get_page (uint32_t pte) { // 0.7GB
+  return ptov (pte & PTE_ADDR); // 3.7
 }
 
 #endif /* threads/pte.h */

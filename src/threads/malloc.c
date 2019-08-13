@@ -9,33 +9,9 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 
-/* A simple implementation of malloc().
+#define ARENA_MAGIC 0x9a548eed // Magic number for detecting arena corruption
 
-   The size of each request, in bytes, is rounded up to a power
-   of 2 and assigned to the "descriptor" that manages blocks of
-   that size.  The descriptor keeps a list of free blocks.  If
-   the free list is nonempty, one of its blocks is used to
-   satisfy the request.
-
-   Otherwise, a new page of memory, called an "arena", is
-   obtained from the page allocator (if none is available,
-   malloc() returns a null pointer).  The new arena is divided
-   into blocks, all of which are added to the descriptor's free
-   list.  Then we return one of the new blocks.
-
-   When we free a block, we add it to its descriptor's free list.
-   But if the arena that the block was in now has no in-use
-   blocks, we remove all of the arena's blocks from the free list
-   and give the arena back to the page allocator.
-
-   We can't handle blocks bigger than 2 kB using this scheme,
-   because they're too big to fit in a single page with a
-   descriptor.  We handle those by allocating contiguous pages
-   with the page allocator and sticking the allocation size at
-   the beginning of the allocated block's arena header. */
-
-/* Descriptor. */
-struct desc
+struct desc // 
   {
     size_t block_size;          /* Size of each element in bytes. */
     size_t blocks_per_arena;    /* Number of blocks in an arena. */
@@ -43,10 +19,6 @@ struct desc
     struct lock lock;           /* Lock. */
   };
 
-/* Magic number for detecting arena corruption. */
-#define ARENA_MAGIC 0x9a548eed
-
-/* Arena. */
 struct arena 
   {
     unsigned magic;             /* Always set to ARENA_MAGIC. */
@@ -54,20 +26,18 @@ struct arena
     size_t free_cnt;            /* Free blocks; pages in big block. */
   };
 
-/* Free block. */
 struct block 
   {
     struct list_elem free_elem; /* Free list element. */
   };
 
-/* Our set of descriptors. */
 static struct desc descs[10];   /* Descriptors. */
 static size_t desc_cnt;         /* Number of descriptors. */
 
 static struct arena *block_to_arena (struct block *);
 static struct block *arena_to_block (struct arena *, size_t idx);
 
-/* Initializes the malloc() descriptors. */
+// init descriptors
 void
 malloc_init (void) 
 {
@@ -153,8 +123,7 @@ malloc (size_t size)
   return b;
 }
 
-/* Allocates and return A times B bytes initialized to zeroes.
-   Returns a null pointer if memory is not available. */
+// malloc A times B bytes initialized to zeroes
 void *
 calloc (size_t a, size_t b) 
 {

@@ -7,11 +7,9 @@
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
 
-/* Identifies an inode. */
-#define INODE_MAGIC 0x494e4f44
+#define INODE_MAGIC 0x494e4f44  /* Identifies an inode. */
 
-/* On-disk inode.
-   Must be exactly BLOCK_SECTOR_SIZE bytes long. */
+// inode (on hard disk)
 struct inode_disk
   {
     block_sector_t start;               /* First data sector. */
@@ -20,15 +18,8 @@ struct inode_disk
     uint32_t unused[125];               /* Not used. */
   };
 
-/* Returns the number of sectors to allocate for an inode SIZE
-   bytes long. */
-static inline size_t
-bytes_to_sectors (off_t size)
-{
-  return DIV_ROUND_UP (size, BLOCK_SECTOR_SIZE);
-}
 
-/* In-memory inode. */
+// inode (in memory)
 struct inode 
   {
     struct list_elem elem;              /* Element in inode list. */
@@ -38,6 +29,14 @@ struct inode
     int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
     struct inode_disk data;             /* Inode content. */
   };
+
+
+
+static inline size_t
+bytes_to_sectors (off_t size)
+{
+  return DIV_ROUND_UP (size, BLOCK_SECTOR_SIZE);
+}
 
 /* Returns the block device sector that contains byte offset POS
    within INODE.
@@ -64,11 +63,10 @@ inode_init (void)
   list_init (&open_inodes);
 }
 
-/* Initializes an inode with LENGTH bytes of data and
-   writes the new inode to sector SECTOR on the file system
-   device.
-   Returns true if successful.
-   Returns false if memory or disk allocation fails. */
+
+
+
+
 bool
 inode_create (block_sector_t sector, off_t length)
 {
@@ -105,9 +103,13 @@ inode_create (block_sector_t sector, off_t length)
   return success;
 }
 
-/* Reads an inode from SECTOR
-   and returns a `struct inode' that contains it.
-   Returns a null pointer if memory allocation fails. */
+
+
+
+
+
+
+
 struct inode *
 inode_open (block_sector_t sector)
 {
