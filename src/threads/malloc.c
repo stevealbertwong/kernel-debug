@@ -10,6 +10,8 @@
 #include "threads/vaddr.h"
 
 #define ARENA_MAGIC 0x9a548eed // Magic number for detecting arena corruption
+static size_t block_size (void *block);
+
 
 // global malloc table
 // desc == 1 type of memory size unit e.g. 32 byte
@@ -273,7 +275,6 @@ realloc (void *old_block, size_t new_size)
 }
 
 
-/* Returns the number of bytes allocated for BLOCK. */
 static size_t
 block_size (void *block) 
 {
