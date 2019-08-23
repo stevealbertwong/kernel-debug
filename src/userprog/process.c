@@ -99,10 +99,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 /*******************************************************************/
 
-// kernel parent thread !!!!!!
-// kernel user synch -> start_process(), wait until ELF finishes loading
+// kernel user single synch -> start_process(), wait until finish loading ELF
 tid_t
-process_execute (const char *file_name) 
+process_execute (const char *file_name) // kernel parent thread !!!!!!
 {
   char *fn_copy;
   tid_t tid;
@@ -125,50 +124,46 @@ process_execute (const char *file_name)
   // kernel wait for child thread start_process() to finish !!!!!
   // process_wait() could access load_ELF_status
   struct thread *child_thread = tid_to_thread(tid);
-  sema_down(&child_thread->sema_load_elf);
+  sema_down(&child_thread->sema_load_elf); // kernel_thread{} ready_list[] -> sema_load_elf[]
 
+  palloc_free_page (fn_copy);
   return tid;
 }
 
 
 
 
-
-// parent children double synchronization
-// parent wait for children die before it exits + child wait till parent receives its exit_status
+// parent child double synchronization (parent perspective)
+// parent wait for child die before it exits + child wait till parent receives its exit_status
 // e.g. wait(exec("elf_file")) -> child thread runs ELF, parent thread runs wait()
 int
-process_wait (tid_t child_tid) 
+process_wait (tid_t child_tid) // child_tid == child thread's pid 
 {
 	struct thread *child_thread, *parent_thread;
 	parent_thread = thread_current();
 	child_thread = tid_to_thread(child_tid);
 
-	// 1. all reasons parent does not need to wait for child
-	// -> wrong child_tid 
-	// -> no parent child relationship
-  // -> wait() twice error
+	// 1. exception cases: all reasons parent does not need to wait for child
+	// -> wrong child_tid / no parent child relationship / wait() twice error
 	if (child_thread == NULL || child_thread->parent != parent_thread || child_thread->waited)
 		return -1;
-	// -> child error status
-  // -> child already exited
+	// -> child error status / child already exited
 	if (child_thread->load_ELF_status != 0 || child_thread->exited == true)
 		return child_thread->load_ELF_status;
 
-  // 2. parent children double synchronization
-	sema_down(&child_thread->sema_blocked_parent); // parent_thread -> child.sema.waiters[]
+  // 2. trible synch -> parent child double synch + kernel user single synch
+	sema_down(&child_thread->sema_blocked_parent); // parent_thread block itself -> child.sema.waiters[]
 	// <---- restart point, child is exiting, lets get its load_ELF_status
 	int ret = child_thread->load_ELF_status; // child wont exit until parent get return status from 
-	sema_up(&child_thread->sema_blocked_child); // let child exit
-	child_thread->waited = true; // wait() twice error
-	return ret;
+	sema_up(&child_thread->sema_blocked_child); // unblock child, let child exit
+	child_thread->waited = true; // prevent wait() twice error
+	
+  return ret;
 }
 
 
 
-
-
-// parent children double synchronization + free resources
+// parent children double synchronization (child perspective)
 void
 process_exit (void)
 {
@@ -208,24 +203,9 @@ process_exit (void)
 
 
 
-void
-process_activate (void)
-{
-  struct thread *t = thread_current ();
-
-  /* Activate thread's page tables. */
-  pagedir_activate (t->pagedir);
-
-  /* Set thread's kernel stack for use in processing
-     interrupts. */
-  tss_update ();
-}
-
-
-
 
 /*******************************************************************/
-// major helpers
+// major implementations to load ELF
 
 
 
@@ -243,9 +223,8 @@ process_activate (void)
 
 
 /*******************************************************************/
-
-// child thread in user space !!!!!
-// threaded function spawned by kernel to run ELF
+// child user thread threaded function 
+// spawned by kernel thread process_execute() to run ELF
 static void
 start_process (void *file_name_)
 {
@@ -255,7 +234,8 @@ start_process (void *file_name_)
   struct thread *user_thread = thread_current();
 
 
-  // 1. init() interrupt_frame{} 
+  // 1. artificial intr_frame{} 
+  // intr_fra{} indexes() user stack when assembly start ps
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
@@ -266,22 +246,8 @@ start_process (void *file_name_)
   // + init() pagedir, supt + notify kernel + deny_write(elf)
   success = load (file_name, &if_.eip, &if_.esp);
   palloc_free_page (file_name);
-  // notify kernel that has been waiting for load() "success" 
-  if (!success) {
-    user_thread->load_ELF_status = -1; // error
-    sema_up(&user_thread->sema_load_elf); 
-    thread_exit ();
-  } else {
-    user_thread->load_ELF_status = 0; // success
-    sema_up(&user_thread->sema_load_elf);
-    user_thread->elf_file = filesys_open(file_name);
-	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
-  }
-    
 
-  // 3. w() kernel args from intr_frame{} to user_stack 
-  // TODO
-  // malloc() ??
+  // 3. push kernel args to user_stack 
   char **cmdline_tokens = (char**) palloc_get_page(0); 
   char* token;
   char* save_ptr;
@@ -294,15 +260,27 @@ start_process (void *file_name_)
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
 
 
-  // 4. kernel "interrupt switch" to user ps  
+  // 4. unblock kernel_thread after load_elf() + push_cmdline_tokens()
+  if (!success) {
+    user_thread->load_ELF_status = -1; // error
+    sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
+    thread_exit ();
+  } else {
+    user_thread->load_ELF_status = 0; // success
+    sema_up(&user_thread->sema_load_elf);
+    user_thread->elf_file = filesys_open(file_name);
+	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
+  }
+    
+
+
+  // 5. kernel "interrupt switch" to user ps  
   // start ps by simulating a return from interrupt i.e. jmp intr_exit(&if)
   // intr_exit() passes intr_frame{}/stack_frame to user ps 
   // pop to segment registers : intr_frame{}->%esp == cmdline stored on user_stack
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
-
-
 
 
 
@@ -394,7 +372,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
     
-  // 3. read() ELF into PA 
+  // 3. palloc() code/text/bss + read() ELF into PA 
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable))
                 goto done;
@@ -404,7 +382,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
           break;
         }
     }
-  // 4. allocate page for user stack and index() at if_.esp
+  // 4. palloc() user stack and index() at if_.esp
   if (!setup_stack (esp))
     goto done;
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
@@ -417,7 +395,68 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
 
 
+// x86 calling convention before intr_exit(intr_frame) to start running ELF
+static void
+push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
+{
+  ASSERT(argc >= 0);
+  
+  // push cmdline_tokens to user stack
+  int i, len = 0;
+  void* argv_addr[argc];
+  for (i = 0; i < argc; i++) {
+    len = strlen(cmdline_tokens[i]) + 1;
+    *esp -= len; // "-ve increment" esp
+    memcpy(*esp, cmdline_tokens[i], len);
+    argv_addr[i] = *esp; // each cmdtoken's stack addr
+  }
 
+  // word align with 0 paddings
+  *esp = (void*)((unsigned int)(*esp) & 0xfffffffc);
+
+  // last null before argv[]
+  *esp -= 4; // 4 bytes
+  *((uint32_t*) *esp) = 0;
+
+  // push argv[]
+  for (i = argc - 1; i >= 0; i--) {
+    *esp -= 4;
+    *((void**) *esp) = argv_addr[i];
+  }
+
+  // push argv
+  *esp -= 4;
+  *((void**) *esp) = (*esp + 4);
+
+  // push argc
+  *esp -= 4;
+  *((int*) *esp) = argc;
+
+  // push null as ret addr
+  *esp -= 4;
+  *((int*) *esp) = 0;
+}
+
+
+/*******************************************************************/
+//key helpers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*******************************************************************/
 
 
 // read() ELF into PA 
@@ -455,11 +494,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 }
 
 
-
-
-
-
-// allocate page for stack
+// palloc() user stack + u() pagedir 
 static bool
 setup_stack (void **esp) 
 {
@@ -478,7 +513,7 @@ setup_stack (void **esp)
   return success;
 }
 
-
+// update() pagedir
 static bool
 install_page (void *upage, void *kpage, bool writable)
 {
@@ -489,52 +524,6 @@ install_page (void *upage, void *kpage, bool writable)
 }
 
 
-
-
-
-
-
-// last step in start_process() before intr_exit(intr_frame) n starts running ELF
-static void
-push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
-{
-  ASSERT(argc >= 0);
-
-  int i, len = 0;
-  void* argv_addr[argc];
-  for (i = 0; i < argc; i++) {
-    len = strlen(cmdline_tokens[i]) + 1;
-    *esp -= len;
-    memcpy(*esp, cmdline_tokens[i], len);
-    argv_addr[i] = *esp;
-  }
-
-  // word align
-  *esp = (void*)((unsigned int)(*esp) & 0xfffffffc);
-
-  // last null
-  *esp -= 4; // 4 bytes
-  *((uint32_t*) *esp) = 0;
-
-  // setting **esp with argvs
-  for (i = argc - 1; i >= 0; i--) {
-    *esp -= 4;
-    *((void**) *esp) = argv_addr[i];
-  }
-
-  // setting **argv (addr of stack, esp)
-  *esp -= 4;
-  *((void**) *esp) = (*esp + 4);
-
-  // setting argc
-  *esp -= 4;
-  *((int*) *esp) = argc;
-
-  // setting ret addr
-  *esp -= 4;
-  *((int*) *esp) = 0;
-
-}
 
 
 /*******************************************************************/
@@ -554,6 +543,21 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
 
 
 /*******************************************************************/
+
+void
+process_activate (void)
+{
+  struct thread *t = thread_current ();
+
+  /* Activate thread's page tables. */
+  pagedir_activate (t->pagedir);
+
+  /* Set thread's kernel stack for use in processing
+     interrupts. */
+  tss_update ();
+}
+
+
 /* Checks whether PHDR describes a valid, loadable segment in
    FILE and returns true if so, false otherwise. */
 static bool

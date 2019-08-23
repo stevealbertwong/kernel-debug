@@ -5,7 +5,7 @@
 #include "threads/thread.h"
 
 static void syscall_handler (struct intr_frame *);
-struct lock file_lock; // multi-threads access same file
+struct lock file_lock; // global file lock -> multi-threads access same file
 
 void
 syscall_init (void) 
@@ -13,13 +13,9 @@ syscall_init (void)
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
-
-
 /***************************************************************/
-// kernel side redirect to syscall implementation
-// e.g. parse() intr_frame->esp, then syscall_exec(), then process_execute()
-
-
+// kernel side syscall starting point -> redirect to implementation 
+// e.g. parse() args from intr_frame->esp, then syscall_exec(arg), then process_execute(arg)
 
 
 
@@ -50,14 +46,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 		case SYS_HALT:
 			system_call_halt();
 			break;
-		case SYS_EXIT:
-			if (is_user_vaddr(argument + 1))
-				system_call_exit(*(argument + 1));
-			else
-				system_call_exit(-1);
-			break;
+
 		
-		// PS
+		// PS + VM
 		case SYS_EXEC:
 			if (is_user_vaddr(argument + 1))
 				ret_val = system_call_exec((const char *) *(argument + 1));
@@ -70,7 +61,14 @@ syscall_handler (struct intr_frame *f UNUSED)
 			else
 				system_call_exit(-1);
 			break;
-		
+		case SYS_EXIT:
+			if (is_user_vaddr(argument + 1))
+				system_call_exit(*(argument + 1));
+			else
+				system_call_exit(-1);
+			break;
+
+
 		// FS
 		case SYS_CREATE:
 			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2))
@@ -133,17 +131,19 @@ syscall_handler (struct intr_frame *f UNUSED)
 			else
 				system_call_exit(-1);
 			break;
+	
+	// syscall return thru intr_frame{}, then intr_exit(),
+	// then back to user side syscall(), then user program
+	f->eax = ret_val;
 }
-
-
-
-
-// TODO
-// when lock_acquire() ??
 
 /***************************************************************/
 // PS kernel side syscalls implementation
 
+// TODO
+// when lock_acquire() ??
+
+
 
 
 
@@ -158,14 +158,33 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 /***************************************************************/
 
-void system_call_halt(void)
+/**
+ * Runs the executable whose name is given in cmd_line, 
+ * passing any given arguments, and returns the new process's program id (pid). 
+ */ 
+pid_t system_call_exec(const char *cmd_line)
 {
-	shutdown_power_off();
+	tid_t tid;
+	lock_acquire(&file_lock);
+	tid = process_execute(cmd_line);
+	lock_release(&file_lock);
+	return tid;
 }
 
 
+int system_call_wait(pid_t pid)
+{
+	// why no lock ?? double dead lock when called with exec() ??
+	return process_wait(pid);
+}
 
 
+/**
+ * 
+ * Terminates the current user program, returning status to the kernel. 
+ * If the process's parent waits for it (see below), this is the status that will be returned. Conventionally,
+ * a status of 0 indicates success and nonzero values indicate errors.
+ */ 
 void system_call_exit(int status)
 {
 	struct thread *t;
@@ -190,24 +209,27 @@ void system_call_exit(int status)
 	thread_exit();
 }
 
-pid_t system_call_exec(const char *cmd_line)
+
+
+void system_call_halt(void)
 {
-	tid_t tid;
-	lock_acquire(&file_lock);
-	tid = process_execute(cmd_line);
-	lock_release(&file_lock);
-	return tid;
+	shutdown_power_off();
 }
 
-int system_call_wait(pid_t pid)
-{
-	return process_wait(pid);
-}
+
+
 
 
 /***************************************************************/ 
 // FS kernel side syscalls implementation
-// mostly on thread->fd_list[]
+// mostly thread->fd_list[i]->file or thread->fd_list[i]->dir
+
+// TODO -> change global FS syscall lock to read write lock
+
+// why fd ?? quick access fd_list, instead of for loop filename search
+
+
+
 
 
 
@@ -221,46 +243,25 @@ int system_call_wait(pid_t pid)
 
 /***************************************************************/
 
-
-// creates an empty file or sub_dir without opening it
-bool system_call_create(const char *file, unsigned initial_size)
-{
-	if (file != NULL)
-	{
-		lock_acquire(&file_lock);
-		bool success = filesys_create(file, initial_size);
-		lock_release(&file_lock);
-		return success;
-	}
-	else
-		system_call_exit(-1);
-	return false;
-}
-
-
-bool system_call_remove(const char *file)
-{
-	if (file != NULL)
-	{
-		lock_acquire(&file_lock);
-		bool success = filesys_remove(file);
-		lock_release(&file_lock);
-		return success;
-	}
-	else
-		system_call_exit(-1);
-	return false;
-}
-
-
-
-// append() "opened file" in thread->fd_list[]
+/**
+ * Returns a nonnegative integer handle - "file descriptor" (fd)
+ * or -1 if the file could not be opened.
+ * fd 0 (STDIN_FILENO) is standard input, fd 1 (STDOUT_FILENO) is standard output. 
+ * Each process has an independent set of file descriptors
+ * 
+ * 1. given file_name, find inode + malloc(), populate() file{}
+ * 2. malloc() file_desc{}
+ * 3. append() file{} to file_desc{}
+ * 4. append() file_desc{} to fd_list[]
+ * 
+ * NOTE: user thread(not switched to kernel thread) running kernel code
+ */
 int system_call_open(char *file_name)
 {
 	if (file_name != NULL)
 	{
-		// 1. malloc() file{}
-		lock_acquire(&file_lock); //multi-threads open() same file
+		// 1. given file_name, find inode + malloc(), populate() file{}
+		lock_acquire(&file_lock); // multi-threads open() same file
 		struct file *file = filesys_open(file_name);
 		lock_release(&file_lock);
 		if (file == NULL)
@@ -295,9 +296,15 @@ int system_call_open(char *file_name)
 }
 
 
-
-
-// check fd, buffer + for-loop() file_desc + file_read()
+/**
+ * Reads size bytes from the file open as fd into buffer. 
+ * Returns the number of bytes actually read (0 at end of file), 
+ * or -1 if the file could not be read (due to a condition other than end of file). 
+ * 
+ * 1. check fd, buffer 
+ * 2. for-loop() file_desc 
+ * 3. file_read()
+ */ 
 int system_call_read(int fd, void *buffer, unsigned size)
 {
 	// 1. check buffer
@@ -306,16 +313,16 @@ int system_call_read(int fd, void *buffer, unsigned size)
 
 	// 1. check fd
 	switch (fd){
-	case STDIN_FILENO:
+	case STDIN_FILENO://Fd0/STDIN reads from keyboard w input_getc()
 		unsigned int offset = 0;
 		for (offset = 0; offset < size; ++offset)
 			*(uint8_t *) (buffer + offset) = input_getc();
 		return size;
-	case STDOUT_FILENO:
+	case STDOUT_FILENO: // standard out
 		return -1;
 	
+	// 2. for-loop() file_desc
 	default:
-		// 2. for-loop() file_desc
 		lock_acquire(&file_lock);
 		struct file_desc *file_desc = get_file_desc(fd);
 		lock_release(&file_lock);
@@ -332,8 +339,12 @@ int system_call_read(int fd, void *buffer, unsigned size)
 }
 
 
-
-
+/**
+ * Writes size bytes from buffer to the open file fd. 
+ * Returns the number of bytes actually written,
+ * 
+ * 
+ */ 
 // check fd, buffer + for-loop() file_desc + file_write()
 int system_call_write(int fd, const void *buffer, unsigned size)
 {
@@ -351,7 +362,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	
 	default: // normal fd
 		// 2. for-loop() file_desc
-		lock_acquire(&file_lock); // ?? read-only necessary
+		lock_acquire(&file_lock);
 		struct file_desc *file_desc = get_file_desc(fd);
 		lock_release(&file_lock);
 		if (file_desc == NULL || file_desc->d != NULL){
@@ -368,21 +379,42 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 }
 
 
-
-void system_call_seek(int fd, unsigned position)
+/**
+ * creates an empty file or sub_dir without opening it 
+ * no fd involved !!!!
+ */ 
+bool system_call_create(const char *file, unsigned initial_size)
 {
-	
-	lock_acquire(&file_lock);
-	struct file_desc *file_desc = get_file_desc(fd);
-	lock_release(&file_lock);
-
-	if (file_desc == NULL || file_desc->d != NULL)
+	if (file != NULL)
+	{
+		lock_acquire(&file_lock);
+		bool success = filesys_create(file, initial_size);
+		lock_release(&file_lock);
+		return success;
+	}
+	else
 		system_call_exit(-1);
-	lock_acquire(&file_lock);
-	file_seek(file_desc->f, position);
-	lock_release(&file_lock);
+	return false;
 }
 
+
+/**
+ * Deletes a file called "file" without opening it 
+ * no fd involved !!!!
+ */ 
+bool system_call_remove(const char *file)
+{
+	if (file != NULL)
+	{
+		lock_acquire(&file_lock);
+		bool success = filesys_remove(file);
+		lock_release(&file_lock);
+		return success;
+	}
+	else
+		system_call_exit(-1);
+	return false;
+}
 
 
 // when seek pointer is
@@ -406,7 +438,29 @@ unsigned system_call_tell(int fd)
 
 
 
+void system_call_seek(int fd, unsigned position)
+{
+	
+	lock_acquire(&file_lock);
+	struct file_desc *file_desc = get_file_desc(fd);
+	lock_release(&file_lock);
 
+	if (file_desc == NULL || file_desc->d != NULL)
+		system_call_exit(-1);
+	lock_acquire(&file_lock);
+	file_seek(file_desc->f, position);
+	lock_release(&file_lock);
+}
+
+
+/**
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
 void system_call_close(int fd)
 {
 	// 1. for-loop thread->fd_list[] for file_desc{}
@@ -431,8 +485,14 @@ void system_call_close(int fd)
 }
 
 
-
-
+/**
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
 int system_call_filesize(int fd)
 {
 	// 1. for-loop thread->fd_list[] for file_desc{}
@@ -449,27 +509,6 @@ int system_call_filesize(int fd)
 
 	return size;
 }
-
-
-
-
-/***************************************************************/
-// helper
-
-
-
-
-
-
-
-
-
-
-
-
-/***************************************************************/
-
-
 
 
 
@@ -491,3 +530,27 @@ get_file_desc(int fd)
 
 	return NULL;
 }
+
+
+
+
+/***************************************************************/ 
+// VM kernel side syscalls implementation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/***************************************************************/

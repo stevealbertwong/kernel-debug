@@ -3,7 +3,6 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 
-/* An open file. */
 struct file 
   {
     struct inode *inode;        /* File's inode. */
@@ -11,9 +10,23 @@ struct file
     bool deny_write;            /* Has file_deny_write() been called? */
   };
 
-/* Opens a file for the given INODE, of which it takes ownership,
-   and returns the new file.  Returns a null pointer if an
-   allocation fails or if INODE is null. */
+
+/***************************************************************/
+// APIs 
+
+
+
+
+
+
+
+
+
+
+
+
+/***************************************************************/
+
 struct file *
 file_open (struct inode *inode) 
 {
@@ -33,8 +46,6 @@ file_open (struct inode *inode)
     }
 }
 
-/* Opens and returns a new file for the same inode as FILE.
-   Returns a null pointer if unsuccessful. */
 struct file *
 file_reopen (struct file *file) 
 {
@@ -60,11 +71,6 @@ file_get_inode (struct file *file)
   return file->inode;
 }
 
-/* Reads SIZE bytes from FILE into BUFFER,
-   starting at the file's current position.
-   Returns the number of bytes actually read,
-   which may be less than SIZE if end of file is reached.
-   Advances FILE's position by the number of bytes read. */
 off_t
 file_read (struct file *file, void *buffer, off_t size) 
 {
@@ -73,11 +79,6 @@ file_read (struct file *file, void *buffer, off_t size)
   return bytes_read;
 }
 
-/* Reads SIZE bytes from FILE into BUFFER,
-   starting at offset FILE_OFS in the file.
-   Returns the number of bytes actually read,
-   which may be less than SIZE if end of file is reached.
-   The file's current position is unaffected. */
 off_t
 file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs) 
 {

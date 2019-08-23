@@ -9,43 +9,23 @@
 
 /* Partition that contains the file system. */
 struct block *fs_device;
-
 static void do_format (void);
 
+/***************************************************************/
+// APIs 
 
 
 
 
 
 
-void
-filesys_init (bool format) 
-{
-  fs_device = block_get_role (BLOCK_FILESYS);
-  if (fs_device == NULL)
-    PANIC ("No file system device found, can't initialize file system.");
-
-  inode_init ();
-  free_map_init ();
-
-  if (format) 
-    do_format ();
-
-  free_map_open ();
-}
 
 
 
 
 
-void
-filesys_done (void) 
-{
-  free_map_close ();
-}
-
 
-
+/***************************************************************/
 
 
 // creates an empty file or sub_dir 
@@ -67,9 +47,6 @@ filesys_create (const char *name, off_t initial_size)
 
 
 
-
-
-
 // given file path, traverse hard disk, return file
 struct file *
 filesys_open (const char *name)
@@ -86,12 +63,6 @@ filesys_open (const char *name)
 
 
 
-
-
-
-
-
-
 bool
 filesys_remove (const char *name) 
 {
@@ -104,8 +75,21 @@ filesys_remove (const char *name)
 
 
 
+/***************************************************************/
+// helpers 
 
 
+
+
+
+
+
+
+
+
+
+
+/***************************************************************/
 
 
 static void
@@ -118,3 +102,29 @@ do_format (void)
   free_map_close ();
   printf ("done.\n");
 }
+
+
+void
+filesys_init (bool format) 
+{
+  fs_device = block_get_role (BLOCK_FILESYS);
+  if (fs_device == NULL)
+    PANIC ("No file system device found, can't initialize file system.");
+
+  inode_init ();
+  free_map_init ();
+  // TODO: init() buffer cache
+
+  if (format) 
+    do_format ();
+
+  free_map_open ();
+}
+
+
+void
+filesys_done (void) 
+{
+  free_map_close ();
+}
+

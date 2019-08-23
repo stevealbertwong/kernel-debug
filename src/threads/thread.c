@@ -119,9 +119,7 @@ thread_init (void)
 
 
 
-
-
-// init() thread (except initial_thread)
+// init() normal thread (except initial_thread)
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
@@ -160,7 +158,9 @@ init_thread (struct thread *t, const char *name, int priority)
     t->priority = priority;
   }
 
-  sema_init(&t->sema_blocked_parent, 0);
+  #ifdef USERPROG // process_wait() 
+
+  sema_init(&t->sema_blocked_parent, 0); //store 1 blocked thd
 	sema_init(&t->sema_blocked_child, 0);
 	sema_init(&t->sema_load_elf, 0);
 
@@ -169,6 +169,12 @@ init_thread (struct thread *t, const char *name, int priority)
 	t->waited = false;
 	t->parent = thread_current();
   t->total_fd = 2;
+
+  #endif
+
+  #ifdef FILESYSTEM
+  // list_init(&t->fd_list);
+  #endif
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
@@ -1060,6 +1066,20 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 /************************************************************/
 
 
+struct thread *
+tid_to_thread(tid_t tid)
+{
+	struct list_elem *e;
+	for (e = list_begin(&all_list); e != list_end(&all_list); e = list_next(e))
+	{
+		struct thread *t = list_entry(e, struct thread, all_elem);
+		ASSERT(is_thread(t));
+		if (t->tid == tid)
+			return t;
+	}
+	return NULL;
+}
+
 
 void
 thread_print_stats (void) 
@@ -1104,8 +1124,6 @@ is_thread (struct thread *t)
 {
   return t != NULL && t->magic == THREAD_MAGIC;
 }
-
-
 
 
 
