@@ -63,6 +63,7 @@ static void paging_init (void);
 static char **read_command_line (void);
 static char **parse_options (char **argv);
 static void run_actions (char **argv);
+static void run_task (char **argv);
 static void usage (void);
 
 #ifdef FILESYS

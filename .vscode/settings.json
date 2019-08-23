@@ -15,6 +15,7 @@
         "initializer_list": "c",
         "utility": "c",
         "malloc.h": "c",
-        "syscall.h": "c"
+        "syscall.h": "c",
+        "init.h": "c"
     }
 }
