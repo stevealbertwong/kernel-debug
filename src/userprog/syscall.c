@@ -268,13 +268,13 @@ void system_call_halt(void)
  * 
  * NOTE: user thread(not switched to kernel thread) running kernel code
  */
-int system_call_open(const char *file)
+int system_call_open(const char *file_name)
 {
-	if (file != NULL)
+	if (file_name != NULL)
 	{
 		// 1. given file_name, find inode + malloc(), populate() file{}
 		lock_acquire(&file_lock); // multi-threads open() same file
-		struct file *file = filesys_open(file);
+		struct file *file = filesys_open(file_name);
 		lock_release(&file_lock);
 		if (file == NULL)
 			return -1;
@@ -395,12 +395,12 @@ int system_call_write(int fd, const void *buffer, unsigned size)
  * creates an empty file or sub_dir without opening it 
  * no fd involved !!!!
  */ 
-bool system_call_create(const char *file, unsigned initial_size)
+bool system_call_create(const char *file_name, unsigned initial_size)
 {
-	if (file != NULL)
+	if (file_name != NULL)
 	{
 		lock_acquire(&file_lock);
-		bool success = filesys_create(file, initial_size);
+		bool success = filesys_create(file_name, initial_size);
 		lock_release(&file_lock);
 		return success;
 	}
@@ -414,12 +414,12 @@ bool system_call_create(const char *file, unsigned initial_size)
  * Deletes a file called "file" without opening it 
  * no fd involved !!!!
  */ 
-bool system_call_remove(const char *file)
+bool system_call_remove(const char *file_name)
 {
-	if (file != NULL)
+	if (file_name != NULL)
 	{
 		lock_acquire(&file_lock);
-		bool success = filesys_remove(file);
+		bool success = filesys_remove(file_name);
 		lock_release(&file_lock);
 		return success;
 	}

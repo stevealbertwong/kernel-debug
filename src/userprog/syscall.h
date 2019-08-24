@@ -13,9 +13,9 @@ void system_call_halt(void);									 //CallNumber: 0
 void system_call_exit(int status);								 //CallNumber: 1
 pid_t system_call_exec(const char *cmd_line);					 //CallNumber: 2
 int system_call_wait(pid_t pid);								 //CallNumber: 3
-bool system_call_create(const char *file, unsigned initial_size);//CallNumber: 4
-bool system_call_remove(const char *file);						 //CallNumber: 5
-int system_call_open(const char *file);							 //CallNumber: 6
+bool system_call_create(const char *file_name, unsigned initial_size);//CallNumber: 4
+bool system_call_remove(const char *file_name);						 //CallNumber: 5
+int system_call_open(const char *file_name);							 //CallNumber: 6
 int system_call_filesize(int fd);								 //CallNumber: 7
 int system_call_read(int fd, void *buffer, unsigned size);		 //CallNumber: 8
 int system_call_write(int fd, const void *buffer, unsigned size);//CallNumber: 9

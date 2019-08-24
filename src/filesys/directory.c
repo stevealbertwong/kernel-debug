@@ -19,6 +19,12 @@ struct dir_entry // disk
     bool in_use;                        /* In use or free? */
   };
 
+
+static bool
+lookup (const struct dir *dir, const char *name,
+        struct dir_entry *ep, off_t *ofsp);
+
+ 
 /***************************************************************/
 // APIs - traverse() inode_disk, dir_entries
 
