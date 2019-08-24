@@ -8,6 +8,7 @@
 #include "userprog/process.h"
 #include "filesys/filesys.h"
 #include "filesys/file.h"
+#include "filesys/directory.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
 
@@ -267,7 +268,7 @@ void system_call_halt(void)
  * 
  * NOTE: user thread(not switched to kernel thread) running kernel code
  */
-int system_call_open(char *file)
+int system_call_open(const char *file)
 {
 	if (file != NULL)
 	{
@@ -318,6 +319,7 @@ int system_call_open(char *file)
  */ 
 int system_call_read(int fd, void *buffer, unsigned size)
 {
+	unsigned int offset;
 	// 1. check buffer
 	if (!is_user_vaddr(buffer) || !is_user_vaddr(buffer + size))
 		system_call_exit(-1);
@@ -325,7 +327,6 @@ int system_call_read(int fd, void *buffer, unsigned size)
 	// 1. check fd
 	switch (fd){
 	case STDIN_FILENO://Fd0/STDIN reads from keyboard w input_getc()		
-		unsigned int offset;
 		for (offset = 0; offset < size; ++offset)
 			*(uint8_t *) (buffer + offset) = input_getc();
 		return size;
