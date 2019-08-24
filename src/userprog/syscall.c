@@ -267,13 +267,13 @@ void system_call_halt(void)
  * 
  * NOTE: user thread(not switched to kernel thread) running kernel code
  */
-int system_call_open(char *file_name)
+int system_call_open(char *file)
 {
-	if (file_name != NULL)
+	if (file != NULL)
 	{
 		// 1. given file_name, find inode + malloc(), populate() file{}
 		lock_acquire(&file_lock); // multi-threads open() same file
-		struct file *file = filesys_open(file_name);
+		struct file *file = filesys_open(file);
 		lock_release(&file_lock);
 		if (file == NULL)
 			return -1;
@@ -324,8 +324,8 @@ int system_call_read(int fd, void *buffer, unsigned size)
 
 	// 1. check fd
 	switch (fd){
-	case STDIN_FILENO://Fd0/STDIN reads from keyboard w input_getc()
-		unsigned int offset = 0;
+	case STDIN_FILENO://Fd0/STDIN reads from keyboard w input_getc()		
+		unsigned int offset;
 		for (offset = 0; offset < size; ++offset)
 			*(uint8_t *) (buffer + offset) = input_getc();
 		return size;
