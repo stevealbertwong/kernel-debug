@@ -141,6 +141,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->original_priority = priority;
   list_init(&t->locks_acquired);
 
+  printf("thread.c 144 \n");
   if (list_empty(&all_list)) { // initial_thread
     t->niceness = 0;  /* Set niceness to 0 on initial thread */
     t->recent_cpu = 0; /* Set cpu_usage to 0 on initial thread */
@@ -163,7 +164,8 @@ init_thread (struct thread *t, const char *name, int priority)
   sema_init(&t->sema_blocked_parent, 0); //store 1 blocked thd
 	sema_init(&t->sema_blocked_child, 0);
 	sema_init(&t->sema_load_elf, 0);
-
+  
+  printf("thread.c 168 \n");
 	t->load_ELF_status = 0;	// normal
 	t->exited = false;
 	t->waited = false;
