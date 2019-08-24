@@ -171,7 +171,7 @@ init_thread (struct thread *t, const char *name, int priority)
 	t->waited = false;
 	t->parent = thread_current();
   t->total_fd = 2;
-
+  printf("thread.c 174 \n");
   #endif
 
   #ifdef FILESYSTEM
