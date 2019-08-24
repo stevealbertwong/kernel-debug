@@ -220,10 +220,12 @@ thread_current (void)
   struct thread *t = running_thread ();
   ASSERT (is_thread (t));
   debug_backtrace();
-  printf("debug_backtrace called");
+  printf("debug_backtrace called \n");
   debug_backtrace_all();
-  printf("debug_backtrace_all called");
+  printf("debug_backtrace_all called \n");
   ASSERT (t->status == THREAD_RUNNING);
+  debug_backtrace();
+  printf("debug_backtrace called twice \n");
 
   return t;
 }
