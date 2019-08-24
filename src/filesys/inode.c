@@ -32,7 +32,7 @@ struct inode // inode (in memory)
 static struct list open_inodes;
 
 static block_sector_t byte_to_sector (const struct inode *inode, off_t pos); 
-
+static inline size_t bytes_to_sectors (off_t size);
 /***************************************************************/
 // key helpers
 
