@@ -20,7 +20,6 @@ debug_panic (const char *file, int line, const char *function,
   va_end (args);
 
   debug_backtrace ();
-  debug_backtrace_all();
   
   exit (1);
 }
