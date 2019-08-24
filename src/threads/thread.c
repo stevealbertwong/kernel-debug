@@ -1065,7 +1065,6 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 /************************************************************/
 
-
 struct thread *
 tid_to_thread(tid_t tid)
 {
@@ -1079,7 +1078,6 @@ tid_to_thread(tid_t tid)
 	}
 	return NULL;
 }
-
 
 void
 thread_print_stats (void) 

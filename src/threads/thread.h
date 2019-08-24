@@ -106,6 +106,7 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+struct thread *tid_to_thread(tid_t tid);
 
 // OUR IMPLEMENTATION
 void add_thread_sleeplist(struct thread *t);

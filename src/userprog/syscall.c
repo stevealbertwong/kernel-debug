@@ -3,9 +3,20 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/vaddr.h"
+#include "threads/malloc.h"
+#include "userprog/process.h"
+#include "filesys/filesys.h"
+#include "filesys/file.h"
+#include "devices/shutdown.h"
+#include "devices/input.h"
+
+
 
 static void syscall_handler (struct intr_frame *);
 struct lock file_lock; // global file lock -> multi-threads access same file
+struct file_desc *get_file_desc(int fd);
+
 
 void
 syscall_init (void) 
@@ -31,8 +42,6 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
-  // TODO 
-
 	int *syscall_number = f->esp;
 	int *argument = f->esp;
 	int ret_val = 0;
@@ -131,7 +140,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 			else
 				system_call_exit(-1);
 			break;
-	
+		}
+	}
 	// syscall return thru intr_frame{}, then intr_exit(),
 	// then back to user side syscall(), then user program
 	f->eax = ret_val;
@@ -180,10 +190,11 @@ int system_call_wait(pid_t pid)
 
 
 /**
- * 
  * Terminates the current user program, returning status to the kernel. 
- * If the process's parent waits for it (see below), this is the status that will be returned. Conventionally,
- * a status of 0 indicates success and nonzero values indicate errors.
+ * If the process's parent waits for it (see below), this is the status that will be returned
+ * status of 0 == success, nonzero values == errors.
+ * 
+ * 
  */ 
 void system_call_exit(int status)
 {
@@ -197,14 +208,14 @@ void system_call_exit(int status)
 	while (!list_empty(&t->fd_list))
 	{
 		e = list_begin(&t->fd_list);
-		system_call_close(
-		list_entry (e, struct file_desc, thread_file_elem)->fid);
+		// close(fd{}->id) 
+		system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
 	}
 
-	t->return_status = status;
+	t->load_ELF_status = status;
 
 	//print this when the process exits
-	printf("%s: exit(%d)\n", t->name, t->return_status);
+	printf("%s: exit(%d)\n", t->name, t->load_ELF_status);
 
 	thread_exit();
 }
@@ -527,7 +538,6 @@ get_file_desc(int fd)
 		if (file_desc->id == fd)
 			return file_desc;
 	}
-
 	return NULL;
 }
 
