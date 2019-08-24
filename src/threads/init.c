@@ -88,9 +88,9 @@ main (void)
 
   /* Initialize ourselves as a thread so we can use locks,
      then enable console locking. */
-  printf("before thread_init() \n");
+  printf("init.c before thread_init() \n");
   thread_init ();
-  printf("after thread_init() \n");
+  printf("init.c after thread_init() \n");
   console_init ();  
 
   /* Greet user. */
@@ -119,9 +119,9 @@ main (void)
 #endif
 
   /* Start thread scheduler and enable interrupts. */
-  printf("before thread_start() \n");
+  printf("init.c before thread_start() \n");
   thread_start ();
-  printf("after thread_start() \n");
+  printf("init.c after thread_start() \n");
   serial_init_queue ();
   timer_calibrate ();
 
