@@ -88,7 +88,9 @@ main (void)
 
   /* Initialize ourselves as a thread so we can use locks,
      then enable console locking. */
+  printf("before thread_init() \n");
   thread_init ();
+  printf("after thread_init() \n");
   console_init ();  
 
   /* Greet user. */
@@ -117,7 +119,9 @@ main (void)
 #endif
 
   /* Start thread scheduler and enable interrupts. */
+  printf("before thread_start() \n");
   thread_start ();
+  printf("after thread_start() \n");
   serial_init_queue ();
   timer_calibrate ();
 
@@ -131,7 +135,9 @@ main (void)
   printf ("Boot complete.\n");
   
   /* Run actions specified on kernel command line. */
+  printf("before run_actions() \n");
   run_actions (argv);
+  printf("after run_actions() \n");
 
   /* Finish up. */
   shutdown ();

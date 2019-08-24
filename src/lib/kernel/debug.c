@@ -36,7 +36,6 @@ debug_panic (const char *file, int line, const char *function,
       va_end (args);
 
       debug_backtrace ();
-      debug_backtrace_all();
     }
   else if (level == 2)
     printf ("Kernel PANIC recursion at %s:%d in %s().\n",
