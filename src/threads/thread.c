@@ -11,26 +11,15 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
-#include "devices/timer.h"
-#ifdef USERPROG
 #include "userprog/process.h"
-#endif
+#include "devices/timer.h"
 
-/* Random value for struct thread's `magic' member.
-   Used to detect stack overflow.  See the big comment at the top
-   of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 
-// mlfqs
-static int load_avg;
 
-/* List of processes in THREAD_READY state, that is, processes
-   that are ready to run but not actually running. */
+static int load_avg; // mlfqs
 static struct list ready_list;
-
-/* List of all processes.  Processes are added to this list
-   when they are first scheduled and removed when they exit. */
 static struct list all_list;
 static struct list sleep_list; // threads waiting/sleeping
 static bool thread_init_finished = false;
@@ -89,7 +78,7 @@ static void thread_wake(struct thread *t, void *aux UNUSED);
 
 /************************************************************/
 
-// init() initial_thread
+// init() "initial_thread" main()
 void
 thread_init (void) 
 {
@@ -118,8 +107,12 @@ thread_init (void)
 
 
 
-
-// init() normal thread (except initial_thread)
+/**
+ * init() normal thread (except initial_thread)
+ * 
+ * 
+ * DONT call thread_current() here as initial_thread main() is BUGGY !!!!! 
+ */ 
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
@@ -134,14 +127,13 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->magic = THREAD_MAGIC;
-  // BUG!!!!!!! -1 instead of 0 ===> not affected by timer_interrupt()/thread_tick()
-  t->sleep_ticks = THREAD_AWAKE;
+  t->sleep_ticks = THREAD_AWAKE; // BUG!!!!!!! -1 instead of 0 ===> not affected by timer_interrupt()/thread_tick()
   t->lock_waiting_on = NULL;
 
   t->original_priority = priority;
   list_init(&t->locks_acquired);
 
-  printf("thread.c 144 \n");
+  printf("thread.c init_thread() 144 \n");
   if (list_empty(&all_list)) { // initial_thread
     t->niceness = 0;  /* Set niceness to 0 on initial thread */
     t->recent_cpu = 0; /* Set cpu_usage to 0 on initial thread */
@@ -158,25 +150,6 @@ init_thread (struct thread *t, const char *name, int priority)
   } else {
     t->priority = priority;
   }
-
-  #ifdef USERPROG // process_wait() 
-
-  sema_init(&t->sema_blocked_parent, 0); //store 1 blocked thd
-	sema_init(&t->sema_blocked_child, 0);
-	sema_init(&t->sema_load_elf, 0);
-  
-  printf("thread.c 168 \n");
-	t->load_ELF_status = 0;	// normal
-	t->exited = false;
-	t->waited = false;
-	t->parent = thread_current();
-  t->total_fd = 2;
-  printf("thread.c 174 \n");
-  #endif
-
-  #ifdef FILESYSTEM
-  // list_init(&t->fd_list);
-  #endif
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
@@ -222,12 +195,9 @@ thread_current (void)
   struct thread *t = running_thread ();
   ASSERT (is_thread (t));
   debug_backtrace();
-  printf("debug_backtrace called \n");
-  debug_backtrace_all();
-  printf("debug_backtrace_all called \n");
+  printf("thread.c 226 debug_backtrace called \n");
   ASSERT (t->status == THREAD_RUNNING);
-  debug_backtrace();
-  printf("debug_backtrace called twice \n");
+  printf("thread.c 228 ASSERT (t->status == THREAD_RUNNING); succeeds \n");
 
   return t;
 }
@@ -268,6 +238,27 @@ thread_create (const char *name, int priority,
   if (!thread_mlfqs && priority >= thread_current()->priority) {
     thread_yield();
   }
+
+  #ifdef USERPROG
+
+  // process_wait() 
+  sema_init(&t->sema_blocked_parent, 0); //store 1 blocked thd
+	sema_init(&t->sema_blocked_child, 0);
+	sema_init(&t->sema_load_elf, 0);
+  
+  printf("thread.c init_thread() 168 \n");
+	t->load_ELF_status = 0;	// normal
+	t->exited = false;
+	t->waited = false;
+	t->parent = thread_current();
+  t->total_fd = 2;
+  printf("thread.c init_thread() 174 \n");
+  #endif
+
+  #ifdef FILESYSTEM
+  list_init(&t->fd_list);
+  #endif
+
   return tid;
 }
 
