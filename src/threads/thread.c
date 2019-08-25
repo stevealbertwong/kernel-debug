@@ -194,10 +194,7 @@ thread_current (void)
 {
   struct thread *t = running_thread ();
   ASSERT (is_thread (t));
-  debug_backtrace();
-  printf("thread.c 226 debug_backtrace called \n");
   ASSERT (t->status == THREAD_RUNNING);
-  printf("thread.c 228 ASSERT (t->status == THREAD_RUNNING); succeeds \n");
 
   return t;
 }
@@ -246,13 +243,12 @@ thread_create (const char *name, int priority,
 	sema_init(&t->sema_blocked_child, 0);
 	sema_init(&t->sema_load_elf, 0);
   
-  printf("thread.c init_thread() 168 \n");
 	t->load_ELF_status = 0;	// normal
 	t->exited = false;
 	t->waited = false;
 	t->parent = thread_current();
   t->total_fd = 2;
-  printf("thread.c init_thread() 174 \n");
+  // printf("thread.c init_thread() 174 \n");
   #endif
 
   #ifdef FILESYSTEM
