@@ -455,6 +455,8 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
   // push null as ret addr
   *esp -= 4;
   *((int*) *esp) = 0;
+  
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 56, true);
 }
 
 
