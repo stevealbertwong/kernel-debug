@@ -18,6 +18,8 @@
         "syscall.h": "c",
         "init.h": "c",
         "process.h": "c",
-        "*.tcc": "c"
+        "*.tcc": "c",
+        "ctype.h": "c",
+        "sstream": "c"
     }
 }

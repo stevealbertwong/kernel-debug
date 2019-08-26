@@ -37,6 +37,7 @@
 #include "filesys/filesys.h"
 #include "filesys/fsutil.h"
 #endif
+#include <ctype.h>
 
 void strip_extra_spaces(const char* str);
 
