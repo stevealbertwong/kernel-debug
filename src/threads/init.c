@@ -38,6 +38,8 @@
 #include "filesys/fsutil.h"
 #endif
 
+void strip_extra_spaces(const char* str);
+
 /* Page directory with kernel mappings only. */
 uint32_t *init_page_dir;
 
@@ -283,15 +285,25 @@ static void
 run_task (char **argv)
 {
   const char *task = argv[1];
-  
+  strip_extra_spaces(task);
   printf ("Executing '%s':\n", task);
 #ifdef USERPROG
-  process_execute (task);
-  // process_wait (process_execute (task));
+  // process_execute (task);
+  process_wait (process_execute (task));
 #else
   run_test (task);
 #endif
   printf ("Execution of '%s' complete.\n", task);
+}
+
+void strip_extra_spaces(const char* str_orig)
+{
+	char *str = (char *) str_orig;
+	int i, x;
+	for (i = x = 1; str[i]; ++i)
+		if (!isspace(str[i]) || (i > 0 && !isspace(str[i - 1])))
+			str[x++] = str[i];
+	str[x] = '\0';
 }
 
 

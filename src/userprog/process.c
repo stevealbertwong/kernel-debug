@@ -399,12 +399,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
   // 4. palloc() user stack and index() at if_.esp
   if (!setup_stack (esp))
     goto done;
-  printf("process.c load() is called \n");
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
   success = true;
 
  done:
-  file_close (file);
+  // file_close (file);
   return success;
 }
 
