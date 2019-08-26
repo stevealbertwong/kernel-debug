@@ -399,6 +399,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   // 4. palloc() user stack and index() at if_.esp
   if (!setup_stack (esp))
     goto done;
+  printf("process.c setup_stack() is called \n");
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
   success = true;
 
@@ -420,7 +421,8 @@ static void
 push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
 {
   ASSERT(argc >= 0);
-  
+  printf("process.c push_cmdline_to_stack() is called \n");
+
   // push cmdline_tokens to user stack
   int i, len = 0;
   void* argv_addr[argc];
