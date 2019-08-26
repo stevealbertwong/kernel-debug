@@ -271,7 +271,7 @@ start_process (void *file_name_)
     cmdline_tokens[argc++] = token;
   }
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
-  palloc_free_page(cmdline_tokens);
+  // palloc_free_page(cmdline_tokens);
 
 
   // 4. unblock kernel_thread after load_elf() + push_cmdline_tokens()
@@ -399,7 +399,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   // 4. palloc() user stack and index() at if_.esp
   if (!setup_stack (esp))
     goto done;
-  printf("process.c setup_stack() is called \n");
+  printf("process.c load() is called \n");
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
   success = true;
 
@@ -439,7 +439,8 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
   // last null before argv[]
   *esp -= 4; // 4 bytes
   *((uint32_t*) *esp) = 0;
-
+  
+  printf("process.c push_cmdline_to_stack() before push argv[] is called \n");
   // push argv[]
   for (i = argc - 1; i >= 0; i--) {
     *esp -= 4;
@@ -552,6 +553,7 @@ setup_stack (void **esp)
       else
         palloc_free_page (kpage);
     }
+  printf("process.c setup_stack() is called \n");
   return success;
 }
 
