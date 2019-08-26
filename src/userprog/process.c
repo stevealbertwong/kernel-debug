@@ -254,7 +254,7 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
 
 
-  // 2. load() ELF + palloc() stack and index() at if_.esp
+  // 2. palloc(), load() ELF + palloc() stack, index() at if_.esp
   // + init() pagedir, supt + notify kernel + deny_write(elf)
   success = load (file_name, &if_.eip, &if_.esp);
   palloc_free_page (file_name);
@@ -412,8 +412,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
  * KEY FUNCTION !!!!!!! push arguments !!!!!!!!
  * called by child user thread start_process()
  * 
- * 1. according to x86 calling convention 
- * 2. before intr_exit(intr_frame) to start running ELF ??
+ * according to x86 calling convention 
+ * called before intr_exit(intr_frame) to "assembly start" ELF 
+ * esp == VA
  */ 
 static void
 push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
@@ -426,7 +427,7 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
   for (i = 0; i < argc; i++) {
     len = strlen(cmdline_tokens[i]) + 1;
     *esp -= len; // "-ve increment" esp
-    memcpy(*esp, cmdline_tokens[i], len);
+    memcpy(*esp, cmdline_tokens[i], len); // memcpy works on VA
     argv_addr[i] = *esp; // each cmdtoken's stack addr
   }
 
