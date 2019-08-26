@@ -17,6 +17,7 @@
         "malloc.h": "c",
         "syscall.h": "c",
         "init.h": "c",
-        "process.h": "c"
+        "process.h": "c",
+        "*.tcc": "c"
     }
 }

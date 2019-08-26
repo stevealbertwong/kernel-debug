@@ -116,9 +116,7 @@ main (void)
 #endif
 
   /* Start thread scheduler and enable interrupts. */
-  printf("init.c before thread_start() \n");
   thread_start ();
-  printf("init.c after thread_start() \n");
   serial_init_queue ();
   timer_calibrate ();
 
@@ -132,9 +130,7 @@ main (void)
   printf ("Boot complete.\n");
   
   /* Run actions specified on kernel command line. */
-  printf("before run_actions() \n");
   run_actions (argv);
-  printf("after run_actions() \n");
 
   /* Finish up. */
   shutdown ();
@@ -332,8 +328,6 @@ read_command_line (void)
   return argv;
 }
 
-/* Parses options in ARGV[]
-   and returns the first non-option argument. */
 static char **
 parse_options (char **argv) 
 {

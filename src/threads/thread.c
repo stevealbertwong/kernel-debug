@@ -133,7 +133,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->original_priority = priority;
   list_init(&t->locks_acquired);
 
-  printf("thread.c init_thread() 144 \n");
   if (list_empty(&all_list)) { // initial_thread
     t->niceness = 0;  /* Set niceness to 0 on initial thread */
     t->recent_cpu = 0; /* Set cpu_usage to 0 on initial thread */

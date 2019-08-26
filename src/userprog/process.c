@@ -82,46 +82,52 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static void push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp);
 static bool setup_stack (void **esp);
 static bool install_page (void *upage, void *kpage, bool writable);
-/*******************************************************************/
-// APIs
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*******************************************************************/
+// PARENT KERNEL THREAD
 
-// kernel user single synch -> start_process(), wait until finish loading ELF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*******************************************************************/
+
+// parent kernel child user single synch -> start_process(), wait until finish loading ELF
 tid_t
 process_execute (const char *file_name) // kernel parent thread !!!!!!
 {
-  char *fn_copy;
+  char *fn_copy, *fn_name;
   tid_t tid;
-
 
   // make a copy, otherwise race between caller and load()
   fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL)
+  if (fn_copy == NULL){
     return TID_ERROR;
+  }
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  fn_name = palloc_get_page (0);
+  if (fn_copy == NULL){
+    return TID_ERROR;
+  }
+  strlcpy (fn_name, file_name, PGSIZE);
 
   // kernel spawn new user thread to run ELF
   // load ELF + interrupt switch to start running
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  if (tid == TID_ERROR)
+  tid = thread_create (fn_name, PRI_DEFAULT, start_process, fn_copy);
+  if (tid == TID_ERROR){
     palloc_free_page (fn_copy); 
-
+  }
 
   // kernel wait for child thread start_process() to finish !!!!!
   // process_wait() could access load_ELF_status
@@ -135,7 +141,7 @@ process_execute (const char *file_name) // kernel parent thread !!!!!!
 
 
 
-// parent child double synchronization (parent perspective)
+// parent wait child exec double synchronization (parent perspective)
 // parent wait for child die before it exits + child wait till parent receives its exit_status
 // e.g. wait(exec("elf_file")) -> child thread runs ELF, parent thread runs wait()
 int
@@ -207,7 +213,8 @@ process_exit (void)
 
 
 /*******************************************************************/
-// major implementations to load ELF
+// CHILD KERNEL THREAD -> USER THREAD 
+// load_ELF(), push_args(), intr_frame{}, intr_switch()
 
 
 
@@ -225,8 +232,11 @@ process_exit (void)
 
 
 /*******************************************************************/
-// child user thread threaded function 
-// spawned by kernel thread process_execute() to run ELF
+/**
+ * starting point of child kernel thread
+ * spawned by parent kernel thread process_execute() to "assembly start" ELF
+ * 
+ */ 
 static void
 start_process (void *file_name_)
 {
@@ -236,18 +246,19 @@ start_process (void *file_name_)
   struct thread *user_thread = thread_current();
 
 
-  // 1. artificial intr_frame{} 
-  // intr_fra{} indexes() user stack when assembly start ps
+  // 1. populates() new intr_frame{} 
+  // intr_fra{} index() user stack, passed as arg, when "assembly start" ps
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
 
 
-  // 2. load() ELF + alloc() stack and index() at if_.esp
+  // 2. load() ELF + palloc() stack and index() at if_.esp
   // + init() pagedir, supt + notify kernel + deny_write(elf)
   success = load (file_name, &if_.eip, &if_.esp);
   palloc_free_page (file_name);
+
 
   // 3. push kernel args to user_stack 
   char **cmdline_tokens = (char**) palloc_get_page(0); 
@@ -260,6 +271,7 @@ start_process (void *file_name_)
     cmdline_tokens[argc++] = token;
   }
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
+  palloc_free_page(cmdline_tokens);
 
 
   // 4. unblock kernel_thread after load_elf() + push_cmdline_tokens()
@@ -273,11 +285,9 @@ start_process (void *file_name_)
     user_thread->elf_file = filesys_open(file_name);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
   }
-    
-
 
   // 5. kernel "interrupt switch" to user ps  
-  // start ps by simulating a return from interrupt i.e. jmp intr_exit(&if)
+  // "assembly start" ps by simulating a return from interrupt i.e. jmp intr_exit(&if)
   // intr_exit() passes intr_frame{}/stack_frame to user ps 
   // pop to segment registers : intr_frame{}->%esp == cmdline stored on user_stack
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
@@ -287,11 +297,14 @@ start_process (void *file_name_)
 
 
 
-
-// 1. init() pagedir + supt + file
-// 2. read() ELF header onto stack 
-// 3. read() ELF into PA 
-// 4. allocate page for user stack, index() at if_.esp
+/**
+ * 
+ * 
+ * 1. init() pagedir + supt + file
+ * 2. read() ELF header onto stack 
+ * 3. read() ELF into PA 
+ * 4. allocate page for user stack, index() at if_.esp
+ */ 
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
@@ -301,7 +314,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
-
 
   // 1. init() pagedir + supt + file
   t->pagedir = pagedir_create ();
@@ -315,7 +327,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       goto done; 
     }
 
-  // 2. read() ELF header onto stack // 2. read() ELF header onto stack // 2. read() ELF header onto stack // 2. read() ELF header onto stack // 2. read() ELF header onto stack // 2. read() ELF header onto stack // 2. read() ELF header onto stack 
+  // 2. read() ELF header onto kernel stack 
   // executable header
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)
@@ -374,7 +386,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
     
-  // 3. palloc() code/text/bss + read() ELF into PA 
+  // 3. based on header, palloc() kpage for code/text/bss + read() ELF into PA 
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable))
                 goto done;
@@ -396,8 +408,13 @@ load (const char *file_name, void (**eip) (void), void **esp)
 }
 
 
-
-// x86 calling convention before intr_exit(intr_frame) to start running ELF
+/**
+ * KEY FUNCTION !!!!!!! push arguments !!!!!!!!
+ * called by child user thread start_process()
+ * 
+ * 1. according to x86 calling convention 
+ * 2. before intr_exit(intr_frame) to start running ELF ??
+ */ 
 static void
 push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
 {
@@ -460,8 +477,14 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
 
 /*******************************************************************/
 
-
-// read() ELF into PA 
+/**
+ * read() ELF into PA 
+ * called by load(), upage is from ELF program header 
+ * 
+ * 1. palloc() kpage
+ * 2. read() file from disk into kpage
+ * 3. u() pagedir kpage upage mapping
+ */ 
 static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable) 
@@ -472,22 +495,29 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
     {
+      // 1. fill unused kpage w 0s      
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
+      
+      // 2. palloc() kpage 
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         return false;
+      
+      // 3. read() file from disk into kpage
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
           palloc_free_page (kpage);
           return false; 
         }
+      
       memset (kpage + page_read_bytes, 0, page_zero_bytes);
       if (!install_page (upage, kpage, writable)) 
         {
           palloc_free_page (kpage);
           return false; 
         }
+
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
@@ -495,8 +525,13 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   return true;
 }
 
-
-// palloc() user stack + u() pagedir 
+/**
+ * allocate() 1 page(zeroed) for user_stack at top of user virtual memory
+ * called by load()
+ * 
+ * 1. palloc() user stack 
+ * 2. u() pagedir, supt
+ */ 
 static bool
 setup_stack (void **esp) 
 {
@@ -515,7 +550,11 @@ setup_stack (void **esp)
   return success;
 }
 
-// update() pagedir
+/**
+ * update VM data structure e.g. pagedir, supt for new upage kpage mapping
+ * called by setup_stack()
+ * 
+ */ 
 static bool
 install_page (void *upage, void *kpage, bool writable)
 {
@@ -523,6 +562,8 @@ install_page (void *upage, void *kpage, bool writable)
 
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
+
+  // TODO -> updates supt(kpage status)
 }
 
 
