@@ -297,7 +297,7 @@ start_process (void *full_cmdline)
   if (!success) {
     user_thread->load_ELF_status = -1; // error
     sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
-    thread_exit ();
+    // thread_exit ();
   } else { // if success
     user_thread->load_ELF_status = 0;
     printf("process.c start_process() before file_deny_write(): %s \n", elf_file);
@@ -542,7 +542,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       
-      // 2. palloc() kpage 
+      // 2. palloc() kpage from user pool
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         {
@@ -598,7 +598,6 @@ setup_stack (void **esp)
       else
         palloc_free_page (kpage);
     }
-  printf("process.c setup_stack() is called \n");
   return success;
 }
 
