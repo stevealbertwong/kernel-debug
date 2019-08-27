@@ -218,7 +218,7 @@ void system_call_exit(int status)
 	//print this when the process exits
 	printf("%s: exit(%d)\n", t->name, t->load_ELF_status);
 
-	// thread_exit();
+	thread_exit();
 }
 
 
