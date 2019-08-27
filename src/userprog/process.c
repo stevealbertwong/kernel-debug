@@ -276,10 +276,9 @@ start_process (void *full_cmdline)
 
   // 3. palloc(), load() ELF + palloc() stack, index() at if_.esp
   // + init() pagedir, supt + notify kernel + deny_write(elf)
-  printf("loading() elf_file: %s \n", elf_file);
+  printf("process.c loading() elf_file: %s \n", elf_file);
   success = load (elf_file, &if_.eip, &if_.esp);
   
-
   // 4. push kernel args to user_stack 
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
   palloc_free_page(cmdline_tokens);
@@ -289,8 +288,8 @@ start_process (void *full_cmdline)
     user_thread->load_ELF_status = -1; // error
     sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
     thread_exit ();
-  } else {
-    user_thread->load_ELF_status = 0; // success
+  } else { // if success
+    user_thread->load_ELF_status = 0;
     sema_up(&user_thread->sema_load_elf);
     user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
@@ -413,7 +412,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   success = true;
 
  done:
-  // file_close (file);
+  file_close (file);
   return success;
 }
 
@@ -430,7 +429,6 @@ static void
 push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
 {
   ASSERT(argc >= 0);
-  printf("process.c push_cmdline_to_stack() is called \n");
 
   // push cmdline_tokens to user stack
   int i, len = 0;
@@ -449,7 +447,6 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
   *esp -= 4; // 4 bytes
   *((uint32_t*) *esp) = 0;
   
-  printf("process.c push_cmdline_to_stack() before push argv[] is called \n");
   // push argv[]
   for (i = argc - 1; i >= 0; i--) {
     *esp -= 4;
