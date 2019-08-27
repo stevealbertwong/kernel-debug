@@ -282,7 +282,7 @@ start_process (void *full_cmdline)
   // 4. push kernel args to user_stack 
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
   printf("process.c start_process() after push_cmdline_to_stack() : %s \n", elf_file);
-  palloc_free_page(cmdline_tokens);
+  
 
   // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
   if (!success) {
@@ -296,7 +296,7 @@ start_process (void *full_cmdline)
     user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
   }
-
+  
   // 5. kernel "interrupt switch" to user ps  
   // "assembly start" ps by simulating a return from interrupt i.e. jmp intr_exit(&if)
   // intr_exit() passes intr_frame{}/stack_frame to user ps 
@@ -304,6 +304,8 @@ start_process (void *full_cmdline)
   printf("process.c before assembly start \n");
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   printf("process.c after assembly start \n");
+  
+  palloc_free_page(cmdline_tokens);
   NOT_REACHED ();
 }
 
