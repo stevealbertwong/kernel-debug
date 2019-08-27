@@ -222,7 +222,7 @@ thread_create (const char *name, int priority,
   kf = alloc_frame (t, sizeof *kf); // alloc stack space for kernel_thread
   kf->eip = NULL;
   kf->function = function; // start_process()
-  kf->aux = aux; // cmdline
+  kf->aux = aux; // full cmdline
   ef = alloc_frame (t, sizeof *ef); // switch_entry
   ef->eip = (void (*) (void)) kernel_thread;
   sf = alloc_frame (t, sizeof *sf); // switch_threads

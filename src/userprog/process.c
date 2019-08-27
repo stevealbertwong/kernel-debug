@@ -249,15 +249,24 @@ process_exit (void)
  * 
  */ 
 static void
-start_process (void *file_name_)
+start_process (void *full_cmdline)
 {
-  char *file_name = file_name_; // cmdline
   struct intr_frame if_;
   bool success;
   struct thread *user_thread = thread_current();
 
-
-  // 1. populates() new intr_frame{} 
+  // 1. parse() full_cmdline into elf_file
+  char *elf_file = full_cmdline;
+  char **cmdline_tokens = (char**) palloc_get_page(0); 
+  char* token;
+  char* strtok_ptr;
+  int argc = 0;
+  for (token = strtok_r(elf_file, " ", &strtok_ptr); token != NULL;
+      token = strtok_r(NULL, " ", &strtok_ptr))
+  {
+    cmdline_tokens[argc++] = token;
+  }
+  // 2. populates() new intr_frame{} 
   // intr_fra{} index() user stack, passed as arg, when "assembly start" ps
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -265,27 +274,17 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
 
 
-  // 2. palloc(), load() ELF + palloc() stack, index() at if_.esp
+  // 3. palloc(), load() ELF + palloc() stack, index() at if_.esp
   // + init() pagedir, supt + notify kernel + deny_write(elf)
-  success = load (file_name, &if_.eip, &if_.esp);
-  palloc_free_page (file_name);
+  printf("loading() elf_file: %s \n", elf_file);
+  success = load (elf_file, &if_.eip, &if_.esp);
+  
 
-
-  // 3. push kernel args to user_stack 
-  char **cmdline_tokens = (char**) palloc_get_page(0); 
-  char* token;
-  char* save_ptr;
-  int argc = 0;
-  for (token = strtok_r(file_name, " ", &save_ptr); token != NULL;
-      token = strtok_r(NULL, " ", &save_ptr))
-  {
-    cmdline_tokens[argc++] = token;
-  }
+  // 4. push kernel args to user_stack 
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
-  // palloc_free_page(cmdline_tokens);
+  palloc_free_page(cmdline_tokens);
 
-
-  // 4. unblock kernel_thread after load_elf() + push_cmdline_tokens()
+  // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
   if (!success) {
     user_thread->load_ELF_status = -1; // error
     sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
@@ -293,7 +292,7 @@ start_process (void *file_name_)
   } else {
     user_thread->load_ELF_status = 0; // success
     sema_up(&user_thread->sema_load_elf);
-    user_thread->elf_file = filesys_open(file_name);
+    user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
   }
 
