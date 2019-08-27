@@ -136,7 +136,8 @@ main (void)
   run_actions (argv);
   /* Finish up. */
   shutdown ();
-  thread_exit (); // TODO process_exit()
+  printf ("init.c TODO !!!!!! process_exit() \n");
+  thread_exit (); // TODO !!!!!! process_exit()
 }
 
 
@@ -288,8 +289,8 @@ run_task (char **argv)
   strip_extra_spaces(task);
   printf ("Executing '%s':\n", task);
 #ifdef USERPROG
-  // process_execute (task);
-  process_wait (process_execute (task));
+  process_execute (task);
+  // process_wait (process_execute (task));
 #else
   run_test (task);
 #endif
