@@ -291,6 +291,7 @@ start_process (void *full_cmdline)
   } else { // if success
     user_thread->load_ELF_status = 0;
     sema_up(&user_thread->sema_load_elf);
+    printf("process.c start_process() before file_deny_write() %s", elf_file);
     user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
   }
@@ -490,7 +491,6 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
 
 
 /*******************************************************************/
-
 /**
  * read() ELF into PA 
  * called by load(), upage is from ELF program header 
