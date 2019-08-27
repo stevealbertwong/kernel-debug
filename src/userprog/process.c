@@ -568,6 +568,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
     }
+  printf("process.c load_segment() return true \n");
   return true;
 }
 
