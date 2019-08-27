@@ -302,9 +302,9 @@ start_process (void *full_cmdline)
     // thread_exit ();
   } else { // if success
     user_thread->load_ELF_status = 0;
-    printf("process.c start_process() before file_deny_write(): %s \n", elf_file);
-    user_thread->elf_file = filesys_open(elf_file);
-	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
+    printf("process.c load() succeds, start_process() before file_deny_write(): %s \n", elf_file);
+    // user_thread->elf_file = filesys_open(elf_file);
+	  // file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
 
     sema_up(&user_thread->sema_load_elf);    
   }
@@ -444,8 +444,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
   success = true;
 
+  t->elf_file = file;
+  file_deny_write(file);
+
  done:
-  file_close (file);
+  // file_close (file);
   return success;
 }
 
