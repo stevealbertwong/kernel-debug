@@ -112,6 +112,7 @@ static bool install_page (void *upage, void *kpage, bool writable);
 tid_t
 process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 {
+  printf("full_cmdline: %s \n", full_cmdline);
   char *full_cmdline_copy, *elf_file;
   char *strtoken_ptr = NULL;
   tid_t tid;
@@ -129,7 +130,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   }
   strlcpy (elf_file, full_cmdline, PGSIZE);
   elf_file = strtok_r(elf_file, " ", &strtoken_ptr); // parse() elf_file out of full_cmdline 
-
+  printf("elf_file: %s \n", elf_file);
 
   // 2. spawn child user thread start_process() to "assembly start" ELF
   // load ELF + interrupt switch to start running
