@@ -300,14 +300,14 @@ start_process (void *full_cmdline)
     thread_exit ();
   } else { // if success
     user_thread->load_ELF_status = 0;
-    printf("process.c start_process() before file_deny_write(): %s", elf_file);
+    printf("process.c start_process() before file_deny_write(): %s \n", elf_file);
     user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
 
     sema_up(&user_thread->sema_load_elf);    
   }
   
-  // 5. kernel "interrupt switch" to user ps  
+  // 6. kernel "interrupt switch" to user ps  
   // "assembly start" ps by simulating a return from interrupt i.e. jmp intr_exit(&if)
   // intr_exit() passes intr_frame{}/stack_frame to user ps 
   // pop to segment registers : intr_frame{}->%esp == cmdline stored on user_stack
@@ -481,7 +481,7 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
   *esp -= 4;
   *((int*) *esp) = 0;
   
-  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 56, true);
+  // hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 56, true);
 }
 
 
@@ -537,7 +537,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           palloc_free_page (kpage);
           return false; 
         }
-      
+      // 4. zeros out extra space in page
       memset (kpage + page_read_bytes, 0, page_zero_bytes);
       if (!install_page (upage, kpage, writable)) 
         {
