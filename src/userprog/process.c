@@ -545,8 +545,10 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       // 2. palloc() kpage 
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
+        {
         printf("process.c load_segment() palloc() failed !!! \n");
         return false;
+        }      
       
       // 3. read() file from disk into kpage
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
@@ -557,6 +559,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         }
       // 4. zeros out extra space in page
       memset (kpage + page_read_bytes, 0, page_zero_bytes);
+      
+      // 5. u() pagedir
       if (!install_page (upage, kpage, writable)) 
         {
           printf("process.c load_segment() install_page failed !!! \n");
