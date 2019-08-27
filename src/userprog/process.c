@@ -102,33 +102,43 @@ static bool install_page (void *upage, void *kpage, bool writable);
 
 /*******************************************************************/
 
-// parent kernel child user single synch -> start_process(), wait until finish loading ELF
+/**
+ * parent kernel child user single synch 
+ * 
+ * 1. parse() elf_file out of full_cmdline 
+ * 2. spawn child user thread start_process() to "assembly start" ELF
+ * 3. wait() until finish loading ELF
+ */ 
 tid_t
-process_execute (const char *file_name) // kernel parent thread !!!!!!
+process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 {
-  char *fn_copy, *fn_name;
+  char *full_cmdline_copy, *elf_file;
+  char *strtoken_ptr = NULL;
   tid_t tid;
 
-  // make a copy, otherwise race between caller and load()
-  fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL){
+  // 1. parse() elf_file out of full_cmdline   
+  full_cmdline_copy = palloc_get_page (0); // copy, otherwise race between process_execute() and start_process()
+  if (full_cmdline_copy == NULL){
     return TID_ERROR;
   }
-  strlcpy (fn_copy, file_name, PGSIZE);
+  strlcpy (full_cmdline_copy, full_cmdline, PGSIZE);
 
-  fn_name = palloc_get_page (0);
-  if (fn_copy == NULL){
+  elf_file = palloc_get_page (0);
+  if (elf_file == NULL){
     return TID_ERROR;
   }
-  strlcpy (fn_name, file_name, PGSIZE);
+  strlcpy (elf_file, full_cmdline, PGSIZE);
+  elf_file = strtok_r(elf_file, " ", &strtoken_ptr); // parse() elf_file out of full_cmdline 
 
-  // kernel spawn new user thread to run ELF
+
+  // 2. spawn child user thread start_process() to "assembly start" ELF
   // load ELF + interrupt switch to start running
-  tid = thread_create (fn_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (elf_file, PRI_DEFAULT, start_process, full_cmdline_copy);
   if (tid == TID_ERROR){
-    palloc_free_page (fn_copy); 
+    palloc_free_page (elf_file); 
   }
 
+  // 3. wait() until finish loading ELF
   // kernel wait for child thread start_process() to finish !!!!!
   // process_wait() could access load_ELF_status
   struct thread *child_thread = tid_to_thread(tid);
@@ -320,7 +330,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (t->pagedir == NULL) 
     goto done;
   process_activate ();
-  file = filesys_open (file_name);
+  file = filesys_open (file_name); // BUG!!!! filename 
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
