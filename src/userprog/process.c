@@ -261,7 +261,7 @@ static void
 start_process (void *full_cmdline)
 {
   struct intr_frame if_;
-  bool success;
+  bool success = false;
   struct thread *user_thread = thread_current();
 
   // 1. parse() full_cmdline into elf_file
@@ -288,6 +288,7 @@ start_process (void *full_cmdline)
   printf("process.c loading() elf_file: %s \n", elf_file);
   success = load (elf_file, &if_.eip, &if_.esp);
   printf("process.c start_process() after load() : %s \n", elf_file);
+  
   // 4. push kernel args to user_stack 
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
   printf("process.c start_process() after push_cmdline_to_stack() : %s \n", elf_file);
@@ -297,6 +298,7 @@ start_process (void *full_cmdline)
   if (!success) {
     user_thread->load_ELF_status = -1; // error
     sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
+    printf("process.c load() failed \n");
     // thread_exit ();
   } else { // if success
     user_thread->load_ELF_status = 0;
@@ -348,7 +350,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   } 
     
   process_activate ();
-  file = filesys_open (file_name); // BUG!!!! filename 
+  file = filesys_open (file_name); // BUG!!!! 
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
