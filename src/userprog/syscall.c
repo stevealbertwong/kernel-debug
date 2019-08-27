@@ -204,13 +204,13 @@ void system_call_exit(int status)
 
 	t = thread_current();
 	if (lock_held_by_current_thread(&file_lock))
-		lock_release(&file_lock);
+		// lock_release(&file_lock);
 
 	while (!list_empty(&t->fd_list))
 	{
 		e = list_begin(&t->fd_list);
 		// close(fd{}->id) 
-		system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
+		// system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
 	}
 
 	t->load_ELF_status = status;
@@ -218,7 +218,7 @@ void system_call_exit(int status)
 	//print this when the process exits
 	printf("%s: exit(%d)\n", t->name, t->load_ELF_status);
 
-	thread_exit();
+	// thread_exit();
 }
 
 

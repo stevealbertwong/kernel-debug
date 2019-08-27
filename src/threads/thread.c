@@ -379,7 +379,7 @@ thread_exit (void)
   }
 
 #ifdef USERPROG
-  process_exit ();
+  // process_exit ();
 #endif
 
   intr_disable ();
