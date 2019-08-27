@@ -342,8 +342,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   // 1. init() pagedir + supt + file
   t->pagedir = pagedir_create ();
-  if (t->pagedir == NULL) 
+  if (t->pagedir == NULL){
+    printf("process.c pagedir_create() failed !!! \n");
     goto done;
+  } 
+    
   process_activate ();
   file = filesys_open (file_name); // BUG!!!! filename 
   if (file == NULL) 
@@ -372,12 +375,18 @@ load (const char *file_name, void (**eip) (void), void **esp)
     {
       struct Elf32_Phdr phdr;
 
-      if (file_ofs < 0 || file_ofs > file_length (file))
+      if (file_ofs < 0 || file_ofs > file_length (file)){
+        printf("process.c file_length() failed !!! \n");
         goto done;
+
+      }        
       file_seek (file, file_ofs);
 
-      if (file_read (file, &phdr, sizeof phdr) != sizeof phdr)
+      if (file_read (file, &phdr, sizeof phdr) != sizeof phdr){
+        printf("process.c file_read() failed !!! \n");
         goto done;
+      }
+        
       file_ofs += sizeof phdr;
       switch (phdr.p_type) 
         {
@@ -413,17 +422,23 @@ load (const char *file_name, void (**eip) (void), void **esp)
     
   // 3. based on header, palloc() kpage for code/text/bss + read() ELF into PA 
               if (!load_segment (file, file_page, (void *) mem_page,
-                                 read_bytes, zero_bytes, writable))
-                goto done;
+                                 read_bytes, zero_bytes, writable)){
+                                   printf("process.c load_segment() failed !!! \n");
+                                   goto done;
+                                 }
             }
-          else
+          else{
+            printf("process.c validate_segment() failed !!! \n");
             goto done;
+          }
           break;
         }
     }
   // 4. palloc() user stack and index() at if_.esp
-  if (!setup_stack (esp))
+  if (!setup_stack (esp)){
+    printf("process.c setup_stack() failed !!! \n");
     goto done;
+  }    
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
   success = true;
 
@@ -481,7 +496,7 @@ push_cmdline_to_stack (char* cmdline_tokens[], int argc, void **esp)
   *esp -= 4;
   *((int*) *esp) = 0;
   
-  // hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 56, true);
+  hex_dump((uintptr_t)*esp, *esp, sizeof(char) * 56, true);
 }
 
 
@@ -529,11 +544,13 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       // 2. palloc() kpage 
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
+        printf("process.c load_segment() palloc() failed !!! \n");
         return false;
       
       // 3. read() file from disk into kpage
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
+          printf("process.c load_segment() file_read failed !!! \n");
           palloc_free_page (kpage);
           return false; 
         }
@@ -541,6 +558,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       memset (kpage + page_read_bytes, 0, page_zero_bytes);
       if (!install_page (upage, kpage, writable)) 
         {
+          printf("process.c load_segment() install_page failed !!! \n");
           palloc_free_page (kpage);
           return false; 
         }
