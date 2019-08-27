@@ -278,9 +278,10 @@ start_process (void *full_cmdline)
   // + init() pagedir, supt + notify kernel + deny_write(elf)
   printf("process.c loading() elf_file: %s \n", elf_file);
   success = load (elf_file, &if_.eip, &if_.esp);
-  
+  printf("process.c start_process() after load() : %s \n", elf_file);
   // 4. push kernel args to user_stack 
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
+  printf("process.c start_process() after push_cmdline_to_stack() : %s \n", elf_file);
   palloc_free_page(cmdline_tokens);
 
   // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
@@ -291,7 +292,7 @@ start_process (void *full_cmdline)
   } else { // if success
     user_thread->load_ELF_status = 0;
     sema_up(&user_thread->sema_load_elf);
-    printf("process.c start_process() before file_deny_write() %s", elf_file);
+    printf("process.c start_process() before file_deny_write(): %s", elf_file);
     user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
   }
