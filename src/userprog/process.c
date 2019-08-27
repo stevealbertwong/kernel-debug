@@ -143,7 +143,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   // kernel wait for child thread start_process() to finish !!!!!
   // process_wait() could access load_ELF_status
   struct thread *child_thread = tid_to_thread(tid);
-  // sema_down(&child_thread->sema_load_elf); // kernel_thread{} ready_list[] -> sema_load_elf[]
+  sema_down(&child_thread->sema_load_elf); // kernel_thread{} ready_list[] -> sema_load_elf[]
 
   palloc_free_page (full_cmdline_copy);
   return tid;
@@ -296,15 +296,15 @@ start_process (void *full_cmdline)
   // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
   if (!success) {
     user_thread->load_ELF_status = -1; // error
-    // sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
+    sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
     thread_exit ();
   } else { // if success
     user_thread->load_ELF_status = 0;
     printf("process.c start_process() before file_deny_write(): %s", elf_file);
-    // sema_up(&user_thread->sema_load_elf);
-    
     user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
+
+    sema_up(&user_thread->sema_load_elf);    
   }
   
   // 5. kernel "interrupt switch" to user ps  
