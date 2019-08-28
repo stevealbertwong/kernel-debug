@@ -112,7 +112,6 @@ static bool install_page (void *upage, void *kpage, bool writable);
 tid_t
 process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 {
-  printf("full_cmdline: %s \n", full_cmdline);
   char *full_cmdline_copy, *elf_file;
   char *strtoken_ptr = NULL;
   tid_t tid;
@@ -199,16 +198,16 @@ process_exit (void)
   
   // 1. child unblock parent to get its exit_status
 	while (!list_empty(&child_thread->sema_blocked_parent.waiters)){
-    printf("process.c process_exit() before sema_up \n");
+    // printf("process.c process_exit() before sema_up \n");
     sema_up(&child_thread->sema_blocked_parent); // parent from child's sema
-    printf("process.c process_exit() after sema_up \n");
+    // printf("process.c process_exit() after sema_up \n");
   }
 		 
 	// 1. child block itself for parent to finish get its exit_status
 	if (child_thread->parent != NULL){
-    printf("process.c process_exit() before sema_down \n");
+    // printf("process.c process_exit() before sema_down \n");
 		sema_down(&child_thread->sema_blocked_child);
-    printf("process.c process_exit() after sema_down \n");
+    // printf("process.c process_exit() after sema_down \n");
   }
 
 	// <---- restart point after parent gets it return status
@@ -287,14 +286,10 @@ start_process (void *full_cmdline)
 
   // 3. palloc(), load() ELF + palloc() stack, index() at if_.esp
   // + init() pagedir, supt + notify kernel + deny_write(elf)
-  printf("process.c loading() elf_file: %s \n", elf_file);
   success = load (elf_file, &if_.eip, &if_.esp);
-  printf("process.c start_process() after load() : %s \n", elf_file);
   
   // 4. push kernel args to user_stack 
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
-  printf("process.c start_process() after push_cmdline_to_stack() : %s \n", elf_file);
-  
 
   // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
   if (!success) {
@@ -304,7 +299,6 @@ start_process (void *full_cmdline)
     // thread_exit ();
   } else { // if success
     user_thread->load_ELF_status = 0;
-    printf("process.c load() succeds, start_process() before file_deny_write(): %s \n", elf_file);
     user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
 
@@ -315,9 +309,7 @@ start_process (void *full_cmdline)
   // "assembly start" ps by simulating a return from interrupt i.e. jmp intr_exit(&if)
   // intr_exit() passes intr_frame{}/stack_frame to user ps 
   // pop to segment registers : intr_frame{}->%esp == cmdline stored on user_stack
-  printf("process.c before assembly start \n");
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
-  printf("process.c after assembly start \n");
   
   palloc_free_page(cmdline_tokens);
   NOT_REACHED ();
@@ -540,8 +532,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (ofs % PGSIZE == 0);  
   file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
-    {
-      printf("process.c load_segment() loop \n");
+    {      
       // 1. fill unused kpage w 0s      
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
@@ -549,15 +540,13 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       // 2. palloc() kpage from user pool
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
-        {
-        printf("process.c load_segment() palloc() failed !!! \n");
+        {        
         return false;
         }      
       
       // 3. read() file from disk into kpage
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
-          printf("process.c load_segment() file_read failed !!! \n");
           palloc_free_page (kpage);
           return false; 
         }
@@ -567,7 +556,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       // 5. u() pagedir
       if (!install_page (upage, kpage, writable)) 
         {
-          printf("process.c load_segment() install_page failed !!! \n");
           palloc_free_page (kpage);
           return false; 
         }
@@ -576,7 +564,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
     }
-  printf("process.c load_segment() return true \n");
   return true;
 }
 
