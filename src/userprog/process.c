@@ -195,14 +195,18 @@ process_exit (void)
 {
 	struct thread *child_thread = thread_current();
 	uint32_t *pd;
+  if (child_thread->elf_file != NULL) 
+		file_allow_write(child_thread->elf_file);
   
   // 1. child unblock parent to get its exit_status
 	while (!list_empty(&child_thread->sema_blocked_parent.waiters)){
     printf("process.c process_exit() before sema_up \n");
     sema_up(&child_thread->sema_blocked_parent); // parent from child's sema
-    printf("process.c process_exit() after sema_up \n");
+    // printf("process.c process_exit() after sema_up \n");
   }
-		 
+  
+  child_thread->exited = true; // parent wont wait() on exited child
+
 	// 1. child block itself for parent to finish get its exit_status
 	if (child_thread->parent != NULL){
     // printf("process.c process_exit() before sema_down \n");
@@ -210,14 +214,9 @@ process_exit (void)
     // printf("process.c process_exit() after sema_down \n");
   }
 
-	// <---- restart point after parent gets it return status
-
-  // 2. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
-  child_thread->exited = true; // parent wont wait() on exited child
+	// <---- child's restart point after parent gets it return status
   
-	if (child_thread->elf_file != NULL) 
-		file_allow_write(child_thread->elf_file);
-
+  // 2. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
   // destroy current thread's pagedir, switch to kernel only pagedir
   pd = child_thread->pagedir;
   if (pd != NULL) 
