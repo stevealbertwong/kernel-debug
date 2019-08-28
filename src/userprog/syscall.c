@@ -220,16 +220,17 @@ void system_call_exit(int status)
 
 	// 1. palloc_free() fd_list[]->file/dir
 	struct list *fd_list = &t->fd_list;
-	// while (!list_empty(fd_list))
-	// {
-	// 	struct list_elem *e = list_pop_front (fd_list);
-    // 	struct file_desc *desc = list_entry(e, struct file_desc, fd_list_elem);
-    // 	file_close(desc->f);
-    // 	palloc_free_page(desc);
+	while (!list_empty(fd_list))
+	{
+		printf("syscall.c system_call_exit() \n");
+		struct list_elem *e = list_pop_front (fd_list);
+    	struct file_desc *desc = list_entry(e, struct file_desc, fd_list_elem);
+    	file_close(desc->f);
+    	palloc_free_page(desc);
 		
-	// 	// e = list_begin(&t->fd_list);
-	// 	// system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
-	// }
+		// e = list_begin(&t->fd_list);
+		// system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
+	}
 	
 	// how to return elf exit status ?? 
 	t->load_ELF_status = status;	

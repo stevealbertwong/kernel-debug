@@ -242,7 +242,7 @@ thread_create (const char *name, int priority,
 	sema_init(&t->sema_blocked_child, 0);
 	sema_init(&t->sema_load_elf, 0);
   list_init(&t->fd_list);
-  
+
 	t->load_ELF_status = 0;	// normal
 	t->exited = false;
 	t->waited = false;
@@ -385,9 +385,9 @@ thread_exit (void)
   if (cur->lock_waiting_on != NULL) {
         list_remove(&cur->elem);
   }
-  
   // lock_release() thread->locks[] 
   while (!list_empty(&cur->locks_acquired)) {
+      printf("thread.c thread_exit() \n");
       e = list_begin(&cur->locks_acquired);
       struct lock *lock = list_entry(e, struct lock, thread_elem);
       lock_release(lock);
