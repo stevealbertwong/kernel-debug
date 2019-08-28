@@ -200,7 +200,7 @@ process_exit (void)
 	while (!list_empty(&child_thread->sema_blocked_parent.waiters)){
     printf("process.c process_exit() before sema_up \n");
     sema_up(&child_thread->sema_blocked_parent); // parent from child's sema
-    // printf("process.c process_exit() after sema_up \n");
+    printf("process.c process_exit() after sema_up \n");
   }
 		 
 	// 1. child block itself for parent to finish get its exit_status
