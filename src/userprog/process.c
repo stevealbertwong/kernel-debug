@@ -198,7 +198,7 @@ process_exit (void)
   
   // 1. child unblock parent to get its exit_status
 	while (!list_empty(&child_thread->sema_blocked_parent.waiters)){
-    // printf("process.c process_exit() before sema_up \n");
+    printf("process.c process_exit() before sema_up \n");
     sema_up(&child_thread->sema_blocked_parent); // parent from child's sema
     // printf("process.c process_exit() after sema_up \n");
   }
