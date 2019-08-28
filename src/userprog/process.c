@@ -182,13 +182,15 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 
 
 /**
- * 
  * TODO !!!!!
+ * parent children double synch (child "notify" parent)
+ * notify == put parent thd back to ready_list
  * 
  * 
- * 
+ * future projects
+ * thread->fd_list, thread->mmap_list, children_list->threads ??
+ * dir_close(cur->cwd), vm_supt_destroy ??
  */ 
-// parent children double synchronization (child perspective)
 void
 process_exit (void)
 {
@@ -199,19 +201,12 @@ process_exit (void)
 	while (!list_empty(&child_thread->sema_blocked_parent.waiters))
 		sema_up(&child_thread->sema_blocked_parent); // parent from child's sema
 			 
-	// 2. child block itself for parent to finish get its exit_status
+	// 1. child block itself for parent to finish get its exit_status
 	if (child_thread->parent != NULL)
 		sema_down(&child_thread->sema_blocked_child);
 	// <---- restart point after parent gets it return status
 
-
-
-
-  // 3. free resources, clean up
-  // TODO
-  // thread->fd_list, thread->mmap_list, children_list->threads ??
-  // dir_close(cur->cwd), vm_supt_destroy ??
-
+  // 2. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
   child_thread->exited = true; // parent wont wait() on exited child
   
 	if (child_thread->elf_file != NULL) 
@@ -303,8 +298,8 @@ start_process (void *full_cmdline)
   } else { // if success
     user_thread->load_ELF_status = 0;
     printf("process.c load() succeds, start_process() before file_deny_write(): %s \n", elf_file);
-    // user_thread->elf_file = filesys_open(elf_file);
-	  // file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
+    user_thread->elf_file = filesys_open(elf_file);
+	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
 
     sema_up(&user_thread->sema_load_elf);    
   }
@@ -443,9 +438,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   }    
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
   success = true;
-
-  t->elf_file = file;
-  file_deny_write(file);
 
  done:
   // file_close (file);

@@ -21,6 +21,7 @@
         "*.tcc": "c",
         "ctype.h": "c",
         "sstream": "c",
-        "filesys.h": "c"
+        "filesys.h": "c",
+        "thread": "c"
     }
 }

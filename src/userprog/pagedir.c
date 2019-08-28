@@ -101,7 +101,12 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
     return NULL;
 }
 
-// called once when process_exit()
+/**
+ * called once when process_exit()
+ * 
+ * palloc_free() cmdline, elf code(eip), stack(esp)
+ * 
+ */ 
 void
 pagedir_destroy (uint32_t *pd)
 {

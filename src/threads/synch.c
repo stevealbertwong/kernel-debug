@@ -259,6 +259,7 @@ lock_try_acquire (struct lock *lock)
   return success;
 }
 
+// check if lock is held by thread_current
 bool
 lock_held_by_current_thread (const struct lock *lock) 
 {

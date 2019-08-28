@@ -358,11 +358,25 @@ thread_unblock (struct thread *t)
 }
 
 
-
+/**
+ * called by syscall.c sys_exit(int status) 
+ * 
+ * 1. palloc_free() pcb
+ * 2. palloc_free() locks, thread_list, thread
+ * 
+ * 
+ */ 
 void
 thread_exit (void) 
 {
   ASSERT (!intr_context ());
+
+// 1. palloc_free() pcb
+#ifdef USERPROG
+  process_exit ();
+#endif
+
+  // 2. palloc_free() locks, thread_list, thread 
   struct thread *cur = thread_current();
   struct list_elem *e;
 
@@ -377,10 +391,6 @@ thread_exit (void)
       struct lock *lock = list_entry(e, struct lock, thread_elem);
       lock_release(lock);
   }
-
-#ifdef USERPROG
-  process_exit ();
-#endif
 
   intr_disable ();
   list_remove (&thread_current()->all_elem);

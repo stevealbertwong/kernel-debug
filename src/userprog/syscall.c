@@ -195,7 +195,17 @@ int system_call_wait(pid_t pid)
  * If the process's parent waits for it (see below), this is the status that will be returned
  * status of 0 == success, nonzero values == errors.
  * 
+ * 1. palloc_free() global syscall lock, fd_list[]->file/dir
+ * 		syscall_exit()
+ * 2. synch + return elf exit status + palloc_free() parent/child pcb 
+ * 		thread_exit() -> process_exit()
+ * 3. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
+ * 		process_exit() -> pagedir_destroy()
+ * 4. palloc_free() locks, thread_list, thread
+ * 		thread_exit()
  * 
+ * TODO: synch ?? return ELF status ??
+ * open a pcb branch before making changes !!!!
  */ 
 void system_call_exit(int status)
 {
@@ -203,23 +213,59 @@ void system_call_exit(int status)
 	struct list_elem *e;
 
 	t = thread_current();
+	
+	// 1. palloc_free() global syscall lock
 	if (lock_held_by_current_thread(&file_lock))
-		// lock_release(&file_lock);
+		lock_release(&file_lock);
 
+	// 1. palloc_free() fd_list[]->file/dir
 	while (!list_empty(&t->fd_list))
 	{
 		e = list_begin(&t->fd_list);
-		// close(fd{}->id) 
-		// system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
+		// close(fd{}->id) // ??
+		system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
 	}
-
-	t->load_ELF_status = status;
-
-	//print this when the process exits
+	
+	// how to return elf exit status ?? 
+	t->load_ELF_status = status;	
 	printf("%s: exit(%d)\n", t->name, t->load_ELF_status);
-
+	
+	// palloc_free() thread_list, thread, pcb(process_exit())
 	thread_exit();
 }
+
+
+/**
+ * palloc_free() fd_list[i]->file/dir n file_desc
+ * 
+ * 1. for-loop thread->fd_list[] for file_desc{}
+ * 2. remove() file_desc{} from thread->fd_list[]
+ * 3. free() file/dir n file_desc
+ */
+void system_call_close(int fd)
+{
+	// 1. for-loop thread->fd_list[] for file_desc{}
+	lock_acquire(&file_lock);
+	struct file_desc *file_desc = get_file_desc(fd);
+
+	if (file_desc == NULL){
+		printf("syscall.c system_call_close() file_desc == NULL \n");
+	}	
+
+	// 2. remove() file_desc{} from thread->fd_list[]
+	list_remove(&file_desc->fd_list_elem);
+	
+	// 3. free() file/dir
+	if(file_desc->d != NULL){
+		dir_close(file_desc->d);
+	}else{
+		file_close(file_desc->f);
+	}
+	free(file_desc);
+	lock_release(&file_lock);
+}
+
+
 
 
 
@@ -465,36 +511,6 @@ void system_call_seek(int fd, unsigned position)
 }
 
 
-/**
- * 
- * 
- * 
- * 
- * 
- * 
- */
-void system_call_close(int fd)
-{
-	// 1. for-loop thread->fd_list[] for file_desc{}
-	lock_acquire(&file_lock);
-	struct file_desc *file_desc = get_file_desc(fd);
-	lock_release(&file_lock);
-	if (file_desc == NULL)
-		system_call_exit(-1);
-
-	// 2. remove() file_desc{} from thread->fd_list[]
-	lock_acquire(&file_lock);
-	list_remove(&file_desc->fd_list_elem);
-	
-	// 3. free() file/dir
-	if(file_desc->d != NULL){
-		dir_close(file_desc->d);
-	}else{
-		file_close(file_desc->f);
-	}
-	free(file_desc);
-	lock_release(&file_lock);
-}
 
 
 /**
