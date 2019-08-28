@@ -241,6 +241,7 @@ thread_create (const char *name, int priority,
   sema_init(&t->sema_blocked_parent, 0); //store 1 blocked thd
 	sema_init(&t->sema_blocked_child, 0);
 	sema_init(&t->sema_load_elf, 0);
+  list_init(&t->fd_list);
   
 	t->load_ELF_status = 0;	// normal
 	t->exited = false;
@@ -251,7 +252,7 @@ thread_create (const char *name, int priority,
   #endif
 
   #ifdef FILESYSTEM
-  list_init(&t->fd_list);
+  
   #endif
 
   return tid;
