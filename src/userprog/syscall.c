@@ -219,11 +219,17 @@ void system_call_exit(int status)
 		lock_release(&file_lock);
 
 	// 1. palloc_free() fd_list[]->file/dir
-	// while (!list_empty(&t->fd_list))
-	// {
-	// 	e = list_begin(&t->fd_list);
-	// 	system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
-	// }
+	struct list *fd_list = &t->fd_list;
+	while (!list_empty(fd_list))
+	{
+		struct list_elem *e = list_pop_front (fd_list);
+    	struct file_desc *desc = list_entry(e, struct file_desc, fd_list_elem);
+    	file_close(desc->f);
+    	palloc_free_page(desc);
+		
+		// e = list_begin(&t->fd_list);
+		// system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
+	}
 	
 	// how to return elf exit status ?? 
 	t->load_ELF_status = status;	
