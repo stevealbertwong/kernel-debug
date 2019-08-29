@@ -170,7 +170,8 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 int
 process_wait (tid_t child_tid) // child_tid == child thread's pid 
 {
-	struct thread *child_thread, *parent_thread;
+	printf("process.c process_wait() starts running \n");
+  struct thread *child_thread, *parent_thread;
 	parent_thread = thread_current();
 	child_thread = tid_to_thread(child_tid);
 
@@ -217,15 +218,15 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
  */ 
 void
 process_exit (void)
-{
-	struct thread *child_thread = thread_current();
+{	
+  struct thread *child_thread = thread_current();
 	uint32_t *pd;
   if (child_thread->elf_file != NULL) 
 		file_allow_write(child_thread->elf_file);
 
   // 1. child unblock parent to get its exit_status
 	while (!list_empty(&child_thread->sema_elf_call_exit.waiters)){
-    // printf("process.c process_exit() before sema_up \n");
+    printf("process.c process_exit() before sema_up \n");
     sema_up(&child_thread->sema_elf_call_exit);
     // printf("process.c process_exit() after sema_up \n");
   }
@@ -236,7 +237,7 @@ process_exit (void)
 
 	// 1. child elf code block itself for parent process_wait() get its exit_status
 	if (child_thread->parent != NULL){
-    // printf("process.c process_exit() before sema_down \n");
+    printf("process.c process_exit() before sema_down \n");
 		sema_down(&child_thread->sema_elf_exit_status);
     // printf("process.c process_exit() after sema_down \n");
   }
