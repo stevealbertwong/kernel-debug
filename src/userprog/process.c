@@ -180,14 +180,14 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	// 1. elf_exit_status exception cases: all reasons parent does not need to wait for child
 	// -> wrong child_tid / no parent child relationship / wait() twice error
 	if (child_thread == NULL || child_thread->parent != parent_thread || child_thread->waited){
-    printf("process.c process_wait() error \n");
+    printf("process.c process_wait() 1st error \n");
     return -1;
   }
 		
 	// -> child error status / child already exited
   child_thread->waited = true;
 	if (child_thread->elf_exit_status != 0 || child_thread->exited == true){
-    printf("process.c process_wait() error \n");
+    printf("process.c process_wait() 2nd error \n");
     return child_thread->elf_exit_status;
   }
 
@@ -333,7 +333,7 @@ start_process (void *full_cmdline)
 	  file_deny_write(elf_thread->elf_file); // +1 deny_write_cnt
     printf("process.c start_process() before sema_up, tid: %d\n", elf_thread->tid);
     sema_up(&elf_thread->sema_load_elf); // notify parent process_execute()
-    printf("process.c start_process() after sema_up \n");
+    // printf("process.c start_process() after sema_up \n");
   }
   
   // 6. kernel "interrupt switch" to user ps  
