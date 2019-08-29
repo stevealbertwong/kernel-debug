@@ -289,7 +289,6 @@ run_task (char **argv)
   strip_extra_spaces(task);
   printf ("Executing '%s':\n", task);
 #ifdef USERPROG
-  // process_execute (task);
   process_wait (process_execute (task));
 #else
   run_test (task);

@@ -150,7 +150,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
     tid = TID_ERROR;
     printf("process.c process_execute() elf_exit_status error \n");
   }
-
+  printf("process.c process_execute() finished running \n");
   return tid;
 }
 
