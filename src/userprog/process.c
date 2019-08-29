@@ -146,7 +146,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   sema_down(&elf_thread->sema_load_elf); // wait child start_process()
   // printf("process.c process_execute() after sema_down \n");  
   
-  palloc_free_page (full_cmdline_copy);
+  // palloc_free_page (full_cmdline_copy);
 
 	if (elf_thread->elf_exit_status == -1){
     tid = TID_ERROR;
@@ -234,8 +234,6 @@ process_exit (void)
   }
   
   child_thread->exited = true; // parent wont wait() on exited child
-
-// syscall handler bug ?????? -> exit() should not return back to elf code, unlike other syscalls
 
 	// 1. child elf code block itself for parent process_wait() get its exit_status
 	if (child_thread->parent != NULL){
