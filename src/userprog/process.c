@@ -293,7 +293,7 @@ start_process (void *full_cmdline)
 {
   struct intr_frame if_;
   bool success = false;
-  struct thread *user_thread = thread_current();
+  struct thread *elf_thread = thread_current();
 
   // 1. parse() full_cmdline into elf_file
   char *elf_file = full_cmdline;
@@ -323,16 +323,17 @@ start_process (void *full_cmdline)
 
   // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
   if (!success) {
-    user_thread->elf_exit_status = -1; // error
-    sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
+    elf_thread->elf_exit_status = -1; // error
+    sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
     printf("process.c load() failed \n");
     // thread_exit ();
   } else { // if success
-    user_thread->elf_exit_status = 0;
-    user_thread->elf_file = filesys_open(elf_file);
-	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
-    printf("process.c start_process() before sema_up, tid: %d\n", user_thread->tid);
-    sema_up(&user_thread->sema_load_elf); // notify parent process_execute()
+    elf_thread->elf_exit_status = 0;
+    elf_thread->elf_file = filesys_open(elf_file);
+	  file_deny_write(elf_thread->elf_file); // +1 deny_write_cnt
+    printf("process.c start_process() before sema_up, tid: %d\n", elf_thread->tid);
+    sema_up(&elf_thread->sema_load_elf); // notify parent process_execute()
+    printf("process.c start_process() after sema_up \n");
   }
   
   // 6. kernel "interrupt switch" to user ps  
