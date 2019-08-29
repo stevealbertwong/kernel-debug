@@ -332,6 +332,7 @@ start_process (void *full_cmdline)
 	  file_deny_write(elf_thread->elf_file); // +1 deny_write_cnt
     printf("process.c start_process() before sema_up, tid: %d\n", elf_thread->tid);
     sema_up(&elf_thread->sema_load_elf); // notify parent process_execute()
+    sema_up(&elf_thread->sema_load_elf); // notify parent process_execute()
     printf("process.c start_process() after sema_up \n");
   }
   
