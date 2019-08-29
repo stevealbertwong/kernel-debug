@@ -39,72 +39,59 @@ sema_init (struct semaphore *sema, unsigned value)
  * ready_list[] -> sema->waiters[] 
  * 
  */ 
-// void
-// sema_down (struct semaphore *sema) 
-// {
-//   ASSERT (sema != NULL);
-//   ASSERT (!intr_context ());
-//   enum intr_level old_level;
-//   old_level = intr_disable ();
-
-//   while (sema->value == 0) 
-//     {
-//       if(!thread_mlfqs){
-//         // 1st option: sort() !!!!! to make sure donated_thread run first !!!!
-//         ASSERT(list_begin(&sema->waiters) != NULL);
-
-//          // 1. remove from ready_list[], add to lock->semaphore->waiters[]
-//         if (is_interior(&thread_current()->elem)){
-//           list_remove(&thread_current()->elem);
-//         }
-//         // 2. stored in lock->sema->waiters[]
-//         // list_insert_ordered(&sema->waiters, &thread_current()->elem, 
-//         //                     thread_less_func, NULL);
-//         list_push_back (&sema->waiters, &thread_current ()->elem);
-
-//       } else { // mlfqs
-//         list_push_back (&sema->waiters, &thread_current ()->elem);
-//       }
-//       thread_block ();
-//     }
-//   sema->value--;
-
-//   intr_set_level (old_level);
-// }
-
-
 void
-sema_down (struct semaphore *sema)
+sema_down (struct semaphore *sema) 
 {
-  enum intr_level old_level;
-
   ASSERT (sema != NULL);
   ASSERT (!intr_context ());
-
+  enum intr_level old_level;
   old_level = intr_disable ();
-  // insert() from ready-to-run list
-  while (sema->value == 0)
+
+  while (sema->value == 0) 
     {
-      list_insert_ordered (&sema->waiters, &thread_current()->elem,
-          comparator_greater_thread_priority, NULL);
+      if(!thread_mlfqs){
+        // 1st option: sort() !!!!! to make sure donated_thread run first !!!!
+        ASSERT(list_begin(&sema->waiters) != NULL);
+
+         // 1. remove from ready_list[], add to lock->semaphore->waiters[]
+        if (is_interior(&thread_current()->elem)){
+          list_remove(&thread_current()->elem);
+        }
+        // 2. stored in lock->sema->waiters[]
+        // list_insert_ordered(&sema->waiters, &thread_current()->elem, 
+        //                     thread_less_func, NULL);
+        list_push_back (&sema->waiters, &thread_current ()->elem);
+
+      } else { // mlfqs
+        list_push_back (&sema->waiters, &thread_current ()->elem);
+      }
       thread_block ();
     }
   sema->value--;
+
   intr_set_level (old_level);
 }
 
 
+// void
+// sema_down (struct semaphore *sema)
+// {
+//   enum intr_level old_level;
 
+//   ASSERT (sema != NULL);
+//   ASSERT (!intr_context ());
 
-
-
-
-
-
-
-
-
-
+//   old_level = intr_disable ();
+//   // insert() from ready-to-run list
+//   while (sema->value == 0)
+//     {
+//       list_insert_ordered (&sema->waiters, &thread_current()->elem,
+//           comparator_greater_thread_priority, NULL);
+//       thread_block ();
+//     }
+//   sema->value--;
+//   intr_set_level (old_level);
+// }
 
 
 
@@ -113,56 +100,51 @@ sema_down (struct semaphore *sema)
  * ready_list[] <- sema->waiters[] 
  * 
  */  
-// void
-// sema_up (struct semaphore *sema) 
-// {
-//   ASSERT (sema != NULL);
-//   enum intr_level old_level;
-//   old_level = intr_disable ();
-
-//   ASSERT(list_begin(&sema->waiters) != NULL);
-//   if (!list_empty (&sema->waiters)){
-//     // if(!thread_mlfqs){
-//     //   // see sema_down()
-//     //   list_sort(&(sema->waiters), thread_less_func, NULL);
-//     // }
-//     // // move from sema->waiters[] to ready_list[]
-//     // thread_unblock (list_entry (list_pop_front (&sema->waiters),
-//     //                             struct thread, elem));
-//     struct list_elem *max = list_max(&sema->waiters, 
-//                 (list_less_func*) thread_more_func, NULL);
-//     list_remove(max);
-//     struct thread *t = list_entry(max, struct thread, elem);
-//     thread_unblock(t);
-//   }
-//   sema->value++;
-//   thread_yield_if_not_highest_priority();
-//   intr_set_level (old_level);
-// }
-
-
 void
-sema_up (struct semaphore *sema)
+sema_up (struct semaphore *sema) 
 {
-  enum intr_level old_level;
-  struct thread *target = NULL;
-
   ASSERT (sema != NULL);
-
+  enum intr_level old_level;
   old_level = intr_disable ();
 
-  sema->value++;
-
-  if (!list_empty (&sema->waiters)) {
-    list_sort(&(sema->waiters), comparator_greater_thread_priority, NULL);
-
-    // the thread of highest priority (in sema waiters) should wake up
-    target = list_entry (list_pop_front (&sema->waiters), struct thread, elem);
-    thread_unblock (target);
+  ASSERT(list_begin(&sema->waiters) != NULL);
+  if (!list_empty (&sema->waiters)){
+    // if(!thread_mlfqs){
+    //   // see sema_down()
+    //   list_sort(&(sema->waiters), thread_less_func, NULL);
+    // }
+    // // move from sema->waiters[] to ready_list[]
+    // thread_unblock (list_entry (list_pop_front (&sema->waiters),
+    //                             struct thread, elem));
+    struct list_elem *max = list_max(&sema->waiters, 
+                (list_less_func*) thread_more_func, NULL);
+    list_remove(max);
+    struct thread *t = list_entry(max, struct thread, elem);
+    thread_unblock(t);
   }
-
+  sema->value++;
+  thread_yield_if_not_highest_priority();
   intr_set_level (old_level);
 }
+
+
+// void
+// sema_up (struct semaphore *sema)
+// {
+//   enum intr_level old_level;
+//   struct thread *target = NULL;
+//   ASSERT (sema != NULL);
+//   old_level = intr_disable ();
+
+//   sema->value++;
+//   if (!list_empty (&sema->waiters)) {
+//     list_sort(&(sema->waiters), comparator_greater_thread_priority, NULL);
+//     target = list_entry (list_pop_front (&sema->waiters), struct thread, elem);
+//     thread_unblock (target);
+//   }
+
+//   intr_set_level (old_level);
+// }
 
 
 
