@@ -55,7 +55,7 @@ sema_down (struct semaphore *sema)
 
          // 1. remove from ready_list[], add to lock->semaphore->waiters[]
         if (is_interior(&thread_current()->elem)){
-          // list_remove(&thread_current()->elem);
+          list_remove(&thread_current()->elem);
         }
         // 2. stored in lock->sema->waiters[]
         // list_insert_ordered(&sema->waiters, &thread_current()->elem, 
