@@ -144,7 +144,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   struct thread *elf_thread = tid_to_thread(tid);
   printf("process.c process_execute() before sema_down, tid: %d\n", elf_thread->tid);
   sema_down(&elf_thread->sema_load_elf); // wait child start_process()
-  // printf("process.c process_execute() after sema_down \n");  
+  printf("process.c process_execute() after sema_down \n");  
   
   // palloc_free_page (full_cmdline_copy);
 
