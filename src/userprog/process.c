@@ -221,6 +221,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 void
 process_exit (void)
 {	
+  printf("process.c process_exit() starts running \n");
   struct thread *child_thread = thread_current();
 	uint32_t *pd;
   if (child_thread->elf_file != NULL) 
