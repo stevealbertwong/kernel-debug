@@ -76,7 +76,6 @@ sema_up (struct semaphore *sema)
   old_level = intr_disable ();
 
   ASSERT(list_begin(&sema->waiters) != NULL);
-  ASSERT(!list_empty (&sema->waiters));  
   if (!list_empty (&sema->waiters)){
     // if(!thread_mlfqs){
     //   // see sema_down()
