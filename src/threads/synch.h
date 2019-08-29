@@ -8,7 +8,7 @@
 struct semaphore 
   {
     unsigned value;             // counter
-    struct list waiters;        // store() locked_thread from ready_list
+    struct list waiters;        // store() locked_thread{} from ready_list
   };
 
 void sema_init (struct semaphore *, unsigned value);

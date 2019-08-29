@@ -143,10 +143,15 @@ syscall_handler (struct intr_frame *f UNUSED)
 			break;
 		}
 	}
+	else
+		system_call_exit(-1);
+	
 	// syscall return thru intr_frame{}, then intr_exit(),
 	// then back to user side syscall(), then user program
 	f->eax = ret_val;
 }
+
+
 
 /***************************************************************/
 // PS kernel side syscalls implementation
@@ -205,6 +210,7 @@ int system_call_wait(pid_t pid)
  * 		thread_exit()
  * 
  * TODO: synch ?? return ELF status ??
+ * syscall handler bug ?? 
  * open a pcb branch before making changes !!!!
  */ 
 void system_call_exit(int status)
@@ -233,8 +239,8 @@ void system_call_exit(int status)
 	}
 	
 	// how to return elf exit status ?? 
-	t->load_ELF_status = status;	
-	printf("%s: exit(%d)\n", t->name, t->load_ELF_status);
+	t->elf_exit_status = status;	
+	printf("%s: exit(%d)\n", t->name, t->elf_exit_status);
 	
 	// palloc_free() thread_list, thread, pcb(process_exit())
 	thread_exit();

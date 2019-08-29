@@ -238,17 +238,16 @@ thread_create (const char *name, int priority,
   #ifdef USERPROG
 
   // process_wait() 
-  sema_init(&t->sema_blocked_parent, 0); //store 1 blocked thd
-	sema_init(&t->sema_blocked_child, 0);
+  sema_init(&t->sema_elf_call_exit, 0); //store 1 blocked thd
+	sema_init(&t->sema_elf_exit_status, 0);
 	sema_init(&t->sema_load_elf, 0);
   list_init(&t->fd_list);
 
-	t->load_ELF_status = 0;	// normal
+	t->elf_exit_status = 0;	// normal
 	t->exited = false;
 	t->waited = false;
 	t->parent = thread_current();
   t->total_fd = 2;
-  // printf("thread.c init_thread() 174 \n");
   #endif
 
   #ifdef FILESYSTEM

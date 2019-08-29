@@ -135,23 +135,36 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   // load ELF + interrupt switch to start running
   tid = thread_create (elf_file, PRI_DEFAULT, start_process, full_cmdline_copy);
   if (tid == TID_ERROR){
+    printf("process.c process_execute() tid error \n");
     palloc_free_page (elf_file); 
   }
 
-  // 3. wait() until finish loading ELF
-  // kernel wait for child thread start_process() to finish !!!!!
-  // process_wait() could access load_ELF_status
+  // 3. wait() child start_process() done load ELF -> elf_exit_status
+  // kernel_thread{} ready_list[] -> sema_load_elf[]
   struct thread *child_thread = tid_to_thread(tid);
-  sema_down(&child_thread->sema_load_elf); // kernel_thread{} ready_list[] -> sema_load_elf[]
+  sema_down(&child_thread->sema_load_elf); // wait child start_process()
 
   palloc_free_page (full_cmdline_copy);
+
+	if (child_thread->elf_exit_status == -1){
+    tid = TID_ERROR;
+    printf("process.c process_execute() elf_exit_status error \n");
+  }
+
   return tid;
 }
 
 
 
+/**
+ * parent process_wait(process_exec()) 
+ * parent wait() child exit() double sync
+ * 
+ * 1. elf_exit_status
+ * 2. 
+ * 
+ */ 
 
-// parent wait child exec double synchronization (parent perspective)
 // parent wait for child die before it exits + child wait till parent receives its exit_status
 // e.g. wait(exec("elf_file")) -> child thread runs ELF, parent thread runs wait()
 int
@@ -161,21 +174,29 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	parent_thread = thread_current();
 	child_thread = tid_to_thread(child_tid);
 
-	// 1. exception cases: all reasons parent does not need to wait for child
+	// 1. elf_exit_status exception cases: all reasons parent does not need to wait for child
 	// -> wrong child_tid / no parent child relationship / wait() twice error
-	if (child_thread == NULL || child_thread->parent != parent_thread || child_thread->waited)
-		return -1;
+	if (child_thread == NULL || child_thread->parent != parent_thread || child_thread->waited){
+    printf("process.c process_wait() error \n");
+    return -1;
+  }
+		
 	// -> child error status / child already exited
-	if (child_thread->load_ELF_status != 0 || child_thread->exited == true)
-		return child_thread->load_ELF_status;
+  child_thread->waited = true;
+	if (child_thread->elf_exit_status != 0 || child_thread->exited == true){
+    printf("process.c process_wait() error \n");
+    return child_thread->elf_exit_status;
+  }
 
-  // 2. trible synch -> parent child double synch + kernel user single synch
-	sema_down(&child_thread->sema_blocked_parent); // parent_thread block itself -> child.sema.waiters[]
-	// <---- restart point, child is exiting, lets get its load_ELF_status
-	int ret = child_thread->load_ELF_status; // child wont exit until parent get return status from 
-	sema_up(&child_thread->sema_blocked_child); // unblock child, let child exit
+  // 2. parent wait(exec()) waits child elf code calls exit()
+	sema_down(&child_thread->sema_elf_call_exit); // parent_thread block itself -> child.sema.waiters[]
+	
+  // <---- restart point, child is exiting, lets get its elf_exit_status
+	int ret = child_thread->elf_exit_status; // child wont exit until parent get return status from 
+	sema_up(&child_thread->sema_elf_exit_status); // unblock child, let child exit
 	child_thread->waited = true; // prevent wait() twice error
 	
+  printf("process.c process_wait() finished running \n");
   return ret;
 }
 
@@ -185,10 +206,14 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
  * parent children double synch (child "notify" parent)
  * notify == put parent thd back to ready_list
  * 
+ * child elf code block itself for parent process_wait() get its exit_status
  * 
  * future projects
  * thread->fd_list, thread->mmap_list, children_list->threads ??
  * dir_close(cur->cwd), vm_supt_destroy ??
+ * 
+ * 
+ * block itself first ?? so elf won't exit before wait ??
  */ 
 void
 process_exit (void)
@@ -197,20 +222,22 @@ process_exit (void)
 	uint32_t *pd;
   if (child_thread->elf_file != NULL) 
 		file_allow_write(child_thread->elf_file);
-  
+
   // 1. child unblock parent to get its exit_status
-	while (!list_empty(&child_thread->sema_blocked_parent.waiters)){
-    printf("process.c process_exit() before sema_up \n");
-    sema_up(&child_thread->sema_blocked_parent); // parent from child's sema
+	while (!list_empty(&child_thread->sema_elf_call_exit.waiters)){
+    // printf("process.c process_exit() before sema_up \n");
+    sema_up(&child_thread->sema_elf_call_exit);
     // printf("process.c process_exit() after sema_up \n");
   }
   
   child_thread->exited = true; // parent wont wait() on exited child
 
-	// 1. child block itself for parent to finish get its exit_status
+// syscall handler bug ?????? -> exit() should not return back to elf code, unlike other syscalls
+
+	// 1. child elf code block itself for parent process_wait() get its exit_status
 	if (child_thread->parent != NULL){
     // printf("process.c process_exit() before sema_down \n");
-		sema_down(&child_thread->sema_blocked_child);
+		sema_down(&child_thread->sema_elf_exit_status);
     // printf("process.c process_exit() after sema_down \n");
   }
 
@@ -225,6 +252,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+    printf("process.c process_exit() finished running \n");
 }
 
 
@@ -292,16 +320,16 @@ start_process (void *full_cmdline)
 
   // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
   if (!success) {
-    user_thread->load_ELF_status = -1; // error
+    user_thread->elf_exit_status = -1; // error
     sema_up(&user_thread->sema_load_elf); // parent kernel thread back to ready_list
     printf("process.c load() failed \n");
     // thread_exit ();
   } else { // if success
-    user_thread->load_ELF_status = 0;
+    user_thread->elf_exit_status = 0;
     user_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(user_thread->elf_file); // +1 deny_write_cnt
 
-    sema_up(&user_thread->sema_load_elf);    
+    sema_up(&user_thread->sema_load_elf); // notify parent process_execute()
   }
   
   // 6. kernel "interrupt switch" to user ps  

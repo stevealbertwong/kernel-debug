@@ -48,10 +48,10 @@ struct thread
     int niceness;                       // mlfqs, inflat your recent_cpu, let other threads run
 
     struct thread *parent;              // check parent, child lineage
-    struct semaphore sema_blocked_parent;    // process_wait() -> store parent until all children exits
-    struct semaphore sema_blocked_child;     // process_exit() -> store child until parent get child's exit_status 
-    struct semaphore sema_load_elf;    // process_execute() wait til start_process() done loading ELF -> load_ELF_status
-    int load_ELF_status;                // kernel knows whether user thread load_elf successfully 
+    struct semaphore sema_elf_call_exit;    // process_wait() -> store parent until all children exits
+    struct semaphore sema_elf_exit_status;     // process_exit() -> store child until parent get child's exit_status 
+    struct semaphore sema_load_elf;    // process_execute() wait til start_process() done loading ELF -> elf_exit_status
+    int elf_exit_status;                // kernel knows whether user thread load_elf successfully 
     bool exited;                        // parent wont wait on already exited child 
     bool waited;                        // wait() twice error
     struct file *elf_file;              // disable/allow write
