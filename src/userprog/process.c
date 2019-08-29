@@ -141,14 +141,14 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 
   // 3. wait() child start_process() done load ELF -> elf_exit_status
   // kernel_thread{} ready_list[] -> sema_load_elf[]
-  struct thread *child_thread = tid_to_thread(tid);
-  printf("process.c process_execute() before sema_down, tid: %d\n", child_thread->tid);
-  sema_down(&child_thread->sema_load_elf); // wait child start_process()
-  printf("process.c process_execute() after sema_down \n");
+  struct thread *elf_thread = tid_to_thread(tid);
+  printf("process.c process_execute() before sema_down, tid: %d\n", elf_thread->tid);
+  sema_down(&elf_thread->sema_load_elf); // wait child start_process()
+  // printf("process.c process_execute() after sema_down \n");
 
   palloc_free_page (full_cmdline_copy);
 
-	if (child_thread->elf_exit_status == -1){
+	if (elf_thread->elf_exit_status == -1){
     tid = TID_ERROR;
     printf("process.c process_execute() elf_exit_status error \n");
   }
@@ -320,7 +320,6 @@ start_process (void *full_cmdline)
   
   // 4. push kernel args to user_stack 
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
-  ASSERT(!success);
 
   // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
   if (!success) {
