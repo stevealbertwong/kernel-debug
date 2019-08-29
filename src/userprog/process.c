@@ -320,6 +320,7 @@ start_process (void *full_cmdline)
   
   // 4. push kernel args to user_stack 
   push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
+  ASSERT(!success);
 
   // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
   if (!success) {
