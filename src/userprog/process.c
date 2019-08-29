@@ -137,15 +137,15 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   if (tid == TID_ERROR){
     printf("process.c process_execute() tid error \n");
     palloc_free_page (elf_file); 
-  }
+  }  
 
   // 3. wait() child start_process() done load ELF -> elf_exit_status
   // kernel_thread{} ready_list[] -> sema_load_elf[]
   struct thread *elf_thread = tid_to_thread(tid);
   printf("process.c process_execute() before sema_down, tid: %d\n", elf_thread->tid);
   sema_down(&elf_thread->sema_load_elf); // wait child start_process()
-  // printf("process.c process_execute() after sema_down \n");
-
+  // printf("process.c process_execute() after sema_down \n");  
+  
   palloc_free_page (full_cmdline_copy);
 
 	if (elf_thread->elf_exit_status == -1){
@@ -173,31 +173,31 @@ int
 process_wait (tid_t child_tid) // child_tid == child thread's pid 
 {
 	printf("process.c process_wait() starts running \n");
-  struct thread *child_thread, *parent_thread;
+  struct thread *elf_thread, *parent_thread;
 	parent_thread = thread_current();
-	child_thread = tid_to_thread(child_tid);
+	elf_thread = tid_to_thread(child_tid);
 
 	// 1. elf_exit_status exception cases: all reasons parent does not need to wait for child
 	// -> wrong child_tid / no parent child relationship / wait() twice error
-	if (child_thread == NULL || child_thread->parent != parent_thread || child_thread->waited){
-    printf("process.c process_wait() 1st error \n");
+	if (elf_thread == NULL || elf_thread->parent != parent_thread || elf_thread->waited){
+    printf("process.c process_wait() system error \n");
     return -1;
   }
 		
 	// -> child error status / child already exited
-  child_thread->waited = true;
-	if (child_thread->elf_exit_status != 0 || child_thread->exited == true){
-    printf("process.c process_wait() 2nd error \n");
-    return child_thread->elf_exit_status;
+  elf_thread->waited = true;
+	if (elf_thread->elf_exit_status != 0 || elf_thread->exited == true){
+    printf("process.c process_wait() child already exited error \n");
+    return elf_thread->elf_exit_status;
   }
 
   // 2. parent wait(exec()) waits child elf code calls exit()
-	sema_down(&child_thread->sema_elf_call_exit); // parent_thread block itself -> child.sema.waiters[]
+	sema_down(&elf_thread->sema_elf_call_exit); // parent_thread block itself -> child.sema.waiters[]
 	
   // <---- restart point, child is exiting, lets get its elf_exit_status
-	int ret = child_thread->elf_exit_status; // child wont exit until parent get return status from 
-	sema_up(&child_thread->sema_elf_exit_status); // unblock child, let child exit
-	child_thread->waited = true; // prevent wait() twice error
+	int ret = elf_thread->elf_exit_status; // child wont exit until parent get return status from 
+	sema_up(&elf_thread->sema_elf_exit_status); // unblock child, let child exit
+	elf_thread->waited = true; // prevent wait() twice error
 	
   printf("process.c process_wait() finished running \n");
   return ret;
