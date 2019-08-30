@@ -22,6 +22,7 @@ struct lock
     struct semaphore semaphore; /* Binary semaphore controlling access. */
     
     // OUR IMPLEMENTATION
+    int priority;
     struct list blocked_threads; //lock_release() -> 2nd lock highest waiter
     struct list_elem thread_locks_list_elem; //thread->locks[], lock_release() 2nd lock highest waiter + thread_exit() free() all locks
   };

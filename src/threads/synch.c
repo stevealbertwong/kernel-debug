@@ -231,6 +231,7 @@ lock_init (struct lock *lock)
 {
   ASSERT (lock != NULL);
   lock->holder = NULL;
+  lock->priority = PRI_MIN;
   sema_init (&lock->semaphore, 1); // 1 lock 1 holder infinite waiters
 }
 
@@ -241,86 +242,86 @@ lock_init (struct lock *lock)
  * 2. nested_donate_priority()
  * 3. sema_down() block itself in lock's sema->waiters
  */ 
-void
-lock_acquire (struct lock *lock)
-{
-  ASSERT (lock != NULL);
-  ASSERT (!intr_context ());
-  ASSERT (!lock_held_by_current_thread (lock));
-
-  enum intr_level old_level = intr_disable();
-  
-  if(thread_mlfqs) {
-    sema_down(&lock->semaphore);
-    lock->holder = thread_current();
-    intr_set_level(old_level);
-    return;
-  } 
-  
-  bool success = sema_try_down(&lock->semaphore); // ??
-  if(!success){
-    // ASSERT(is_thread(lock->holder));
-    
-    // 1. u() 4 + donate_priority()
-    thread_current()->lock_waiting_on = lock;
-    list_push_back(&lock->semaphore.waiters, &thread_current()->elem);
-    thread_donate_priority(lock->holder);
-    
-    // 2. sema_down() block itself in lock's sema->waiters
-    sema_down(&lock->semaphore); // <- end point where thread_block()
-  }
-  
-  // <- restart point: waiter acquires lock when holder lock_release()
-  
-  // 3. u() 4 after lock acquired
-  thread_current()->lock_waiting_on = NULL;
-  lock->holder = thread_current();
-  // list_push_back(&thread_current()->locks_acquired, &lock->thread_locks_list_elem);
-  list_insert_ordered(&(lock->holder->locks_acquired), &(lock->thread_locks_list_elem),
-      comparator_greater_lock_priority, NULL);
-
-  intr_set_level(old_level);  
-  
-}
-
-
-
-// // for debugging
 // void
 // lock_acquire (struct lock *lock)
 // {
 //   ASSERT (lock != NULL);
 //   ASSERT (!intr_context ());
 //   ASSERT (!lock_held_by_current_thread (lock));
-//   struct lock *current_lock = lock;
-//   struct thread *t_holder = lock->holder; // current holder thread
-//   struct thread *t_current = thread_current();
+
 //   enum intr_level old_level = intr_disable();
-
-//   t_current->lock_waiting_on = lock;
-
-//   if(t_holder == NULL) {
-//     current_lock->holder->priority = t_current->priority;
-//   }
-
-//   while (t_holder != NULL && t_holder->priority < t_current->priority) {
-//     set_priority(t_holder, t_current->priority);
+  
+//   if(thread_mlfqs) {
+//     sema_down(&lock->semaphore);
+//     lock->holder = thread_current();
+//     intr_set_level(old_level);
+//     return;
+//   } 
+  
+//   bool success = sema_try_down(&lock->semaphore); // ??
+//   if(!success){
+//     // ASSERT(is_thread(lock->holder));
     
-//     if (current_lock->holder->priority < t_current->priority) {
-//       current_lock->holder->priority = t_current->priority;
-//     }
-//       current_lock = t_holder->lock_waiting_on;
-//       if(current_lock == NULL) break;
-//       t_holder = current_lock->holder;
+//     // 1. u() 4 + donate_priority()
+//     thread_current()->lock_waiting_on = lock;
+//     list_push_back(&lock->semaphore.waiters, &thread_current()->elem);
+//     thread_donate_priority(lock->holder);
+    
+//     // 2. sema_down() block itself in lock's sema->waiters
+//     sema_down(&lock->semaphore); // <- end point where thread_block()
 //   }
-//   sema_down (&lock->semaphore);
-//   lock->holder = thread_current ();
-//   lock->holder->lock_waiting_on = NULL;
+  
+//   // <- restart point: waiter acquires lock when holder lock_release()
+  
+//   // 3. u() 4 after lock acquired
+//   thread_current()->lock_waiting_on = NULL;
+//   lock->holder = thread_current();
+//   // list_push_back(&thread_current()->locks_acquired, &lock->thread_locks_list_elem);
 //   list_insert_ordered(&(lock->holder->locks_acquired), &(lock->thread_locks_list_elem),
 //       comparator_greater_lock_priority, NULL);
-  
+
 //   intr_set_level(old_level);  
+  
 // }
+
+
+
+// for debugging
+void
+lock_acquire (struct lock *lock)
+{
+  ASSERT (lock != NULL);
+  ASSERT (!intr_context ());
+  ASSERT (!lock_held_by_current_thread (lock));
+  struct lock *current_lock = lock;
+  struct thread *t_holder = lock->holder; // current holder thread
+  struct thread *t_current = thread_current();
+  enum intr_level old_level = intr_disable();
+
+  t_current->lock_waiting_on = lock;
+
+  if(t_holder == NULL) {
+    current_lock->priority = t_current->priority;
+  }
+
+  while (t_holder != NULL && t_holder->priority < t_current->priority) {
+    set_priority(t_holder, t_current->priority);
+    
+    if (current_lock->priority < t_current->priority) {
+      current_lock->priority = t_current->priority;
+    }
+      current_lock = t_holder->lock_waiting_on;
+      if(current_lock == NULL) break;
+      t_holder = current_lock->holder;
+  }
+  sema_down (&lock->semaphore);
+  lock->holder = thread_current ();
+  lock->holder->lock_waiting_on = NULL;
+  list_insert_ordered(&(lock->holder->locks_acquired), &(lock->thread_locks_list_elem),
+      comparator_greater_lock_priority, NULL);
+  
+  intr_set_level(old_level);  
+}
 
 
 
@@ -364,10 +365,10 @@ lock_release (struct lock *lock)
       
     list_sort(&cur->locks_acquired, comparator_greater_lock_priority, NULL); // TODO seems duplicated ??
     struct lock *next_highest_lock_acquired = list_entry( list_front(&(cur->locks_acquired)), struct lock, thread_locks_list_elem);
-    // cur->priority = next_highest_lock_acquired->holder->priority;    
+    // cur->priority = next_highest_lock_acquired->priority;    
     // thread_yield_if_not_highest_priority();
 
-    set_priority(cur, next_highest_lock_acquired->holder->priority);
+    set_priority(cur, next_highest_lock_acquired->priority);
   }
   
   // thread_set_priority(cur->original_priority); // set() ori_pri -> then nested_donate() ori_pri to priority
@@ -541,7 +542,7 @@ comparator_greater_lock_priority(const struct list_elem* a, const struct list_el
   const struct lock* x = list_entry(a, struct lock, thread_locks_list_elem);
   const struct lock* y = list_entry(b, struct lock, thread_locks_list_elem);
   ASSERT(x != NULL && y != NULL);
-  return x->holder->priority > y->holder->priority;
+  return x->priority > y->priority;
 }
 
 // // holder receives highest priority from its locks' waiters
