@@ -241,47 +241,47 @@ lock_init (struct lock *lock)
  * 2. nested_donate_priority()
  * 3. sema_down() block itself in lock's sema->waiters
  */ 
-void
-lock_acquire (struct lock *lock)
-{
-  ASSERT (lock != NULL);
-  ASSERT (!intr_context ());
-  ASSERT (!lock_held_by_current_thread (lock));
+// void
+// lock_acquire (struct lock *lock)
+// {
+//   ASSERT (lock != NULL);
+//   ASSERT (!intr_context ());
+//   ASSERT (!lock_held_by_current_thread (lock));
 
-  enum intr_level old_level = intr_disable();
+//   enum intr_level old_level = intr_disable();
   
-  if(thread_mlfqs) {
-    sema_down(&lock->semaphore);
-    lock->holder = thread_current();
-    intr_set_level(old_level);
-    return;
-  } 
+//   if(thread_mlfqs) {
+//     sema_down(&lock->semaphore);
+//     lock->holder = thread_current();
+//     intr_set_level(old_level);
+//     return;
+//   } 
   
-  bool success = sema_try_down(&lock->semaphore); // ??
-  if(!success){
-    // ASSERT(is_thread(lock->holder));
+//   bool success = sema_try_down(&lock->semaphore); // ??
+//   if(!success){
+//     // ASSERT(is_thread(lock->holder));
     
-    // 1. u() 4 + donate_priority()
-    thread_current()->lock_waiting_on = lock;
-    list_push_back(&lock->semaphore.waiters, &thread_current()->elem);
-    thread_donate_priority(lock->holder);
+//     // 1. u() 4 + donate_priority()
+//     thread_current()->lock_waiting_on = lock;
+//     list_push_back(&lock->semaphore.waiters, &thread_current()->elem);
+//     thread_donate_priority(lock->holder);
     
-    // 2. sema_down() block itself in lock's sema->waiters
-    sema_down(&lock->semaphore); // <- end point where thread_block()
-  }
+//     // 2. sema_down() block itself in lock's sema->waiters
+//     sema_down(&lock->semaphore); // <- end point where thread_block()
+//   }
   
-  // <- restart point: waiter acquires lock when holder lock_release()
+//   // <- restart point: waiter acquires lock when holder lock_release()
   
-  // 3. u() 4 after lock acquired
-  thread_current()->lock_waiting_on = NULL;
-  lock->holder = thread_current();
-  // list_push_back(&thread_current()->locks_acquired, &lock->thread_locks_list_elem);
-  list_insert_ordered(&(lock->holder->locks_acquired), &(lock->thread_locks_list_elem),
-      comparator_greater_lock_priority, NULL);
+//   // 3. u() 4 after lock acquired
+//   thread_current()->lock_waiting_on = NULL;
+//   lock->holder = thread_current();
+//   // list_push_back(&thread_current()->locks_acquired, &lock->thread_locks_list_elem);
+//   list_insert_ordered(&(lock->holder->locks_acquired), &(lock->thread_locks_list_elem),
+//       comparator_greater_lock_priority, NULL);
 
-  intr_set_level(old_level);  
+//   intr_set_level(old_level);  
   
-}
+// }
 
 
 
