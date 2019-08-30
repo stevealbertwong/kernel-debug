@@ -25,19 +25,18 @@ typedef int tid_t;
 
 struct thread
   {
-    /* Owned by thread.c. */
-    tid_t tid;                          /* Thread identifier. */
+    tid_t tid;
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
     unsigned magic;                     /* Detects stack overflow. */
-    uint8_t *stack;                     /* Saved stack pointer. */
-    int priority;                       /* Priority. */
+    uint8_t *stack;                     // esp
     struct list_elem elem;              // shared by ready_list, sema->waiters[] -> mutually exclusive
     struct list_elem all_elem;          // all_list
     
     int64_t sleep_ticks;                // number of ticks thread to sleep
     struct list_elem sleep_elem;        // wait/sleep list 
-    
+
+    int priority;                       // donated priority
     int original_priority;              // 2nd_lock_highest_waiter() + next_thread_to_run()
     struct lock *lock_waiting_on;       // nested_doante_priority(), traverse() to highest holder 
     struct list locks_acquired;         // thread_exit() free() all locks + lock_release() 2nd lock highest waiter    
@@ -101,6 +100,7 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
+void set_priority(struct thread *target, int new_priority);
 
 int thread_get_nice (void);
 void thread_set_nice (int);
