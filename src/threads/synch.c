@@ -8,7 +8,8 @@ static bool
 cv_more_func(const struct list_elem* a, const struct list_elem *b, void* aux UNUSED);
 static bool
 comparator_greater_thread_priority(const struct list_elem* a, const struct list_elem *b, void* aux UNUSED);
-
+static bool
+comparator_greater_lock_priority(const struct list_elem* a, const struct list_elem *b, void* aux UNUSED);
 
 /************************************************************/
 // semaphore
