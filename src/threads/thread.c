@@ -139,7 +139,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->sleep_ticks = THREAD_AWAKE; // BUG!!!!!!! -1 instead of 0 ===> not affected by timer_interrupt()/thread_tick()
   t->lock_waiting_on = NULL;
 
-  t->original_priority = priority;
   list_init(&t->locks_acquired);
 
   if (list_empty(&all_list)) { // initial_thread
@@ -154,9 +153,11 @@ init_thread (struct thread *t, const char *name, int priority)
   if (thread_mlfqs) {
     t->priority = 0;
     t->mlfq_priority = 0;
+    t->original_priority = priority;
     // t->mlfq_priority = compute_priority(t->recent_cpu, t->niceness);
   } else {
     t->priority = priority;
+    t->original_priority = priority;
   }
 
   old_level = intr_disable ();
@@ -562,9 +563,10 @@ static struct thread * next_thread_to_run(void) {
     if (list_empty(&ready_list)) {
       return idle_thread;
     } else {
-      max = list_max(&ready_list, (list_less_func*) thread_more_func, NULL);
-      list_remove(max); // pop_max, but less overhead
-      return list_entry(max, struct thread, elem);
+      return list_entry (list_pop_front (&ready_list), struct thread, elem);
+      // max = list_max(&ready_list, (list_less_func*) thread_more_func, NULL);
+      // list_remove(max); // pop_max, but less overhead
+      // return list_entry(max, struct thread, elem);
   }
 }
 
