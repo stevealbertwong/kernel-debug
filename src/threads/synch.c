@@ -355,15 +355,19 @@ lock_release (struct lock *lock)
   
   // 2.1 back to original priority 
   if (list_empty(&cur->locks_acquired)) { // only holding 1 lock
-    cur->priority = cur->original_priority;
+    // cur->priority = cur->original_priority;
+    set_priority(cur, cur->original_priority);
+
   
   // 2.2. get donation from other locks aready acquired (1 thread could hold many locks at the same time)
   } else {
       
     list_sort(&cur->locks_acquired, comparator_greater_lock_priority, NULL); // TODO seems duplicated ??
     struct lock *next_highest_lock_acquired = list_entry( list_front(&(cur->locks_acquired)), struct lock, thread_locks_list_elem);
-    cur->priority = next_highest_lock_acquired->holder->priority;
-    thread_yield_if_not_highest_priority();
+    // cur->priority = next_highest_lock_acquired->holder->priority;    
+    // thread_yield_if_not_highest_priority();
+
+    set_priority(cur, next_highest_lock_acquired->holder->priority);
   }
   
   // thread_set_priority(cur->original_priority); // set() ori_pri -> then nested_donate() ori_pri to priority
