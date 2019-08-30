@@ -16,7 +16,10 @@
 
 #define THREAD_MAGIC 0xcd6abf4b
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
-
+static bool
+comparator_greater_thread_priority (
+    const struct list_elem *a,
+    const struct list_elem *b, void *aux UNUSED);
 
 static int load_avg; // mlfqs
 static struct list ready_list;
