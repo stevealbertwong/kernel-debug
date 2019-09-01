@@ -172,7 +172,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 int
 process_wait (tid_t child_tid) // child_tid == child thread's pid 
 {
-	printf("process.c process_wait() starts running \n");
+	// printf("process.c process_wait() starts running \n");
   struct thread *elf_thread, *parent_thread;
 	parent_thread = thread_current();
 	elf_thread = tid_to_thread(child_tid);
