@@ -187,7 +187,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	// -> child error status / child already exited
   elf_thread->waited = true;
 	if (elf_thread->elf_exit_status != 0 || elf_thread->exited == true){
-    printf("process.c process_wait() child already exited error \n");
+    // printf("process.c process_wait() child already exited error \n");
     return elf_thread->elf_exit_status;
   }
 
@@ -228,7 +228,7 @@ process_exit (void)
 
   // 1. child unblock parent to get its exit_status
 	while (!list_empty(&child_thread->sema_elf_call_exit.waiters)){
-    printf("process.c process_exit() before sema_up, tid: %d\n", child_thread->tid);
+    // printf("process.c process_exit() before sema_up, tid: %d\n", child_thread->tid);
     sema_up(&child_thread->sema_elf_call_exit);
     // printf("process.c process_exit() after sema_up \n");
   }
@@ -237,7 +237,7 @@ process_exit (void)
 
 	// 1. child elf code block itself for parent process_wait() get its exit_status
 	if (child_thread->parent != NULL){
-    printf("process.c process_exit() before sema_down, tid: %d\n", child_thread->tid);
+    // printf("process.c process_exit() before sema_down, tid: %d\n", child_thread->tid);
 		sema_down(&child_thread->sema_elf_exit_status);
     // printf("process.c process_exit() after sema_down \n");
   }
