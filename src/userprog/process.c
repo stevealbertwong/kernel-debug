@@ -129,7 +129,6 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   }
   strlcpy (elf_file, full_cmdline, PGSIZE);
   elf_file = strtok_r(elf_file, " ", &strtoken_ptr); // parse() elf_file out of full_cmdline 
-  printf("elf_file: %s \n", elf_file);
 
   // 2. spawn child user thread start_process() to "assembly start" ELF
   // load ELF + interrupt switch to start running
@@ -142,9 +141,9 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   // 3. wait() child start_process() done load ELF -> elf_exit_status
   // kernel_thread{} ready_list[] -> sema_load_elf[]
   struct thread *elf_thread = tid_to_thread(tid);
-  printf("process.c process_execute() before sema_down, tid: %d\n", elf_thread->tid);
+  // printf("process.c process_execute() before sema_down, tid: %d\n", elf_thread->tid);
   sema_down(&elf_thread->sema_load_elf); // wait child start_process()
-  printf("process.c process_execute() after sema_down \n");  
+  // printf("process.c process_execute() after sema_down \n");  
   
   // palloc_free_page (full_cmdline_copy);
 
@@ -152,7 +151,8 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
     tid = TID_ERROR;
     printf("process.c process_execute() elf_exit_status error \n");
   }
-  printf("process.c process_execute() finished running \n");
+
+  // printf("process.c process_execute() finished running \n");
   return tid;
 }
 
@@ -221,7 +221,6 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 void
 process_exit (void)
 {	
-  printf("process.c process_exit() starts running \n");
   struct thread *child_thread = thread_current();
 	uint32_t *pd;
   if (child_thread->elf_file != NULL) 
@@ -254,7 +253,6 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
-    printf("process.c process_exit() finished running \n");
 }
 
 
@@ -330,9 +328,9 @@ start_process (void *full_cmdline)
     elf_thread->elf_exit_status = 0;
     elf_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(elf_thread->elf_file); // +1 deny_write_cnt
-    printf("process.c start_process() before sema_up, tid: %d\n", elf_thread->tid);
+    // printf("process.c start_process() before sema_up, tid: %d\n", elf_thread->tid);
     sema_up(&elf_thread->sema_load_elf); // notify parent process_execute()
-    printf("process.c start_process() after sema_up \n");
+    // printf("process.c start_process() after sema_up \n");
   }
   
   // 6. kernel "interrupt switch" to user ps  
