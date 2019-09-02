@@ -63,7 +63,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		case SYS_EXEC:
 			if (is_user_vaddr(argument + 1))
 				ret_val = system_call_exec((const char *) *(argument + 1));
-			else
+			else // if kernel addr
 				system_call_exit(-1);
 			break;
 		case SYS_WAIT:
