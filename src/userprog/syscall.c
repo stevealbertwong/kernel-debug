@@ -46,8 +46,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 	int *syscall_number = f->esp;
 	int *argument = f->esp;
 	int ret_val = 0;
-	printf("syscall no: %d \n", *syscall_number);
-	printf("syscall arg: %d \n", *(argument + 1));
+	// printf("syscall no: %d \n", *syscall_number);
+	// printf("syscall arg: %d \n", *(argument + 1));
 	if (is_user_vaddr(syscall_number))
 	{
 		switch (*syscall_number)
