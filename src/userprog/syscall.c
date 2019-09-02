@@ -144,8 +144,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 			break;
 		}
 	}
-	else
+	else{ // intr_frame->esp not in user address
 		system_call_exit(-1);
+	}
 	
 	// syscall return thru intr_frame{}, then intr_exit(),
 	// then back to user side syscall(), then user program
@@ -229,7 +230,6 @@ void system_call_exit(int status)
 	struct list *fd_list = &t->fd_list;
 	while (!list_empty(fd_list))
 	{
-		printf("syscall.c system_call_exit() \n");
 		struct list_elem *e = list_pop_front (fd_list);
     	struct file_desc *desc = list_entry(e, struct file_desc, fd_list_elem);
     	file_close(desc->f);
@@ -241,7 +241,7 @@ void system_call_exit(int status)
 	
 	// how to return elf exit status ?? 
 	t->elf_exit_status = status;	
-	printf("%s: exit(%d)\n", t->name, t->elf_exit_status);
+	// printf("%s: exit(%d)\n", t->name, t->elf_exit_status);
 	
 	// palloc_free() thread_list, thread, pcb(process_exit())
 	thread_exit();
