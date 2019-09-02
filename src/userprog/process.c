@@ -103,11 +103,15 @@ static bool install_page (void *upage, void *kpage, bool writable);
 /*******************************************************************/
 
 /**
- * parent kernel child user single synch 
+ * kernel pool parent thread
+ * wait til start_process() done loading elf
  * 
  * 1. parse() elf_file out of full_cmdline 
  * 2. spawn child user thread start_process() to "assembly start" ELF
  * 3. wait() until finish loading ELF
+ * 
+ * TODO 
+ * palloc(), init() pcb 
  */ 
 tid_t
 process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
@@ -192,7 +196,8 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
   }
 
   // 2. parent wait(exec()) waits child elf code calls exit()
-	sema_down(&elf_thread->sema_elf_call_exit); // parent_thread block itself -> child.sema.waiters[]
+  ASSERT (!elf_thread->exited);
+  sema_down(&elf_thread->sema_elf_call_exit); // parent_thread block itself -> child.sema.waiters[]
 	
   // <---- restart point, child is exiting, lets get its elf_exit_status
 	int ret = elf_thread->elf_exit_status; // child wont exit until parent get return status from 
@@ -281,6 +286,8 @@ process_exit (void)
 
 /*******************************************************************/
 /**
+ * kernel pool child thread
+ * 
  * starting point of child kernel thread
  * spawned by parent kernel thread process_execute() to "assembly start" ELF
  * 
