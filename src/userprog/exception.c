@@ -166,6 +166,7 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
   
+  // testing assembly code bypass syscall implementation to access kernel space
   if ((is_kernel_vaddr(fault_addr) && user) || not_present){
       system_call_exit(-1);
   }
