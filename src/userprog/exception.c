@@ -110,6 +110,22 @@ kill (struct intr_frame *f)
     }
 }
 
+/*****************************************************************
+// IMPORTANT!!!
+
+
+
+
+
+
+
+
+
+
+
+
+
+******************************************************************/
 /* Page fault handler.  This is a skeleton that must be filled in
    to implement virtual memory.  Some solutions to project 2 may
    also require modifying this code.
@@ -151,10 +167,8 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
   
   if ((is_kernel_vaddr(fault_addr) && user) || not_present){
-      // system_call_exit(-1);
-      printf("page fault - not present error bro \n");
+      system_call_exit(-1);
   }
-   
 
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
