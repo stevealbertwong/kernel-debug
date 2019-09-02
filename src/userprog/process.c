@@ -153,7 +153,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 
 	if (elf_thread->elf_exit_status == -1){
     tid = TID_ERROR;
-    printf("process.c process_execute() elf_exit_status error \n");
+    // printf("process.c process_execute() elf_exit_status error \n");
   }
 
   // printf("process.c process_execute() finished running \n");
@@ -184,7 +184,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	// 1. elf_exit_status exception cases: all reasons parent does not need to wait for child
 	// -> wrong child_tid / no parent child relationship / wait() twice error
 	if (elf_thread == NULL || elf_thread->parent != parent_thread || elf_thread->waited){
-    printf("process.c process_wait() system error \n");
+    // printf("process.c process_wait() system error \n");
     return -1;
   }
 		
