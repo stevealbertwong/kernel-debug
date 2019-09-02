@@ -152,7 +152,7 @@ page_fault (struct intr_frame *f)
   
   if ((is_kernel_vaddr(fault_addr) && user) || not_present){
       // system_call_exit(-1);
-      printf("not present error bro \n");
+      printf("page fault - not present error bro \n");
   }
    
 
