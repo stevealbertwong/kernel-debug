@@ -82,9 +82,11 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// FS
 		case SYS_CREATE:
-			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2))
+			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2)){
 				ret_val = system_call_create((const char *) *(argument + 1),
 						(unsigned) *(argument + 2));
+				printf("syscall.c user lib system_call_create() %d", ret_val);
+			}
 			else
 				system_call_exit(-1);
 			break;
@@ -460,7 +462,7 @@ bool system_call_create(const char *file_name, unsigned initial_size)
 	{
 		lock_acquire(&file_lock);
 		bool success = filesys_create(file_name, initial_size);
-		printf("syscall.c system_call_create() %d", success);
+		printf("syscall.c kernel side system_call_create() %d", success);
 		lock_release(&file_lock);
 		return success;
 	}
