@@ -85,9 +85,11 @@ syscall_handler (struct intr_frame *f UNUSED)
 			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2))
 				ret_val = system_call_create((const char *) *(argument + 1),
 						(unsigned) *(argument + 2));				
-			else
-				printf("syscall.c case SYS_CREATE: is_user_vaddr() %d \n", ret_val);
+			else{
+				printf("syscall.c case SYS_CREATE: is_user_vaddr(argument) failed %d \n", ret_val);
 				system_call_exit(-1);
+			}
+
 			break;
 		case SYS_REMOVE:
 			if (is_user_vaddr(argument + 1))
@@ -146,6 +148,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 	}
 	else{ // intr_frame->esp not in user address
+		printf("syscall.c is_user_vaddr(syscall_number) %d \n", ret_val);
 		system_call_exit(-1);
 	}
 	
