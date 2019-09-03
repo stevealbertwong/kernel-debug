@@ -241,7 +241,7 @@ void system_call_exit(int status)
 	
 	// how to return elf exit status ?? 
 	t->elf_exit_status = status;	
-	// printf("%s: exit(%d)\n", t->name, t->elf_exit_status);
+	printf("%s: exit(%d)\n", t->name, t->elf_exit_status);
 	
 	// palloc_free() thread_list, thread, pcb(process_exit())
 	thread_exit();
@@ -460,6 +460,7 @@ bool system_call_create(const char *file_name, unsigned initial_size)
 	{
 		lock_acquire(&file_lock);
 		bool success = filesys_create(file_name, initial_size);
+		printf("syscall.c system_call_create() %d", success);
 		lock_release(&file_lock);
 		return success;
 	}
