@@ -321,10 +321,7 @@ start_process (void *full_cmdline)
   // + init() pagedir, supt + notify kernel + deny_write(elf)
   success = load (elf_file, &if_.eip, &if_.esp);
   
-  // 4. push kernel args to user_stack 
-  push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
-
-  // 5. unblock kernel_thread after load_elf() + push_cmdline_tokens()
+  // 4.1 free kernel process_execute() thread, quit kernel start_process() thread
   if (!success) {
     elf_thread->elf_exit_status = -1; // error
     sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
@@ -333,6 +330,8 @@ start_process (void *full_cmdline)
     thread_exit ();
     // system_call_exit(1);
   } else { // if success
+    // 4.2 unblock kernel_thread after load_elf() + push kernel args to user_stack 
+    push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
     elf_thread->elf_exit_status = 0;
     elf_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(elf_thread->elf_file); // +1 deny_write_cnt
