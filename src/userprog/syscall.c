@@ -469,9 +469,10 @@ bool system_call_create(const char *file_name, unsigned initial_size)
 		lock_release(&file_lock);
 		return success;
 	}
-	else
+	else{
 		printf("filesys.c system_call_create() filename is null \n");
 		system_call_exit(-1);
+	}
 	return false;
 }
 
