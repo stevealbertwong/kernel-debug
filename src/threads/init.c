@@ -131,8 +131,6 @@ main (void)
 #endif
 
   printf ("Boot complete.\n");
-  printf ("hello world \n");
-  
   /* Run actions specified on kernel command line. */
   run_actions (argv);
   /* Finish up. */

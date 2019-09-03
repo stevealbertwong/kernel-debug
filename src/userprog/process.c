@@ -322,11 +322,10 @@ start_process (void *full_cmdline)
   success = load (elf_file, &if_.eip, &if_.esp);
   
   // 4.1 free kernel process_execute() thread, quit kernel start_process() thread
-  if (!success) {
+  if (!success) { // load failed e.g. filename is null
     elf_thread->elf_exit_status = -1; // error
     sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
     palloc_free_page(cmdline_tokens);
-    printf("process.c load() failed \n");
     thread_exit ();
     // system_call_exit(1);
   } else { // if success
@@ -340,13 +339,11 @@ start_process (void *full_cmdline)
     // printf("process.c start_process() after sema_up \n");
   }
   
-  printf("process.c load() before assembly \n");
   // 6. kernel "interrupt switch" to user ps  
   // "assembly start" ps by simulating a return from interrupt i.e. jmp intr_exit(&if)
   // intr_exit() passes intr_frame{}/stack_frame to user ps 
   // pop to segment registers : intr_frame{}->%esp == cmdline stored on user_stack
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
-  printf("process.c load() after assembly \n");
 
   palloc_free_page(cmdline_tokens);
   NOT_REACHED ();
