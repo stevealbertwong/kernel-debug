@@ -236,9 +236,12 @@ void system_call_exit(int status)
 	{
 		struct list_elem *e = list_pop_front (fd_list);
     	struct file_desc *desc = list_entry(e, struct file_desc, fd_list_elem);
-    	file_close(desc->f);
-    	palloc_free_page(desc);
-		
+    	if(desc->d != NULL){
+			dir_close(desc->d);
+		}else{
+			file_close(desc->f);
+		}
+    	free(desc);		
 		// e = list_begin(&t->fd_list);
 		// system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
 	}
