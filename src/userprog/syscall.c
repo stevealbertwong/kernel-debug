@@ -252,40 +252,6 @@ void system_call_exit(int status)
 }
 
 
-/**
- * palloc_free() fd_list[i]->file/dir n file_desc
- * 
- * 1. for-loop thread->fd_list[] for file_desc{}
- * 2. remove() file_desc{} from thread->fd_list[]
- * 3. free() file/dir n file_desc
- */
-void system_call_close(int fd)
-{
-	// 1. for-loop thread->fd_list[] for file_desc{}
-	lock_acquire(&file_lock);
-	struct file_desc *file_desc = get_file_desc(fd);
-
-	if (file_desc == NULL){
-		printf("syscall.c system_call_close() file_desc == NULL \n");
-	}	
-
-	// 2. remove() file_desc{} from thread->fd_list[]
-	list_remove(&file_desc->fd_list_elem);
-	
-	// 3. free() file/dir
-	if(file_desc->d != NULL){
-		dir_close(file_desc->d);
-	}else{
-		file_close(file_desc->f);
-	}
-	free(file_desc);
-	lock_release(&file_lock);
-}
-
-
-
-
-
 void system_call_halt(void)
 {
 	shutdown_power_off();
@@ -319,9 +285,9 @@ void system_call_halt(void)
 /***************************************************************/
 
 /**
- * Returns a nonnegative integer handle - "file descriptor" (fd)
- * or -1 if the file could not be opened.
- * fd 0 (STDIN_FILENO) is standard input, fd 1 (STDOUT_FILENO) is standard output. 
+ * returns fd or -1 if the file could not be opened.
+ * fd 0 (STDIN_FILENO) is standard input, 
+ * fd 1 (STDOUT_FILENO) is standard output. 
  * Each process has an independent set of file descriptors
  * 
  * 1. given file_name, find inode + malloc(), populate() file{}
@@ -342,7 +308,7 @@ int system_call_open(const char *file_name)
 		if (file == NULL)
 			return -1;
 
-		// 2. malloc() file_desc{}
+		// 2. malloc() file_desc{} -> fd free() by system_call_close
 		struct file_desc *file_desc = (struct file_desc *) malloc(
 				sizeof(struct file_desc));
 		if (file_desc == NULL)
@@ -368,6 +334,37 @@ int system_call_open(const char *file_name)
 		system_call_exit(-1);
 	}
 	return -1;
+}
+
+
+/**
+ * palloc_free() fd_list[i]->file/dir n file_desc
+ * 
+ * 1. for-loop thread->fd_list[] for file_desc{}
+ * 2. remove() file_desc{} from thread->fd_list[]
+ * 3. free() file/dir n file_desc
+ */
+void system_call_close(int fd)
+{
+	// 1. for-loop thread->fd_list[] for file_desc{}
+	lock_acquire(&file_lock);
+	struct file_desc *file_desc = get_file_desc(fd);
+
+	if (file_desc == NULL){
+		printf("syscall.c system_call_close() file_desc == NULL \n");
+	}	
+
+	// 2. remove() file_desc{} from thread->fd_list[]
+	list_remove(&file_desc->fd_list_elem);
+	
+	// 3. free() file/dir
+	if(file_desc->d != NULL){
+		dir_close(file_desc->d);
+	}else{
+		file_close(file_desc->f);
+	}
+	free(file_desc);
+	lock_release(&file_lock);
 }
 
 
@@ -468,7 +465,6 @@ bool system_call_create(const char *file_name, unsigned initial_size)
 		return success;
 	}
 	else{
-		printf("filesys.c system_call_create() filename is null \n");
 		system_call_exit(-1);
 	}
 	return false;
