@@ -39,7 +39,6 @@ filesys_create (const char *name, off_t initial_size)
                   && inode_create (inode_sector, initial_size)
                   && dir_add (dir, name, inode_sector));
   if (!success && inode_sector != 0){
-    printf("filesys.c filesys_create() failed \n");
     free_map_release (inode_sector, 1);
   }
   dir_close (dir);

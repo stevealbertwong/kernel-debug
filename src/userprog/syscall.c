@@ -84,7 +84,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		// FS
 		case SYS_CREATE:
 			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2)){
-				printf("syscall.c case SYS_CREATE: system_call_create called \n");
 				ret_val = system_call_create((const char *) *(argument + 1),
 						(unsigned) *(argument + 2));				
 			}else{
@@ -119,8 +118,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 			else
 				system_call_exit(-1);
 			break;
-		case SYS_WRITE:	//Write System call
-			//printf("System call to write");
+		case SYS_WRITE:
 			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2)
 					&& is_user_vaddr(argument + 3))
 				ret_val = system_call_write(*(argument + 1),
@@ -464,11 +462,8 @@ bool system_call_create(const char *file_name, unsigned initial_size)
 {
 	if (file_name != NULL)
 	{
-		printf("syscall.c kernel side system_call_create() 1 \n");
 		lock_acquire(&file_lock);
-		printf("syscall.c kernel side system_call_create() 2 \n");
 		bool success = filesys_create(file_name, initial_size);
-		printf("syscall.c kernel side system_call_create() %d \n", success);
 		lock_release(&file_lock);
 		return success;
 	}
