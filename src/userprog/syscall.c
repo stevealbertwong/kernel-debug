@@ -463,7 +463,9 @@ bool system_call_create(const char *file_name, unsigned initial_size)
 {
 	if (file_name != NULL)
 	{
+		printf("syscall.c kernel side system_call_create() 1 \n");
 		lock_acquire(&file_lock);
+		printf("syscall.c kernel side system_call_create() 2 \n");
 		bool success = filesys_create(file_name, initial_size);
 		printf("syscall.c kernel side system_call_create() %d \n", success);
 		lock_release(&file_lock);
