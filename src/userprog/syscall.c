@@ -82,11 +82,11 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		// FS
 		case SYS_CREATE:
-			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2))
+			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2)){
 				printf("syscall.c case SYS_CREATE: system_call_create called %d \n", ret_val);
 				ret_val = system_call_create((const char *) *(argument + 1),
 						(unsigned) *(argument + 2));				
-			else{
+			}else{
 				printf("syscall.c case SYS_CREATE: is_user_vaddr(argument) failed %d \n", ret_val);
 				system_call_exit(-1);
 			}
