@@ -354,19 +354,20 @@ void system_call_close(int fd)
 	struct file_desc *file_desc = get_file_desc(fd);
 
 	if (file_desc == NULL){
-		printf("syscall.c system_call_close() file_desc == NULL \n");
-	}	
-
-	// 2. remove() file_desc{} from thread->fd_list[]
-	list_remove(&file_desc->fd_list_elem);
-	
-	// 3. free() file/dir
-	if(file_desc->d != NULL){
-		dir_close(file_desc->d);
+		// system_call_exit(-1);
+		// printf("syscall.c system_call_close() file_desc == NULL \n");
 	}else{
-		file_close(file_desc->f);
+		// 2. remove() file_desc{} from thread->fd_list[]
+		list_remove(&file_desc->fd_list_elem);
+		
+		// 3. free() file/dir
+		if(file_desc->d != NULL){
+			dir_close(file_desc->d);
+		}else{
+			file_close(file_desc->f);
+		}
+		free(file_desc);		
 	}
-	free(file_desc);
 	lock_release(&file_lock);
 }
 
