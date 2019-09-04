@@ -128,6 +128,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 				system_call_exit(-1);
 			break;
 		case SYS_SEEK:
+			// fd, pos
 			if (is_user_vaddr(argument + 1) && is_user_vaddr(argument + 2))
 				system_call_seek(*(argument + 1), *(argument + 2));
 			else
@@ -285,8 +286,7 @@ void system_call_halt(void)
 
 
 
-/***************************************************************/
-
+/********************************************************************/
 /**
  * returns fd or -1 if the file could not be opened.
  * fd 0 (STDIN_FILENO) is standard input, 
@@ -440,6 +440,8 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		// 2. for-loop() file_desc
 		lock_acquire(&file_lock);
 		struct file_desc *file_desc = get_file_desc(fd);
+		ASSERT(file_desc != NULL);
+		ASSERT(file_desc->f != NULL);
 		lock_release(&file_lock);
 		if (file_desc == NULL || file_desc->d != NULL){
 			return -1;
@@ -449,6 +451,8 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		lock_acquire(&file_lock);
 		int bytes_written = -1;
 		bytes_written = file_write(file_desc->f, buffer, size);
+		printf("syscall.c system_call_write() bytes_written %d \n", bytes_written);
+		ASSERT(bytes_written == size);
 		lock_release(&file_lock);
 		return bytes_written;
 	}
