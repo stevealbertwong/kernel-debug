@@ -197,6 +197,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 
   // 2. parent wait(exec()) waits child elf code calls exit()
   ASSERT (!elf_thread->exited);
+  printf("process.c process_wait() gets to sema_down() and starts waiting for exec() elf code \n");
   sema_down(&elf_thread->sema_elf_call_exit); // parent_thread block itself -> child.sema.waiters[]
 	
   // <---- restart point, child is exiting, lets get its elf_exit_status
