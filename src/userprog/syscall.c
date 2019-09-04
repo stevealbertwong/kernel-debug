@@ -443,9 +443,10 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		lock_acquire(&file_lock);
 		printf("syscall.c system_call_write() fd %d \n", fd);
 		struct file_desc *file_desc = get_file_desc(fd);
-		ASSERT(file_desc != NULL);
-		ASSERT(file_desc->f != NULL);
+		// ASSERT(file_desc != NULL);
+		// ASSERT(file_desc->f != NULL);
 		if (file_desc == NULL || file_desc->d != NULL){
+			printf("syscall.c system_call_write() file_desc is null %d \n", fd);
 			lock_release(&file_lock);
 			return -1;
 		}
