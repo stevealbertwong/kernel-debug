@@ -445,14 +445,14 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		struct file_desc *file_desc = get_file_desc(fd);
 		ASSERT(file_desc != NULL);
 		ASSERT(file_desc->f != NULL);
-		lock_release(&file_lock);
 		if (file_desc == NULL || file_desc->d != NULL){
+			lock_release(&file_lock);
 			return -1;
 		}
 		
 		// 3. file_write()
-		lock_acquire(&file_lock);
-		int bytes_written = -1;		
+		int bytes_written = -1;
+		file_allow_write(file_desc->f);
 		bytes_written = file_write(file_desc->f, buffer, size);
 		printf("syscall.c system_call_write() bytes_written %d, size %d \n", bytes_written, size);
 		lock_release(&file_lock);
