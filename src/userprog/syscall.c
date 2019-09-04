@@ -453,7 +453,6 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		// 3. file_write()
 		lock_acquire(&file_lock);
 		int bytes_written = -1;		
-		file_allow_write(file_desc->f);
 		bytes_written = file_write(file_desc->f, buffer, size);
 		printf("syscall.c system_call_write() bytes_written %d, size %d \n", bytes_written, size);
 		lock_release(&file_lock);
