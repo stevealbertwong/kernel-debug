@@ -191,7 +191,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	// -> child error status / child already exited
   elf_thread->waited = true;
 	if (elf_thread->elf_exit_status != 0 || elf_thread->exited == true){
-    // printf("process.c process_wait() child already exited error \n");
+    printf("process.c process_wait() exec() elf code already exited before wait() \n");
     return elf_thread->elf_exit_status;
   }
 
