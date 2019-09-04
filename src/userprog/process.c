@@ -202,7 +202,8 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	
   // <---- restart point, child is exiting, lets get its elf_exit_status
 	int ret = elf_thread->elf_exit_status; // child wont exit until parent get return status from 
-	sema_up(&elf_thread->sema_elf_exit_status); // unblock child, let child exit
+	printf("process.c process_wait() gets to sema_down() about to sema_up and finish \n");
+  sema_up(&elf_thread->sema_elf_exit_status); // unblock child, let child exit
 	elf_thread->waited = true; // prevent wait() twice error
 	
   return ret;
