@@ -227,8 +227,10 @@ process_exit (void)
 {	
   struct thread *child_thread = thread_current();
 	uint32_t *pd;
-  if (child_thread->elf_file != NULL) 
-		file_allow_write(child_thread->elf_file);
+  if (child_thread->elf_file != NULL){
+    file_allow_write(child_thread->elf_file);
+    file_close(child_thread->elf_file);
+  }
 
   // 1. child unblock parent to get its exit_status
 	while (!list_empty(&child_thread->sema_elf_call_exit.waiters)){

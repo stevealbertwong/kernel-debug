@@ -22,6 +22,8 @@
         "ctype.h": "c",
         "sstream": "c",
         "filesys.h": "c",
-        "thread": "c"
+        "thread": "c",
+        "stddef.h": "c",
+        "debug.h": "c"
     }
 }
