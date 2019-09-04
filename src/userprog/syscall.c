@@ -326,6 +326,7 @@ int system_call_open(const char *file_name)
 		lock_acquire(&file_lock);		
 		file_desc->f = file;
 		thread_current()->total_fd +=1; 
+		printf("syscall.c tid %d calling system_call_open() \n",thread_current()->tid);		
 		file_desc->id = thread_current()->total_fd;
 		
 		// 4. append() file_desc{} to fd_list[]
@@ -453,11 +454,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		
 		// 3. file_write()
 		int bytes_written = -1;
-		file_allow_write(file_desc->f);
-		file_allow_write(file_desc->f);
-		file_allow_write(file_desc->f);
-		file_allow_write(file_desc->f);
-		file_allow_write(file_desc->f);
+		// file_allow_write(file_desc->f);
 		bytes_written = file_write(file_desc->f, buffer, size);
 		printf("syscall.c system_call_write() bytes_written %d, size %d \n", bytes_written, size);
 		lock_release(&file_lock);
