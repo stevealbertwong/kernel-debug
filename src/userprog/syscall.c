@@ -291,6 +291,7 @@ void system_call_halt(void)
  * returns fd or -1 if the file could not be opened.
  * fd 0 (STDIN_FILENO) is standard input, 
  * fd 1 (STDOUT_FILENO) is standard output. 
+ * fd 2 is stanfard error
  * Each process has an independent set of file descriptors
  * 
  * 1. given file_name, find inode + malloc(), populate() file{}
@@ -302,8 +303,7 @@ void system_call_halt(void)
  */
 int system_call_open(const char *file_name)
 {
-	if (file_name != NULL)
-	{
+	if (file_name != NULL){
 		// 1. given file_name, find inode + malloc(), populate() file{}
 		lock_acquire(&file_lock); // multi-threads open() same file
 		struct file *file = filesys_open(file_name);
@@ -334,9 +334,7 @@ int system_call_open(const char *file_name)
 				&file_desc->fd_list_elem);
 		lock_release(&file_lock);
 		return file_desc->id;
-	}
-	else
-	{
+	}else{ // filename == null
 		system_call_exit(-1);
 	}
 	return -1;
@@ -356,20 +354,19 @@ void system_call_close(int fd)
 	lock_acquire(&file_lock);
 	struct file_desc *file_desc = get_file_desc(fd);
 
-	if (file_desc == NULL){
-		system_call_exit(-1);
-		// printf("syscall.c system_call_close() file_desc == NULL \n");
-	}else{
+	// if (file_desc == NULL){
+	// 	// system_call_exit(-1);
+	// 	// printf("syscall.c system_call_close() file_desc == NULL \n");
+	// }else{
+
+	if(file_desc && file_desc->f){
 		// 2. remove() file_desc{} from thread->fd_list[]
 		list_remove(&file_desc->fd_list_elem);
 		
 		// 3. free() file/dir
-		if(file_desc->d != NULL){
-			dir_close(file_desc->d);
-		}else{
-			file_close(file_desc->f);
-		}
-		free(file_desc);		
+		file_close(file_desc->f);
+		if(file_desc->d != NULL) dir_close(file_desc->d);
+		free(file_desc);
 	}
 	lock_release(&file_lock);
 }
@@ -430,7 +427,8 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	// 1. check buffer
 	if (!is_user_vaddr(buffer) || !is_user_vaddr(buffer + size))
 		system_call_exit(-1); // prevent user w() kernel memory to disk
-
+	
+	lock_acquire(&file_lock);
 	// 1. check fd
 	switch (fd){
 	case STDIN_FILENO: // 0
@@ -441,7 +439,6 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	
 	default: // normal fd
 		// 2. for-loop() file_desc
-		lock_acquire(&file_lock);
 		printf("syscall.c system_call_write() fd %d \n", fd);
 		struct file_desc *file_desc = get_file_desc(fd);
 		// ASSERT(file_desc != NULL);
