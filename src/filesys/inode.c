@@ -151,9 +151,11 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   off_t bytes_written = 0;
   uint8_t *bounce = NULL;
 
-  if (inode->deny_write_cnt)
+  if (inode->deny_write_cnt){
     printf("inode.c inode->deny_write_cnt \n");
     return 0;
+  }
+
 
   // TODO -> if beyond EOF, implements file growth
 
