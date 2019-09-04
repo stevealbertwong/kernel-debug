@@ -477,7 +477,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   success = true;
 
  done:
-  // file_close (file);
+  file_close (file);
   return success;
 }
 
