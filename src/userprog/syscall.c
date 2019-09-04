@@ -308,12 +308,14 @@ int system_call_open(const char *file_name)
 		lock_acquire(&file_lock); // multi-threads open() same file
 		struct file *file = filesys_open(file_name);
 		lock_release(&file_lock);
+		ASSERT(file != NULL);
 		if (file == NULL)
 			return -1;
 
 		// 2. malloc() file_desc{} -> fd free() by system_call_close
 		struct file_desc *file_desc = (struct file_desc *) malloc(
 				sizeof(struct file_desc));
+		ASSERT(file_desc != NULL);
 		if (file_desc == NULL)
 		{
 			file_close(file);
@@ -450,7 +452,8 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		
 		// 3. file_write()
 		lock_acquire(&file_lock);
-		int bytes_written = -1;
+		int bytes_written = -1;		
+		file_allow_write(file_desc->f);
 		bytes_written = file_write(file_desc->f, buffer, size);
 		printf("syscall.c system_call_write() bytes_written %d, size %d \n", bytes_written, size);
 		lock_release(&file_lock);

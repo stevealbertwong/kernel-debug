@@ -24,6 +24,7 @@
         "filesys.h": "c",
         "thread": "c",
         "stddef.h": "c",
-        "debug.h": "c"
+        "debug.h": "c",
+        "file.h": "c"
     }
 }
