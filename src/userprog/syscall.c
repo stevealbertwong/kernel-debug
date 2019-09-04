@@ -428,7 +428,6 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	if (!is_user_vaddr(buffer) || !is_user_vaddr(buffer + size))
 		system_call_exit(-1); // prevent user w() kernel memory to disk
 	
-	lock_acquire(&file_lock);
 	// 1. check fd
 	switch (fd){
 	case STDIN_FILENO: // 0
@@ -439,6 +438,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	
 	default: // normal fd
 		// 2. for-loop() file_desc
+		lock_acquire(&file_lock);		
 		printf("syscall.c system_call_write() fd %d \n", fd);
 		struct file_desc *file_desc = get_file_desc(fd);
 		// ASSERT(file_desc != NULL);
