@@ -357,7 +357,7 @@ void system_call_close(int fd)
 	struct file_desc *file_desc = get_file_desc(fd);
 
 	if (file_desc == NULL){
-		// system_call_exit(-1);
+		system_call_exit(-1);
 		// printf("syscall.c system_call_close() file_desc == NULL \n");
 	}else{
 		// 2. remove() file_desc{} from thread->fd_list[]
