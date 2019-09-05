@@ -334,12 +334,12 @@ int system_call_open(const char *file_name)
 		// 4. append() file_desc{} to fd_list[]
 		list_push_back(&thread_current()->fd_list, &file_desc->fd_list_elem);
 		
-		
+		// DEBUG purpose
 		struct file_desc *file_desc_copy = get_file_desc(file_desc->id);
-		// ASSERT(file_desc_copy != NULL);
-		// ASSERT(file_desc_copy->f != NULL);
 		if (file_desc_copy == NULL){
 			printf("system_call_open() reopen failed ! \n");
+		}else{
+			printf("system_call_open() reopen succeeded ! \n");
 		}
 		
 		lock_release(&file_lock);
