@@ -363,7 +363,6 @@ void system_call_close(int fd)
 	// 1. for-loop thread->fd_list[] for file_desc{}
 	lock_acquire(&file_lock);
 	struct file_desc *file_desc = get_file_desc(fd);
-	printf("syscall.c system_call_close() is called \n");
 
 	// if (file_desc == NULL){
 	// 	// system_call_exit(-1);
@@ -373,15 +372,10 @@ void system_call_close(int fd)
 	if(file_desc && file_desc->f){
 		// 2. remove() file_desc{} from thread->fd_list[]
 		list_remove(&file_desc->fd_list_elem);
-		printf("syscall.c system_call_close() is called 2 \n");
 		// 3. free() file/dir
 		file_close(file_desc->f);
 		// if(file_desc->d != NULL) dir_close(file_desc->d);
-		printf("syscall.c system_call_close() is called 3 \n");
 		free(file_desc);
-		printf("syscall.c system_call_close() is called 4 \n");
-	}else{
-		 printf("syscall.c system_call_close() file_desc == NULL \n");
 	}
 	lock_release(&file_lock);
 }
