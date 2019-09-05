@@ -150,7 +150,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 	}
 	else{ // intr_frame->esp not in user address
-		printf("syscall.c is_user_vaddr(syscall_number) %d \n", ret_val);
+		// printf("syscall.c is_user_vaddr(syscall_number) %d \n", ret_val);
 		system_call_exit(-1);
 	}
 	
@@ -312,7 +312,7 @@ int system_call_open(const char *file_name)
 		struct file *file = filesys_open(file_name);
 		lock_release(&file_lock);
 		if (file == NULL){
-			printf("system_call_open() null file \n");
+			// printf("system_call_open() null file \n");
 			return -1;			
 		}
 		// 2. malloc() file_desc{} -> fd free() by system_call_close
@@ -321,7 +321,7 @@ int system_call_open(const char *file_name)
 		if (file_desc == NULL)
 		{
 			file_close(file);
-			printf("system_call_open() null fd \n");
+			// printf("system_call_open() null fd \n");
 			return -1;
 		}
 
@@ -413,7 +413,7 @@ int system_call_read(int fd, void *buffer, unsigned size)
 		struct file_desc *file_desc = get_file_desc(fd);
 		lock_release(&file_lock);
 		if (file_desc == NULL){
-			printf("system_call_read() null fd %d\n", fd);
+			// printf("system_call_read() null fd %d\n", fd);
 			return -1;
 		}
 		
@@ -581,7 +581,7 @@ int system_call_filesize(int fd)
 	struct file_desc *file_desc = get_file_desc(fd);
 	lock_release(&file_lock);
 	if (file_desc == NULL){
-		printf("system_call_filesize() null fd :%d \n", fd);
+		// printf("system_call_filesize() null fd :%d \n", fd);
 		return -1;
 	}
 		
