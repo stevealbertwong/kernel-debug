@@ -312,9 +312,10 @@ int system_call_open(const char *file_name)
 		struct file *file = filesys_open(file_name);
 		lock_release(&file_lock);
 		ASSERT(file != NULL);
-		if (file == NULL)
-			return -1;
-
+		if (file == NULL){
+			printf("system_call_open() null file \n");
+			return -1;			
+		}
 		// 2. malloc() file_desc{} -> fd free() by system_call_close
 		struct file_desc *file_desc = (struct file_desc *) malloc(
 				sizeof(struct file_desc));
@@ -322,6 +323,7 @@ int system_call_open(const char *file_name)
 		if (file_desc == NULL)
 		{
 			file_close(file);
+			printf("system_call_open() null fd \n");
 			return -1;
 		}
 
