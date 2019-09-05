@@ -327,9 +327,8 @@ int system_call_open(const char *file_name)
 		lock_acquire(&file_lock);		
 		file_desc->f = file;
 		thread_current()->total_fd +=1; 
-		printf("syscall.c tid %d calling system_call_open() \n",thread_current()->tid);		
 		file_desc->id = thread_current()->total_fd;
-		
+		printf("syscall.c fid: %d, tid: %d calling system_call_open() \n",thread_current()->tid, file_desc->id);
 		// 4. append() file_desc{} to fd_list[]
 		list_push_back(&thread_current()->fd_list,
 				&file_desc->fd_list_elem);
@@ -425,7 +424,6 @@ int system_call_read(int fd, void *buffer, unsigned size)
 // check fd, buffer + for-loop() file_desc + file_write()
 int system_call_write(int fd, const void *buffer, unsigned size)
 {
-	printf("syscall.c system_call_write() fd %d \n", fd);
 	// 1. check buffer
 	if (!is_user_vaddr(buffer) || !is_user_vaddr(buffer + size))
 		system_call_exit(-1); // prevent user w() kernel memory to disk
@@ -434,8 +432,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	switch (fd){
 	case STDIN_FILENO: // 0
 		return -1;
-	case STDOUT_FILENO: // 1
-		printf("syscall.c system_call_write() STDOUT_FILENO is called \n", fd);
+	case STDOUT_FILENO: // 1 -> printf()
 		putbuf(buffer, size); // w() to stdout
 		return size;
 	
@@ -443,6 +440,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		// 2. for-loop() file_desc
 		lock_acquire(&file_lock);
 		struct file_desc *file_desc = get_file_desc(fd);
+		printf("syscall.c system_call_write() fd %d \n", fd);		
 		// ASSERT(file_desc != NULL);
 		// ASSERT(file_desc->f != NULL);
 		if (file_desc == NULL || file_desc->d != NULL){
