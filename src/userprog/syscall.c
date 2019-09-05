@@ -330,7 +330,7 @@ int system_call_open(const char *file_name)
 		file_desc->f = file;
 		thread_current()->total_fd +=1; 
 		file_desc->id = thread_current()->total_fd;
-		// printf("syscall.c fid: %d, tid: %d calling system_call_open() \n", file_desc->id, thread_current()->tid);
+		printf("syscall.c fid: %d, tid: %d calling system_call_open() \n", file_desc->id, thread_current()->tid);
 		
 		// 4. append() file_desc{} to fd_list[]
 		list_push_back(&thread_current()->fd_list, &file_desc->fd_list_elem);
