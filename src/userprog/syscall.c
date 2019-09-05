@@ -433,6 +433,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	case STDIN_FILENO: // 0
 		return -1;
 	case STDOUT_FILENO: // 1
+		printf("syscall.c system_call_write() STDOUT_FILENO is called \n", fd);
 		putbuf(buffer, size); // w() to stdout
 		return size;
 	
