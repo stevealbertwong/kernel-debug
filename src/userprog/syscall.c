@@ -238,17 +238,17 @@ void system_call_exit(int status)
 	lock_acquire(&file_lock);
 	while (!list_empty(fd_list))
 	{
-		struct list_elem *e = list_begin (fd_list);
-    	struct file_desc *desc = list_entry(e, struct file_desc, fd_list_elem);
-    	if(desc->d != NULL){
-			dir_close(desc->d);
-		}else{
-			file_close(desc->f);
-		}
-    	list_remove(&desc->fd_list_elem);
-		free(desc);		
-		// e = list_begin(&t->fd_list);
-		// system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
+		// struct list_elem *e = list_begin (fd_list);
+    	// struct file_desc *desc = list_entry(e, struct file_desc, fd_list_elem);
+    	// if(desc->d != NULL){
+		// 	dir_close(desc->d);
+		// }else{
+		// 	file_close(desc->f);
+		// }
+    	// list_remove(&desc->fd_list_elem);
+		// free(desc);		
+		e = list_begin(&t->fd_list);
+		system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
 	}
 	lock_release(&file_lock);
 
