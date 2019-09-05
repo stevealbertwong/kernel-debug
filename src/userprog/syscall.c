@@ -88,7 +88,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 				ret_val = system_call_create((const char *) *(argument + 1),
 						(unsigned) *(argument + 2));				
 			}else{
-				printf("syscall.c case SYS_CREATE: is_user_vaddr(argument) failed %d \n", ret_val);
+				// printf("syscall.c case SYS_CREATE: is_user_vaddr(argument) failed %d \n", ret_val);
 				system_call_exit(-1);
 			}
 
@@ -330,17 +330,18 @@ int system_call_open(const char *file_name)
 		file_desc->f = file;
 		thread_current()->total_fd +=1; 
 		file_desc->id = thread_current()->total_fd;
-		printf("syscall.c fid: %d, tid: %d calling system_call_open() \n", file_desc->id, thread_current()->tid);
+		// printf("syscall.c fid: %d, tid: %d calling system_call_open() \n", file_desc->id, thread_current()->tid);
+		
 		// 4. append() file_desc{} to fd_list[]
 		list_push_back(&thread_current()->fd_list, &file_desc->fd_list_elem);
 		
 		// DEBUG purpose
-		struct file_desc *file_desc_copy = get_file_desc(file_desc->id);
-		if (file_desc_copy != NULL && file_desc_copy->f != NULL){
-			printf("system_call_open() reopen succeeded ! \n");			
-		}else{
-			printf("system_call_open() reopen failed ! \n");
-		}
+		// struct file_desc *file_desc_copy = get_file_desc(file_desc->id);
+		// if (file_desc_copy != NULL && file_desc_copy->f != NULL){
+		// 	printf("system_call_open() reopen succeeded ! \n");			
+		// }else{
+		// 	printf("system_call_open() reopen failed ! \n");
+		// }
 		
 		lock_release(&file_lock);
 		return file_desc->id;
@@ -415,7 +416,6 @@ int system_call_read(int fd, void *buffer, unsigned size)
 			printf("system_call_read() null fd %d\n", fd);
 			return -1;
 		}
-			
 		
 		// 3. file_write()
 		lock_acquire(&file_lock);
@@ -544,7 +544,7 @@ unsigned system_call_tell(int fd)
 	struct file_desc *file_desc = get_file_desc(fd);
 	lock_release(&file_lock);
 
-	if (file_desc == NULL || file_desc->d != NULL)
+	if (file_desc == NULL)
 		return -1;
 
 	lock_acquire(&file_lock);
@@ -563,7 +563,7 @@ void system_call_seek(int fd, unsigned position)
 	struct file_desc *file_desc = get_file_desc(fd);
 	lock_release(&file_lock);
 
-	if (file_desc == NULL || file_desc->d != NULL){
+	if (file_desc == NULL){
 		printf("system_call_seek() null fd \n");
 		system_call_exit(-1);
 	}
