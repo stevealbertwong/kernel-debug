@@ -402,8 +402,11 @@ int system_call_read(int fd, void *buffer, unsigned size)
 		lock_acquire(&file_lock);
 		struct file_desc *file_desc = get_file_desc(fd);
 		lock_release(&file_lock);
-		if (file_desc == NULL || file_desc->d != NULL)
+		if (file_desc == NULL || file_desc->d != NULL){
+			printf("system_call_read() null fd \n");
 			return -1;
+		}
+			
 		
 		// 3. file_write()
 		lock_acquire(&file_lock);
@@ -551,8 +554,11 @@ void system_call_seek(int fd, unsigned position)
 	struct file_desc *file_desc = get_file_desc(fd);
 	lock_release(&file_lock);
 
-	if (file_desc == NULL || file_desc->d != NULL)
+	if (file_desc == NULL || file_desc->d != NULL){
+		printf("system_call_seek() null fd \n");
 		system_call_exit(-1);
+	}
+		
 	lock_acquire(&file_lock);
 	file_seek(file_desc->f, position);
 	lock_release(&file_lock);
@@ -575,8 +581,11 @@ int system_call_filesize(int fd)
 	lock_acquire(&file_lock);
 	struct file_desc *file_desc = get_file_desc(fd);
 	lock_release(&file_lock);
-	if (file_desc == NULL || file_desc->d != NULL)
+	if (file_desc == NULL || file_desc->d != NULL){
+		printf("system_call_filesize() null fd \n");
 		return -1;
+	}
+		
 
 	// 2. file_length()
 	lock_acquire(&file_lock);
