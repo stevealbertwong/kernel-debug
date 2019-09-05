@@ -311,7 +311,6 @@ int system_call_open(const char *file_name)
 		lock_acquire(&file_lock); // multi-threads open() same file
 		struct file *file = filesys_open(file_name);
 		lock_release(&file_lock);
-		ASSERT(file != NULL);
 		if (file == NULL){
 			printf("system_call_open() null file \n");
 			return -1;			
@@ -319,7 +318,6 @@ int system_call_open(const char *file_name)
 		// 2. malloc() file_desc{} -> fd free() by system_call_close
 		struct file_desc *file_desc = (struct file_desc *) malloc(
 				sizeof(struct file_desc));
-		ASSERT(file_desc != NULL);
 		if (file_desc == NULL)
 		{
 			file_close(file);
@@ -335,6 +333,15 @@ int system_call_open(const char *file_name)
 		printf("syscall.c fid: %d, tid: %d calling system_call_open() \n", file_desc->id, thread_current()->tid);
 		// 4. append() file_desc{} to fd_list[]
 		list_push_back(&thread_current()->fd_list, &file_desc->fd_list_elem);
+		
+		
+		struct file_desc *file_desc_copy = get_file_desc(file_desc->id);
+		// ASSERT(file_desc_copy != NULL);
+		// ASSERT(file_desc_copy->f != NULL);
+		if (file_desc_copy == NULL){
+			printf("system_call_open() reopen failed ! \n");
+		}
+		
 		lock_release(&file_lock);
 		return file_desc->id;
 	}else{ // filename == null
