@@ -12,7 +12,8 @@
 #include "devices/shutdown.h"
 #include "devices/input.h"
 
-
+#define STDIN_FILENO 0
+#define STDOUT_FILENO 1
 
 static void syscall_handler (struct intr_frame *);
 struct lock file_lock; // global file lock -> multi-threads access same file
