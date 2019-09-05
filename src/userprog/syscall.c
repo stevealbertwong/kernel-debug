@@ -425,6 +425,7 @@ int system_call_read(int fd, void *buffer, unsigned size)
 // check fd, buffer + for-loop() file_desc + file_write()
 int system_call_write(int fd, const void *buffer, unsigned size)
 {
+	printf("syscall.c system_call_write() fd %d \n", fd);
 	// 1. check buffer
 	if (!is_user_vaddr(buffer) || !is_user_vaddr(buffer + size))
 		system_call_exit(-1); // prevent user w() kernel memory to disk
@@ -440,8 +441,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	
 	default: // normal fd
 		// 2. for-loop() file_desc
-		lock_acquire(&file_lock);		
-		printf("syscall.c system_call_write() fd %d \n", fd);
+		lock_acquire(&file_lock);
 		struct file_desc *file_desc = get_file_desc(fd);
 		// ASSERT(file_desc != NULL);
 		// ASSERT(file_desc->f != NULL);
