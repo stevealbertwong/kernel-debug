@@ -405,7 +405,7 @@ int system_call_read(int fd, void *buffer, unsigned size)
 		struct file_desc *file_desc = get_file_desc(fd);
 		lock_release(&file_lock);
 		if (file_desc == NULL || file_desc->d != NULL){
-			printf("system_call_read() null fd \n");
+			printf("system_call_read() null fd %d\n", fd);
 			return -1;
 		}
 			
@@ -567,16 +567,6 @@ void system_call_seek(int fd, unsigned position)
 }
 
 
-
-
-/**
- * 
- * 
- * 
- * 
- * 
- * 
- */
 int system_call_filesize(int fd)
 {
 	// 1. for-loop thread->fd_list[] for file_desc{}
@@ -584,7 +574,7 @@ int system_call_filesize(int fd)
 	struct file_desc *file_desc = get_file_desc(fd);
 	lock_release(&file_lock);
 	if (file_desc == NULL || file_desc->d != NULL){
-		printf("system_call_filesize() null fd \n");
+		printf("system_call_filesize() null fd :%d \n", fd);
 		return -1;
 	}
 		
