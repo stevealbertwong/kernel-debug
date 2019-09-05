@@ -440,7 +440,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		// 2. for-loop() file_desc
 		lock_acquire(&file_lock);
 		struct file_desc *file_desc = get_file_desc(fd);
-		printf("syscall.c system_call_write() fd %d \n", fd);		
+		printf("syscall.c system_call_write() fd:%d, file_desc->id:%d, tid:%d \n", fd, file_desc->id, thread_current()->tid);
 		// ASSERT(file_desc != NULL);
 		// ASSERT(file_desc->f != NULL);
 		if (file_desc == NULL || file_desc->d != NULL){
