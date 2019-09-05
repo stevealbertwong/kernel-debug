@@ -336,10 +336,10 @@ int system_call_open(const char *file_name)
 		
 		// DEBUG purpose
 		struct file_desc *file_desc_copy = get_file_desc(file_desc->id);
-		if (file_desc_copy == NULL){
-			printf("system_call_open() reopen failed ! \n");
+		if (file_desc_copy != NULL && file_desc_copy->f != NULL){
+			printf("system_call_open() reopen succeeded ! \n");			
 		}else{
-			printf("system_call_open() reopen succeeded ! \n");
+			printf("system_call_open() reopen failed ! \n");
 		}
 		
 		lock_release(&file_lock);
