@@ -377,6 +377,8 @@ void system_call_close(int fd)
 		file_close(file_desc->f);
 		if(file_desc->d != NULL) dir_close(file_desc->d);
 		free(file_desc);
+	}else{
+		 printf("syscall.c system_call_close() file_desc == NULL \n");
 	}
 	lock_release(&file_lock);
 }
