@@ -152,7 +152,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   uint8_t *bounce = NULL;
 
   if (inode->deny_write_cnt){
-    printf("inode.c inode->deny_write_cnt \n");
+    // printf("inode.c inode->deny_write_cnt \n");
     return 0;
   }
 
