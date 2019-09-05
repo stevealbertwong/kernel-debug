@@ -64,7 +64,7 @@ struct thread
 // 1 fd == 1 "open file"
 struct file_desc
 {
-	int id;
+	int id; // fd, index in fd_list
 	struct list_elem fd_list_elem;
 	struct file *f;
 	struct dir *d;

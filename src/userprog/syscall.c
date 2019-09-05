@@ -234,20 +234,24 @@ void system_call_exit(int status)
 
 	// 1. palloc_free() fd_list[]->file/dir
 	struct list *fd_list = &t->fd_list;
+	
+	lock_acquire(&file_lock);
 	while (!list_empty(fd_list))
 	{
-		struct list_elem *e = list_pop_front (fd_list);
+		struct list_elem *e = list_begin (fd_list);
     	struct file_desc *desc = list_entry(e, struct file_desc, fd_list_elem);
     	if(desc->d != NULL){
 			dir_close(desc->d);
 		}else{
 			file_close(desc->f);
 		}
-    	free(desc);		
+    	list_remove(&desc->fd_list_elem);
+		free(desc);		
 		// e = list_begin(&t->fd_list);
 		// system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
 	}
-	
+	lock_release(&file_lock);
+
 	// how to return elf exit status ?? 
 	t->elf_exit_status = status;	
 	printf("%s: exit(%d)\n", t->name, t->elf_exit_status);
