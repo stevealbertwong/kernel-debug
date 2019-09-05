@@ -332,14 +332,12 @@ int system_call_open(const char *file_name)
 		file_desc->id = thread_current()->total_fd;
 		printf("syscall.c fid: %d, tid: %d calling system_call_open() \n", file_desc->id, thread_current()->tid);
 		// 4. append() file_desc{} to fd_list[]
-		list_push_back(&thread_current()->fd_list,
-				&file_desc->fd_list_elem);
+		list_push_back(&thread_current()->fd_list, &file_desc->fd_list_elem);
 		lock_release(&file_lock);
 		return file_desc->id;
 	}else{ // filename == null
 		system_call_exit(-1);
 	}
-	return -1;
 }
 
 
@@ -424,41 +422,65 @@ int system_call_read(int fd, void *buffer, unsigned size)
  * 
  */ 
 // check fd, buffer + for-loop() file_desc + file_write()
+// int system_call_write(int fd, const void *buffer, unsigned size)
+// {
+// 	// 1. check buffer
+// 	if (!is_user_vaddr(buffer) || !is_user_vaddr(buffer + size))
+// 		system_call_exit(-1); // prevent user w() kernel memory to disk
+	
+// 	// 1. check fd
+// 	switch (fd){
+// 	case STDIN_FILENO: // 0
+// 		return -1;
+// 	case STDOUT_FILENO: // 1 -> printf()
+// 		putbuf(buffer, size); // w() to stdout
+// 		return size;
+	
+// 	default: // normal fd
+// 		// 2. for-loop() file_desc
+// 		lock_acquire(&file_lock);
+// 		struct file_desc *file_desc = get_file_desc(fd);
+// 		printf("syscall.c system_call_write() fd:%d, file_desc->id:%d, tid:%d \n", fd, file_desc->id, thread_current()->tid);
+// 		if (file_desc == NULL || file_desc->d != NULL){ // attempt to w() dir
+// 			printf("syscall.c system_call_write() file_desc is null %d \n", fd);
+// 			lock_release(&file_lock);
+// 			return -1;
+// 		}
+		
+// 		// 3. file_write()
+// 		int bytes_written = -1;
+// 		// file_allow_write(file_desc->f);
+// 		bytes_written = file_write(file_desc->f, buffer, size);
+// 		printf("syscall.c system_call_write() bytes_written %d, size %d \n", bytes_written, size);
+// 		lock_release(&file_lock);
+// 		return bytes_written;
+// 	}
+// }
+
+
 int system_call_write(int fd, const void *buffer, unsigned size)
 {
-	// 1. check buffer
 	if (!is_user_vaddr(buffer) || !is_user_vaddr(buffer + size))
-		system_call_exit(-1); // prevent user w() kernel memory to disk
-	
-	// 1. check fd
-	switch (fd){
-	case STDIN_FILENO: // 0
-		return -1;
-	case STDOUT_FILENO: // 1 -> printf()
-		putbuf(buffer, size); // w() to stdout
-		return size;
-	
-	default: // normal fd
-		// 2. for-loop() file_desc
-		lock_acquire(&file_lock);
-		struct file_desc *file_desc = get_file_desc(fd);
-		printf("syscall.c system_call_write() fd:%d, file_desc->id:%d, tid:%d \n", fd, file_desc->id, thread_current()->tid);
-		// ASSERT(file_desc != NULL);
-		// ASSERT(file_desc->f != NULL);
-		if (file_desc == NULL || file_desc->d != NULL){
-			printf("syscall.c system_call_write() file_desc is null %d \n", fd);
-			lock_release(&file_lock);
-			return -1;
-		}
-		
-		// 3. file_write()
-		int bytes_written = -1;
-		// file_allow_write(file_desc->f);
-		bytes_written = file_write(file_desc->f, buffer, size);
-		printf("syscall.c system_call_write() bytes_written %d, size %d \n", bytes_written, size);
-		lock_release(&file_lock);
-		return bytes_written;
+		system_call_exit(-1); // prevent user w() kernel memory to disk	
+	lock_acquire(&file_lock);
+	int ret;
+
+	if(fd == 1) { // write to stdout
+		putbuf(buffer, size);
+		ret = size;
 	}
+	else {
+		// write into file
+		struct file_desc* file_d = get_file_desc(fd);
+
+		if(file_d && file_d->f) {
+			ret = file_write(file_d->f, buffer, size);
+		}else{
+			ret = -1;
+		}				
+	}
+	lock_release(&file_lock);
+	return ret;
 }
 
 
