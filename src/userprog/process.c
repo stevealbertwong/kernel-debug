@@ -8,7 +8,7 @@
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
 #include "userprog/tss.h"
-// #include "userprog/syscall.h"
+#include "userprog/syscall.h"
 #include "filesys/directory.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
@@ -162,8 +162,8 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
     tid = TID_ERROR;
   }
 
-  palloc_free_page(full_cmdline_copy);
-  palloc_free_page(elf_file);
+  // palloc_free_page(full_cmdline_copy);
+  // palloc_free_page(elf_file);
   return tid;
 }
 
