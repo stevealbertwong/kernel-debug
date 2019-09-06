@@ -162,8 +162,8 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
     tid = TID_ERROR;
   }
 
-  // palloc_free_page(full_cmdline_copy);
-  // palloc_free_page(elf_file);
+  if(full_cmdline_copy) palloc_free_page(full_cmdline_copy);
+  if(elf_file) palloc_free_page(elf_file);
   return tid;
 }
 
