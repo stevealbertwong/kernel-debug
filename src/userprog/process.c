@@ -162,8 +162,6 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
     tid = TID_ERROR;
   }
 
-  // if(full_cmdline_copy) palloc_free_page(full_cmdline_copy);
-  // if(elf_file) palloc_free_page(elf_file);
   return tid;
 }
 
@@ -202,7 +200,6 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
   }
 
   // 2. parent wait(exec()) waits child elf code calls exit()
-  ASSERT (!elf_thread->exited);
   // printf("process.c process_wait() gets to sema_down() and starts waiting for exec() elf code \n");
   sema_down(&elf_thread->sema_elf_call_exit); // parent_thread block itself -> child.sema.waiters[]
 	
