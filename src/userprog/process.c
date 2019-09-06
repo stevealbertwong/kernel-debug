@@ -123,12 +123,14 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   // 1. parse() elf_file out of full_cmdline   
   full_cmdline_copy = palloc_get_page (0); // copy, otherwise race between process_execute() and start_process()
   if (full_cmdline_copy == NULL){
+    palloc_free_page(full_cmdline_copy);
     return TID_ERROR;
   }
   strlcpy (full_cmdline_copy, full_cmdline, PGSIZE);
 
   elf_file = palloc_get_page (0);
   if (elf_file == NULL){
+    palloc_free_page(elf_file);
     return TID_ERROR;
   }
   strlcpy (elf_file, full_cmdline, PGSIZE);
@@ -138,7 +140,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   // load ELF + interrupt switch to start running
   tid = thread_create (elf_file, PRI_DEFAULT, start_process, full_cmdline_copy);
   if (tid == TID_ERROR){
-    printf("process.c process_execute() tid error \n");
+    // printf("process.c process_execute() tid error \n");
     palloc_free_page (elf_file); 
     return tid;
   }  
@@ -154,7 +156,6 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 
 	if (elf_thread->elf_exit_status == -1){
     tid = TID_ERROR;
-    // printf("process.c process_execute() elf_exit_status error \n");
   }
 
   // printf("process.c process_execute() finished running \n");

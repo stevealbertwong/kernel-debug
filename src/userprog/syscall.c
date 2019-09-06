@@ -147,6 +147,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 			else
 				system_call_exit(-1);
 			break;
+		default:
+			system_call_exit(-1);
 		}
 	}
 	else{ // intr_frame->esp not in user address
@@ -320,8 +322,8 @@ int system_call_open(const char *file_name)
 				sizeof(struct file_desc));
 		if (file_desc == NULL)
 		{
+			free(file_desc);
 			file_close(file);
-			// printf("system_call_open() null fd \n");
 			return -1;
 		}
 
@@ -452,7 +454,7 @@ int system_call_read(int fd, void *buffer, unsigned size)
 // 		lock_acquire(&file_lock);
 // 		struct file_desc *file_desc = get_file_desc(fd);
 // 		printf("syscall.c system_call_write() fd:%d, file_desc->id:%d, tid:%d \n", fd, file_desc->id, thread_current()->tid);
-// 		if (file_desc == NULL || file_desc->d != NULL){ // attempt to w() dir
+// 		if (file_desc == NULL){ // attempt to w() dir
 // 			printf("syscall.c system_call_write() file_desc is null %d \n", fd);
 // 			lock_release(&file_lock);
 // 			return -1;
@@ -583,8 +585,6 @@ int system_call_filesize(int fd)
 		// printf("system_call_filesize() null fd :%d \n", fd);
 		return -1;
 	}
-		
-
 	// 2. file_length()
 	lock_acquire(&file_lock);
 	int size = file_length(file_desc->f);
