@@ -25,6 +25,7 @@
         "thread": "c",
         "stddef.h": "c",
         "debug.h": "c",
-        "file.h": "c"
+        "file.h": "c",
+        "tss.h": "c"
     }
 }
