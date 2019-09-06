@@ -156,9 +156,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
     return 0;
   }
 
-
   // TODO -> if beyond EOF, implements file growth
-
 
   while (size > 0) 
     {

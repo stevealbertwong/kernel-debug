@@ -140,6 +140,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   if (tid == TID_ERROR){
     printf("process.c process_execute() tid error \n");
     palloc_free_page (elf_file); 
+    return tid;
   }  
 
   // 3. wait() child start_process() done load ELF -> elf_exit_status
@@ -188,8 +189,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
     return -1;
   }
 		
-	// -> child error status / child already exited
-  elf_thread->waited = true;
+  elf_thread->waited = true; // -> child error status / child already exited
 	if (elf_thread->elf_exit_status != 0 || elf_thread->exited == true){
     // printf("process.c process_wait() exec() elf code already exited before wait() \n");
     return elf_thread->elf_exit_status;
@@ -330,8 +330,8 @@ start_process (void *full_cmdline)
     elf_thread->elf_exit_status = -1; // error
     sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
     palloc_free_page(cmdline_tokens);
-    thread_exit ();
-    // system_call_exit(1);
+    // thread_exit ();
+    system_call_exit(1);
   } else { // if success
     // 4.2 unblock kernel_thread after load_elf() + push kernel args to user_stack 
     push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
