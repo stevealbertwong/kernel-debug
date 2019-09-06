@@ -312,7 +312,7 @@ start_process (void *full_cmdline)
   char *elf_file = full_cmdline;
   char **cmdline_tokens = (char**) palloc_get_page(0);
   if (cmdline_tokens == NULL){
-    palloc_get_page(cmdline_tokens);
+    palloc_free_page(cmdline_tokens);
     system_call_exit(-1);
   } 
   char* token;
