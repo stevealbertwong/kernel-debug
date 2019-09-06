@@ -10,6 +10,22 @@
         "thread.h": "c",
         "interrupt.h": "c",
         "string.h": "c",
-        "tests.h": "c"
+        "tests.h": "c",
+        "array": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "malloc.h": "c",
+        "syscall.h": "c",
+        "init.h": "c",
+        "process.h": "c",
+        "*.tcc": "c",
+        "ctype.h": "c",
+        "sstream": "c",
+        "filesys.h": "c",
+        "thread": "c",
+        "stddef.h": "c",
+        "debug.h": "c",
+        "file.h": "c",
+        "tss.h": "c"
     }
 }

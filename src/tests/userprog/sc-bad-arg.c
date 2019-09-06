@@ -3,6 +3,10 @@
    (%esp) set to its address.  The process must be terminated
    with -1 exit code because the argument to the system call
    would be above the top of the user address space. */
+   
+// this assembly code bypass your syscall implementation 
+// resulting in page fault error that should system_call_exit(-1)
+// directly in page_fault_handler() in exception.c 
 
 #include <syscall-nr.h>
 #include "tests/lib.h"

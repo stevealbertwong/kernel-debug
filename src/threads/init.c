@@ -37,6 +37,9 @@
 #include "filesys/filesys.h"
 #include "filesys/fsutil.h"
 #endif
+#include <ctype.h>
+
+void strip_extra_spaces(const char* str);
 
 /* Page directory with kernel mappings only. */
 uint32_t *init_page_dir;
@@ -63,6 +66,7 @@ static void paging_init (void);
 static char **read_command_line (void);
 static char **parse_options (char **argv);
 static void run_actions (char **argv);
+static void run_task (char **argv);
 static void usage (void);
 
 #ifdef FILESYS
@@ -90,11 +94,10 @@ main (void)
   thread_init ();
   console_init ();  
 
-  /* Greet user. */
   printf ("Pintos booting with %'"PRIu32" kB RAM...\n",
           init_ram_pages * PGSIZE / 1024);
 
-  /* Initialize memory system. */
+  // Initialize memory system.
   palloc_init (user_page_limit);
   malloc_init ();
   paging_init ();
@@ -128,32 +131,38 @@ main (void)
 #endif
 
   printf ("Boot complete.\n");
-  
   /* Run actions specified on kernel command line. */
   run_actions (argv);
-
   /* Finish up. */
   shutdown ();
-  thread_exit ();
+  thread_exit (); // TODO !!!!!! process_exit()
 }
 
-/* Clear the "BSS", a segment that should be initialized to
-   zeros.  It isn't actually stored on disk or zeroed by the
-   kernel loader, so we have to zero it ourselves.
 
-   The start and end of the BSS segment is recorded by the
-   linker as _start_bss and _end_bss.  See kernel.lds. */
-static void
-bss_init (void) 
-{
-  extern char _start_bss, _end_bss;
-  memset (&_start_bss, 0, &_end_bss - &_start_bss);
-}
+/************************************************************************************
+ * Important functions
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ *************************************************************************************/
 
-/* Populates the base page directory and page table with the
-   kernel virtual mapping, and then sets up the CPU to use the
-   new page directory.  Points init_page_dir to the page
-   directory it creates. */
+// kernel 1 to 1 VA PA mapping page_dir (all user ps share)
+// VA -> physcial RAM addr, must >3GB won't be in user VA
+// PA -> in theory where memory should be mapped to
+// 2^10 = 1024, 2^20 = 1MB, 2^32 = 4GB
+// 4KB * 4KB -> 16MB, is that sufficient ??
+// why kernel needs VM ?? CR3/PDBR ?? 
 static void
 paging_init (void)
 {
@@ -161,23 +170,23 @@ paging_init (void)
   size_t page;
   extern char _start, _end_kernel_text;
 
-  pd = init_page_dir = palloc_get_page (PAL_ASSERT | PAL_ZERO);
+  pd = init_page_dir = palloc_get_page (PAL_ASSERT | PAL_ZERO); // pd:VA
   pt = NULL;
   for (page = 0; page < init_ram_pages; page++)
     {
-      uintptr_t paddr = page * PGSIZE;
+      uintptr_t paddr = page * PGSIZE; // PA starts from 0B, 1 page == 4KB
       char *vaddr = ptov (paddr);
       size_t pde_idx = pd_no (vaddr);
       size_t pte_idx = pt_no (vaddr);
       bool in_kernel_text = &_start <= vaddr && vaddr < &_end_kernel_text;
 
-      if (pd[pde_idx] == 0)
+      if (pd[pde_idx] == 0) // uninitialized page_table 
         {
-          pt = palloc_get_page (PAL_ASSERT | PAL_ZERO);
-          pd[pde_idx] = pde_create (pt);
+          pt = palloc_get_page (PAL_ASSERT | PAL_ZERO); // pt:VA
+          pd[pde_idx] = pde_create (pt); // pt:VA -> pde:PA
         }
 
-      pt[pte_idx] = pte_create_kernel (vaddr, !in_kernel_text);
+      pt[pte_idx] = pte_create_kernel (vaddr, !in_kernel_text); // pt:VA, pte:PA
     }
 
   /* Store the physical address of the page directory into CR3
@@ -185,11 +194,118 @@ paging_init (void)
      new page tables immediately.  See [IA32-v2a] "MOV--Move
      to/from Control Registers" and [IA32-v3a] 3.7.5 "Base Address
      of the Page Directory". */
+  // sets CPU to use new page_dir, but why a non-existent "PA" tho ??
   asm volatile ("movl %0, %%cr3" : : "r" (vtop (init_page_dir)));
 }
 
-/* Breaks the kernel command line into words and returns them as
-   an argv-like array. */
+
+static void
+run_actions (char **argv) 
+{
+  /* An action. */
+  struct action 
+    {
+      char *name;                       /* Action name. */
+      int argc;                         /* # of args, including action name. */
+      void (*function) (char **argv);   /* execute functions stored in argv */
+    };
+
+  /* Table of supported actions. */
+  static const struct action actions[] = 
+    {
+      {"run", 2, run_task},
+#ifdef FILESYS
+      {"ls", 1, fsutil_ls},
+      {"cat", 2, fsutil_cat},
+      {"rm", 2, fsutil_rm},
+      {"extract", 1, fsutil_extract},
+      {"append", 2, fsutil_append},
+#endif
+      {NULL, 0, NULL},
+    };
+
+  while (*argv != NULL)
+    {
+      const struct action *a;
+      int i;
+
+      /* Find action name. */
+      for (a = actions; ; a++)
+        if (a->name == NULL)
+          PANIC ("unknown action `%s' (use -h for help)", *argv);
+        else if (!strcmp (*argv, a->name))
+          break;
+
+      /* Check for required arguments. */
+      for (i = 1; i < a->argc; i++)
+        if (argv[i] == NULL)
+          PANIC ("action `%s' requires %d argument(s)", *argv, a->argc - 1);
+
+      /* Invoke action and advance. */
+      a->function (argv);
+      argv += a->argc;
+    }
+  
+}
+
+
+
+/************************************************************************************
+ * helpers
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ *************************************************************************************/
+
+
+static void
+bss_init (void) 
+{
+  extern char _start_bss, _end_bss;
+  // It isn't actually stored on disk or zeroed by the
+  // kernel loader, so we have to zero it ourselves.
+  memset (&_start_bss, 0, &_end_bss - &_start_bss);
+}
+
+
+/* Runs the task specified in ARGV[1]. */
+static void
+run_task (char **argv)
+{
+  const char *task = argv[1];
+  strip_extra_spaces(task);
+  printf ("Executing '%s':\n", task);
+#ifdef USERPROG
+  process_wait (process_execute (task));
+#else
+  run_test (task);
+#endif
+  printf ("Execution of '%s' complete.\n", task);
+}
+
+void strip_extra_spaces(const char* str_orig)
+{
+	char *str = (char *) str_orig;
+	int i, x;
+	for (i = x = 1; str[i]; ++i)
+		if (!isspace(str[i]) || (i > 0 && !isspace(str[i - 1])))
+			str[x++] = str[i];
+	str[x] = '\0';
+}
+
+
+// parse kernel command line into argv-like array
 static char **
 read_command_line (void) 
 {
@@ -223,8 +339,6 @@ read_command_line (void)
   return argv;
 }
 
-/* Parses options in ARGV[]
-   and returns the first non-option argument. */
 static char **
 parse_options (char **argv) 
 {
@@ -277,71 +391,14 @@ parse_options (char **argv)
   return argv;
 }
 
-/* Runs the task specified in ARGV[1]. */
-static void
-run_task (char **argv)
-{
-  const char *task = argv[1];
-  
-  printf ("Executing '%s':\n", task);
-#ifdef USERPROG
-  process_wait (process_execute (task));
-#else
-  run_test (task);
-#endif
-  printf ("Execution of '%s' complete.\n", task);
-}
 
-/* Executes all of the actions specified in ARGV[]
-   up to the null pointer sentinel. */
-static void
-run_actions (char **argv) 
-{
-  /* An action. */
-  struct action 
-    {
-      char *name;                       /* Action name. */
-      int argc;                         /* # of args, including action name. */
-      void (*function) (char **argv);   /* Function to execute action. */
-    };
 
-  /* Table of supported actions. */
-  static const struct action actions[] = 
-    {
-      {"run", 2, run_task},
-#ifdef FILESYS
-      {"ls", 1, fsutil_ls},
-      {"cat", 2, fsutil_cat},
-      {"rm", 2, fsutil_rm},
-      {"extract", 1, fsutil_extract},
-      {"append", 2, fsutil_append},
-#endif
-      {NULL, 0, NULL},
-    };
 
-  while (*argv != NULL)
-    {
-      const struct action *a;
-      int i;
 
-      /* Find action name. */
-      for (a = actions; ; a++)
-        if (a->name == NULL)
-          PANIC ("unknown action `%s' (use -h for help)", *argv);
-        else if (!strcmp (*argv, a->name))
-          break;
 
-      /* Check for required arguments. */
-      for (i = 1; i < a->argc; i++)
-        if (argv[i] == NULL)
-          PANIC ("action `%s' requires %d argument(s)", *argv, a->argc - 1);
 
-      /* Invoke action and advance. */
-      a->function (argv);
-      argv += a->argc;
-    }
-  
-}
+
+
 
 /* Prints a kernel command line help message and powers off the
    machine. */
