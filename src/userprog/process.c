@@ -304,7 +304,10 @@ start_process (void *full_cmdline)
 
   // 1. parse() full_cmdline into elf_file
   char *elf_file = full_cmdline;
-  char **cmdline_tokens = (char**) palloc_get_page(0); 
+  char **cmdline_tokens = (char**) palloc_get_page(0);
+  if (cmdline_tokens == NULL){
+    system_call_exit(-1);
+  } 
   char* token;
   char* strtok_ptr;
   int argc = 0;
@@ -331,7 +334,7 @@ start_process (void *full_cmdline)
     sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
     palloc_free_page(cmdline_tokens);
     // thread_exit ();
-    system_call_exit(1);
+    system_call_exit(-1);
   } else { // if success
     // 4.2 unblock kernel_thread after load_elf() + push kernel args to user_stack 
     push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
