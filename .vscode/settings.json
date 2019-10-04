@@ -26,6 +26,12 @@
         "stddef.h": "c",
         "debug.h": "c",
         "file.h": "c",
-        "tss.h": "c"
+        "tss.h": "c",
+        "ide.h": "c",
+        "hash.h": "c",
+        "pagedir.h": "c",
+        "page.h": "c",
+        "frame.h": "c",
+        "swap.h": "c"
     }
 }

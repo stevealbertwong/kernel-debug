@@ -57,7 +57,8 @@ struct thread
     struct list fd_list;
     int total_fd;
 
-    uint32_t *pagedir;                  
+    struct hash *supt;            // each thread's upage status
+    uint32_t *pagedir;                  // accessed, dirty bit
 
   };
 

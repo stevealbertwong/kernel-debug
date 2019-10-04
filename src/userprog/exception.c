@@ -13,6 +13,146 @@ static long long page_fault_cnt;
 static void kill (struct intr_frame *);
 static void page_fault (struct intr_frame *);
 
+/*****************************************************************
+// IMPORTANT!!!
+
+
+
+
+
+
+
+
+
+
+
+
+
+******************************************************************/
+/**
+ * stack grow !!!
+ * called by TLB miss interrupt
+ * 
+ * 1. get faulty VA + error code from cr2 register
+ * 2. determine pagefault/segfault
+ * 2.1. segfault
+ *    - user mode access kernel addr e.g. malicious test code try to bypass syscall to access kernel space with user elf code
+ *    - null pointer
+ *    - not present flag
+ *    - absolute limit on stack size 8MB
+ *    - failed both pagefault test  
+ * 2.2 pagefault
+ *    - TEST: thread_current()->supt{} contains VA entry
+ *       - load page from disk using supt
+ *       - casued by swapped out/lazyload filesystem
+ *    - TEST: valid stack access, next contiguous memory page, within 32 bytes of stack ptr
+ *       - stack growth
+ *       - casued by ELF code upages that are not lazyloaded
+ */ 
+static void
+page_fault (struct intr_frame *f) 
+{
+  bool not_present;  /* True: not-present page, false: writing r/o page. */
+  bool write;        /* True: access was write, false: access was read. */
+  bool user;         /* True: access by user, false: access by kernel. */
+  void *fault_addr;  /* Fault address. */
+  
+  // 1. get faulty VA + error code from cr2 register
+  // it may point to code/data, not necessarily instruction (intr_frame->eip)
+  asm ("movl %%cr2, %0" : "=r" (fault_addr));
+  intr_enable (); // turn interrupts back on -> were off to read CR2 before it changed
+  page_fault_cnt++;
+  not_present = (f->error_code & PF_P) == 0;
+  write = (f->error_code & PF_W) != 0;
+  user = (f->error_code & PF_U) != 0;
+  
+  // 2. determine segfault/pagefault
+  // 2.1 segfault obvious fault_addr
+  // user mode access kernel addr / not present flag / 8MB stack limit / null pointer
+  if ((is_kernel_vaddr(fault_addr) && user) || not_present || PHYS_BASE - 0x800000 <= fault_addr || fault_addr <= 0){
+      system_call_exit(-1);
+  }
+
+
+#ifdef VM
+
+   // 2.2 pagefault tests
+   // obtain user elf's stack pointer (from intr_frame->esp or thread_current()->current_esp)   
+   // if page fault in user mode, faulty addr stored in intr_frame
+   // if page fault in kernel mode, faulty addr stored at current esp at the beginning of system call
+   // void* esp = user ? f->esp : thread_current()->current_esp;
+   void* esp = f->esp;
+
+   // supt's key == 4KB page == VA needs to round down to page
+   void* fault_page = (void*) pg_round_down(fault_addr);   
+
+   // 2.2.1 TEST: check if VA already regitered in supt 
+   if(vm_load_page(thread_current()->supt, thread_current()->pagedir, fault_page)) {
+      return; // succeeds
+   } else {
+      
+      // ??
+	   f->eip = (void *) f->eax; 
+	   f->eax = 0xffffffff;
+
+      printf ("Seg fault at %p: %s error %s page in %s context.\n",
+               fault_addr,
+               not_present ? "not present" : "rights violation",
+               write ? "writing" : "reading",
+               user ? "user" : "kernel");
+      kill (f);    
+   }
+   // 2.2.2 TEST: valid stack access, next contiguous memory page, within 32 bytes of stack ptr
+   if((fault_addr >= (f->esp - 32))){
+      
+      vm_supt_install_zero_page (thread_current()->supt, fault_page);
+      vm_load_page(thread_current()->supt, thread_current()->pagedir, fault_page);
+
+      return; // succeeds
+
+   } else {
+      // ??
+	   f->eip = (void *) f->eax; 
+	   f->eax = 0xffffffff;
+
+      printf ("Seg fault at %p: %s error %s page in %s context.\n",
+               fault_addr,
+               not_present ? "not present" : "rights violation",
+               write ? "writing" : "reading",
+               user ? "user" : "kernel");
+      kill (f);    
+   }
+
+#endif
+
+  printf ("Page fault at %p: %s error %s page in %s context.\n",
+          fault_addr,
+          not_present ? "not present" : "rights violation",
+          write ? "writing" : "reading",
+          user ? "user" : "kernel");
+  kill (f);
+}
+
+
+
+
+
+/*****************************************************************
+// helpers
+
+
+
+
+
+
+
+
+
+
+
+
+
+******************************************************************/
 /* Registers handlers for interrupts that can be caused by user
    programs.
 
@@ -108,75 +248,5 @@ kill (struct intr_frame *f)
              f->vec_no, intr_name (f->vec_no), f->cs);
       thread_exit ();
     }
-}
-
-/*****************************************************************
-// IMPORTANT!!!
-
-
-
-
-
-
-
-
-
-
-
-
-
-******************************************************************/
-/**
- * 
- * 
- * 
- * 
- * 
- * 
- */ 
-static void
-page_fault (struct intr_frame *f) 
-{
-  bool not_present;  /* True: not-present page, false: writing r/o page. */
-  bool write;        /* True: access was write, false: access was read. */
-  bool user;         /* True: access by user, false: access by kernel. */
-  void *fault_addr;  /* Fault address. */
-  
-  // 1. get faulty VA + error code from cr2 register
-  // it may point to code/data, not necessarily instruction (intr_frame->eip)
-  asm ("movl %%cr2, %0" : "=r" (fault_addr));
-  intr_enable (); // turn interrupts back on -> were off to read CR2 before it changed
-  page_fault_cnt++;
-  not_present = (f->error_code & PF_P) == 0;
-  write = (f->error_code & PF_W) != 0;
-  user = (f->error_code & PF_U) != 0;
-  
-  // 2. prevent test code from bypassing syscall to access kernel space with user elf
-  if ((is_kernel_vaddr(fault_addr) && user) || not_present){
-      system_call_exit(-1);
-  }
-
-#ifdef VM
-
-   // 3. page fault logic
-
-   // 3.1 obtain user elf's stack pointer (from intr_frame->esp or thread_current()->current_esp)
-   
-   // 3.2 stack growth == MAX_STACK_SIZE / stack frame ?? -> u() 4 vm data structure
-
-
-
-
-
-
-
-#endif
-
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
-          fault_addr,
-          not_present ? "not present" : "rights violation",
-          write ? "writing" : "reading",
-          user ? "user" : "kernel");
-  kill (f);
 }
 

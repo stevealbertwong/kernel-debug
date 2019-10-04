@@ -160,6 +160,8 @@ init_thread (struct thread *t, const char *name, int priority)
     t->original_priority = priority;
   }
 
+
+  t->pagedir = thread_current()->pagedir;
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
   intr_set_level (old_level);

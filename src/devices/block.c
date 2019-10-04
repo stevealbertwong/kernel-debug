@@ -1,3 +1,8 @@
+/**
+ * block == disk_partition == device driver interface
+ * 
+ * NOTE: see ide.c for assembly code to r() w() disk
+ */ 
 #include "devices/block.h"
 #include <list.h>
 #include <string.h>

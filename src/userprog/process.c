@@ -366,7 +366,6 @@ start_process (void *full_cmdline)
 
 /**
  * 
- * 
  * 1. init() pagedir + supt + file
  * 2. read() ELF header onto stack 
  * 3. read() ELF into PA 
@@ -388,6 +387,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
     printf("process.c pagedir_create() failed !!! \n");
     goto done;
   } 
+#ifdef VM
+  t->supt = vm_supt_init(); // vs init_thread() ??
+#endif
+
+
     
   process_activate ();
   file = filesys_open (file_name); // BUG!!!! 
@@ -579,10 +583,24 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   file_seek (file, ofs);
   while (read_bytes > 0 || zero_bytes > 0) 
     {      
+#ifdef VM
+
       // 1. fill unused kpage w 0s      
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
-      
+      if(pagedir_get_page(thread_current()->pagedir, upage) != NULL){
+        PANIC("load_segment() elf code VA already exists! \n");
+      }
+      // 2, lazy load (involves file_read())
+      vm_supt_install_filesystem(thread_current()->supt, upage,
+            file, ofs, page_read_bytes, page_zero_bytes, writable));
+
+
+#else
+      // 1. fill unused kpage w 0s      
+      size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
+      size_t page_zero_bytes = PGSIZE - page_read_bytes;
+
       // 2. palloc() kpage from user pool
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
@@ -611,6 +629,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       upage += PGSIZE;
     }
   return true;
+
+#endif
 }
 
 /**
@@ -626,7 +646,21 @@ setup_stack (void **esp)
   uint8_t *kpage;
   bool success = false;
 
+#ifdef VM
+  // user stack is at 1st segment below PHYS_BASE (PHYS_BASE - PGSIZE)
+  kpage = vm_palloc_kpage (PAL_USER | PAL_ZERO, PHYS_BASE - PGSIZE, thread_current()->pagedir, true);
+  vm_supt_install_frame (thread_current()->supt, PHYS_BASE - PGSIZE, kpage);
+  vm_unpin_kpage(kpage); // RMB to unpin() everytime after vm_palloc_kpage()
+  
+  // ALTERNATIVELY: 
+  // vm_supt_install_zero_page (thread_current()->supt, fault_page);
+  // vm_load_page(thread_current()->supt, thread_current()->pagedir, fault_page);
+  // return true;
+  
+#else
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+#endif
+
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
@@ -651,7 +685,6 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 
-  // TODO -> updates supt(kpage status)
 }
 
 

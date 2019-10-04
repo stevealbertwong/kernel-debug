@@ -16,9 +16,17 @@ static void invalidate_pagedir (uint32_t *);
  * 
  * 
  * 
+ * 
+ * 
+ * 
+ * 
 *************************************************************************************/
-// traverse VA pages, return VA
-// e.g pd: 3.2GB, VA: 0.01GB 0.02GB 0.03GB (32 bits user ps addr)
+/**
+ * given VA(ELF), traverse pagedir/table, return VA(pte)
+ * 
+ * e.g pd: 3.2GB, VA: 0.01GB 0.02GB 0.03GB (32 bits user ps addr)
+ * 
+ */ 
 static uint32_t *
 lookup_page (uint32_t *pd, const void *vaddr, bool create) 
 {
@@ -39,19 +47,25 @@ lookup_page (uint32_t *pd, const void *vaddr, bool create)
       else
         return NULL;
     }    
-  pt = pde_get_pt (*pde); // 3.4GB = 0.4GB
-  return &pt[pt_no (vaddr)]; // return 3.4GB + 0.02GB
+  pt = pde_get_pt (*pde); // 3.4GB = 0.4GB (pagetable)
+  return &pt[pt_no (vaddr)]; // return 3.4GB + 0.02GB (pte)
 }
 
 
 /***************************************************************************************
- * key APIs
+ * key APIs to u() pagedir
+ * (already used in project 2 process.c install_page())
+ * 
+ * 
+ * 
+ * 
  * 
  * 
  * 
  * 
  * 
 *************************************************************************************/
+
 // create user page_dir, called by process.c load() only once 
 uint32_t *
 pagedir_create (void) 
@@ -101,6 +115,79 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
     return NULL;
 }
 
+/***************************************************************************************
+ * key APIs to u() pagedir
+ * (used in project 3)
+ * - frame.c evict_frame()
+ * - supt.c 
+ * - 
+ * 
+ * 
+ * 
+ * 
+*************************************************************************************/
+// unchanged
+bool
+pagedir_is_dirty (uint32_t *pd, const void *vpage) 
+{
+  uint32_t *pte = lookup_page (pd, vpage, false);
+  return pte != NULL && (*pte & PTE_D) != 0;
+}
+
+// unchanged
+void
+pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty) 
+{
+  uint32_t *pte = lookup_page (pd, vpage, false);
+  if (pte != NULL) 
+    {
+      if (dirty)
+        *pte |= PTE_D;
+      else 
+        {
+          *pte &= ~(uint32_t) PTE_D;
+          invalidate_pagedir (pd);
+        }
+    }
+}
+
+// unchanged
+bool
+pagedir_is_accessed (uint32_t *pd, const void *vpage) 
+{
+  uint32_t *pte = lookup_page (pd, vpage, false);
+  return pte != NULL && (*pte & PTE_A) != 0;
+}
+
+// unchanged
+void
+pagedir_set_accessed (uint32_t *pd, const void *vpage, bool accessed) 
+{
+  uint32_t *pte = lookup_page (pd, vpage, false);
+  if (pte != NULL) 
+    {
+      if (accessed)
+        *pte |= PTE_A;
+      else 
+        {
+          *pte &= ~(uint32_t) PTE_A; 
+          invalidate_pagedir (pd);
+        }
+    }
+}
+
+
+
+/***************************************************************************************
+ * helper
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+*************************************************************************************/
 /**
  * called once when process_exit()
  * 
@@ -151,15 +238,6 @@ pagedir_clear_page (uint32_t *pd, void *upage)
 }
 
 
-/***************************************************************************************
- * helper
- * 
- * 
- * 
- * 
- * 
-*************************************************************************************/
-
 void
 pagedir_activate (uint32_t *pd) 
 {
@@ -185,54 +263,6 @@ active_pd (void)
   uintptr_t pd;
   asm volatile ("movl %%cr3, %0" : "=r" (pd));
   return ptov (pd);
-}
-
-bool
-pagedir_is_dirty (uint32_t *pd, const void *vpage) 
-{
-  uint32_t *pte = lookup_page (pd, vpage, false);
-  return pte != NULL && (*pte & PTE_D) != 0;
-}
-
-/* Set the dirty bit to DIRTY in the PTE for virtual page VPAGE
-   in PD. */
-void
-pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty) 
-{
-  uint32_t *pte = lookup_page (pd, vpage, false);
-  if (pte != NULL) 
-    {
-      if (dirty)
-        *pte |= PTE_D;
-      else 
-        {
-          *pte &= ~(uint32_t) PTE_D;
-          invalidate_pagedir (pd);
-        }
-    }
-}
-
-bool
-pagedir_is_accessed (uint32_t *pd, const void *vpage) 
-{
-  uint32_t *pte = lookup_page (pd, vpage, false);
-  return pte != NULL && (*pte & PTE_A) != 0;
-}
-
-void
-pagedir_set_accessed (uint32_t *pd, const void *vpage, bool accessed) 
-{
-  uint32_t *pte = lookup_page (pd, vpage, false);
-  if (pte != NULL) 
-    {
-      if (accessed)
-        *pte |= PTE_A;
-      else 
-        {
-          *pte &= ~(uint32_t) PTE_A; 
-          invalidate_pagedir (pd);
-        }
-    }
 }
 
 static void

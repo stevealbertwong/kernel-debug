@@ -147,6 +147,22 @@ syscall_handler (struct intr_frame *f UNUSED)
 			else
 				system_call_exit(-1);
 			break;
+#ifdef VM
+		case SYS_MMAP:
+			if (is_user_vaddr(argument + 1))
+				system_call_mmap(*(argument + 1));
+			else
+				system_call_exit(-1);
+			break;
+
+		case SYS_MUNMAP:
+			if (is_user_vaddr(argument + 1))
+				system_call_close(*(argument + 1));
+			else
+				system_call_exit(-1);
+			break;
+#endif
+
 		default:
 			system_call_exit(-1);
 		}
@@ -418,14 +434,24 @@ int system_call_read(int fd, void *buffer, unsigned size)
 			return -1;
 		}
 		
-		// 3. file_write()
+		// 3. file_read()
+#ifdef VM // support file bigger than 1 page(4KB)
+		pin_and_grow_buffer(buffer, size); // buffer has existing kpages
+#endif
 		lock_acquire(&file_lock);
 		int bytes_read = -1;
 		bytes_read = file_read(file_desc->f, buffer, size);
 		lock_release(&file_lock);
+#ifdef VM	
+		unpin_buffer(buffer);
+#endif
 		return bytes_read;
+
+
 	}
 }
+
+
 
 
 /**
@@ -455,7 +481,7 @@ int system_call_read(int fd, void *buffer, unsigned size)
 // 		struct file_desc *file_desc = get_file_desc(fd);
 // 		printf("syscall.c system_call_write() fd:%d, file_desc->id:%d, tid:%d \n", fd, file_desc->id, thread_current()->tid);
 // 		if (file_desc == NULL){ // attempt to w() dir
-// 			printf("syscall.c system_call_write() file_desc is null %d \n", fd);
+// 			// printf("syscall.c system_call_write() file_desc is null %d \n", fd);
 // 			lock_release(&file_lock);
 // 			return -1;
 // 		}
@@ -475,6 +501,11 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 {
 	if (!is_user_vaddr(buffer) || !is_user_vaddr(buffer + size))
 		system_call_exit(-1); // prevent user w() kernel memory to disk	
+	
+#ifdef VM // support file bigger than 1 page(4KB)
+	pin_and_grow_buffer(buffer, size); // buffer has existing kpages
+#endif
+	
 	lock_acquire(&file_lock);
 	int ret;
 
@@ -493,7 +524,45 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		}				
 	}
 	lock_release(&file_lock);
+
+#ifdef VM	
+	unpin_buffer(buffer);
+#endif
+
 	return ret;
+}
+
+
+
+
+/**
+ * grow new stack for buffer
+ * 
+ */ 
+pin_and_grow_buffer(void *buffer, unsigned size){
+	struct hash *supt = thread_current()->supt;
+  	uint32_t *pagedir = thread_current()->pagedir;
+	void *upage; // buffer == upage
+	for(upage = pg_round_down(buffer); upage < buffer + size; upage += PGSIZE)
+	{
+		// if buffer does not have an entry in supt
+		if(!vm_supt_search_supt(supt, upage)){
+			vm_supt_install_zero_page(supt, upage); 
+		}		
+		vm_load_kpage_using_supt (supt, pagedir, upage);						
+		vm_pin_upage(upage);
+
+	}
+}
+
+unpin_buffer(void *buffer, unsigned size){
+	struct hash *supt = thread_current()->supt;
+  	uint32_t *pagedir = thread_current()->pagedir;
+	void *upage; // buffer == upage
+	for(upage = pg_round_down(buffer); upage < buffer + size; upage += PGSIZE)
+	{		
+		vm_unpin_upage(supt, pagedir, upage); 
+	}
 }
 
 
@@ -636,3 +705,38 @@ get_file_desc(int fd)
 
 
 /***************************************************************/
+/**
+ * directly map a file into RAM
+ * 
+ * 1. given fd, get file_desc->file{} 
+ * 		- needed for file_read() when lazy load
+ * 
+ * 2. update supt to lazy load 
+ * 		- NOT direct file_read()
+ * 		- use file size to calculate num of pages needed
+ * 		- add supt entry (filesystem)
+ * 
+ * 3. add() to thread->mmap_list[]
+ * 		- mmap{} index() RAM mapped file: VA to delete supt entry
+ * 
+ * different from unix mmap() syscall
+ * https://www.poftut.com/mmap-tutorial-with-examples-in-c-and-cpp-programming-languages/
+ */ 
+mmapid_t system_call_mmap(int fd, void *upage){
+
+}
+
+
+
+/**
+ * 
+ * 1. update supt NOT to lazy load 
+ * 		- delete supt entry (filesystem)
+ * 2. delete from thread->mmap_list[] 
+ */
+system_call_munmap(mmapid_t mmapid){
+
+
+
+
+}
