@@ -5,11 +5,11 @@
 #include <list.h>
 
 #include "threads/thread.h"
-#include "vm/page.h"
 #include "threads/malloc.h"
 #include "threads/palloc.h"
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
+#include "vm/page.h"
 #include "vm/frame.h"
 
 #include "lib/kernel/hash.h"
@@ -86,7 +86,8 @@ vm_palloc_kpage(enum palloc_flags flags, void *upage)
   }
   
   // 2.2 u() frametable and pagedir for fresh kpage    
-  vm_append_frame_table(kpage, upage);        
+  vm_append_frame_table(kpage, upage);    
+  return kpage;    
 }
 
 
@@ -243,7 +244,7 @@ void vm_unpin_kpage(kpage){
 
 struct frame_table_entry* 
 vm_search_frametable(void* kpage){
-  struct frame_table_entry *e_temp; 
+  struct frame_table_entry e_temp; 
   e_temp.kpage = kpage;
   struct hash_elem *h = hash_find (&frame_table_hash, &(e_temp.frame_table_hash_elem));
 

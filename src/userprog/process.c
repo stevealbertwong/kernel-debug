@@ -388,6 +388,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   } 
 #ifdef VM
+  // not in thread_create(): only user thread with elf has supt
   t->supt = vm_supt_init(); // vs init_thread() ??
 #endif
 
@@ -593,9 +594,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       }
       // 2, lazy load (involves file_read())
       vm_supt_install_filesystem(thread_current()->supt, upage,
-            file, ofs, page_read_bytes, page_zero_bytes, writable));
+            file, ofs, page_read_bytes, page_zero_bytes, writable);
 
-
+      read_bytes -= page_read_bytes;
+      zero_bytes -= page_zero_bytes;
+      upage += PGSIZE;
+      ofs += PGSIZE;
 #else
       // 1. fill unused kpage w 0s      
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
@@ -627,10 +631,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
-    }
+#endif 
+
+    }  
   return true;
 
-#endif
+
 }
 
 /**
@@ -649,8 +655,10 @@ setup_stack (void **esp)
 #ifdef VM
   // user stack is at 1st segment below PHYS_BASE (PHYS_BASE - PGSIZE)
   kpage = vm_palloc_kpage (PAL_USER | PAL_ZERO, PHYS_BASE - PGSIZE, thread_current()->pagedir, true);
+  // pin during installing supt: when evict there will be a spte to u() 
   vm_supt_install_frame (thread_current()->supt, PHYS_BASE - PGSIZE, kpage);
-  vm_unpin_kpage(kpage); // RMB to unpin() everytime after vm_palloc_kpage()
+  // RMB to unpin() everytime after vm_palloc_kpage()  
+  vm_unpin_kpage(kpage); 
   
   // ALTERNATIVELY: 
   // vm_supt_install_zero_page (thread_current()->supt, fault_page);
