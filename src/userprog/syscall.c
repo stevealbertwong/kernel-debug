@@ -22,6 +22,8 @@ static void syscall_handler (struct intr_frame *);
 struct lock file_lock; // global file lock -> multi-threads access same file
 struct file_desc *get_file_desc(int fd);
 struct mmap_desc *get_mmap_desc(int mmapid);
+void pin_and_grow_buffer(void *buffer, unsigned size);
+void unpin_buffer(void *buffer, unsigned size);
 
 void
 syscall_init (void) 
@@ -542,7 +544,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
  * grow new stack for buffer
  * 
  */ 
-pin_and_grow_buffer(void *buffer, unsigned size){
+void pin_and_grow_buffer(void *buffer, unsigned size){
 	struct hash *supt = thread_current()->supt;
   	uint32_t *pagedir = thread_current()->pagedir;
 	void *upage; // buffer == upage
@@ -558,7 +560,7 @@ pin_and_grow_buffer(void *buffer, unsigned size){
 	}
 }
 
-unpin_buffer(void *buffer, unsigned size){
+void unpin_buffer(void *buffer, unsigned size){
 	struct hash *supt = thread_current()->supt;
   	uint32_t *pagedir = thread_current()->pagedir;
 	void *upage; // buffer == upage

@@ -70,11 +70,14 @@ page_fault (struct intr_frame *f)
   
   // 2. determine segfault/pagefault
   // 2.1 segfault obvious fault_addr
-  // user mode access kernel addr / not present flag / 8MB stack limit / null pointer
-  if ((is_kernel_vaddr(fault_addr) && user) || not_present || PHYS_BASE - 0x800000 <= fault_addr || fault_addr <= 0){
+  // user mode access kernel addr / not present flag / null pointer
+  if ((is_kernel_vaddr(fault_addr) && user) || not_present ||  fault_addr <= 0){
       system_call_exit(-1);
   }
-
+  // 8MB stack limit
+  if(!((PHYS_BASE - 0x800000) <= fault_addr && fault_addr < PHYS_BASE )){
+     system_call_exit(-1);
+  }
 
 #ifdef VM
 
@@ -89,7 +92,7 @@ page_fault (struct intr_frame *f)
    void* fault_page = (void*) pg_round_down(fault_addr);   
 
    // 2.2.1 TEST: check if VA already regitered in supt 
-   if(vm_load_page(thread_current()->supt, thread_current()->pagedir, fault_page)) {
+   if(vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page)) {
       return; // succeeds
    } else {
       
@@ -105,7 +108,7 @@ page_fault (struct intr_frame *f)
       kill (f);    
    }
    // 2.2.2 TEST: valid stack access, next contiguous memory page, within 32 bytes of stack ptr
-   if((fault_addr >= (f->esp - 32))){
+   if((fault_addr >= (esp - 32))){
       
       vm_supt_install_zero_page (thread_current()->supt, fault_page);
       vm_load_page(thread_current()->supt, thread_current()->pagedir, fault_page);
