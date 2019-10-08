@@ -231,12 +231,12 @@ struct frame_table_entry* vm_clock_ptr_circular_loop(void)
   return e;
 }
 
-void vm_pin_kpage(kpage){
+void vm_pin_kpage(void *kpage){
   struct frame_table_entry *frame = vm_search_frametable(kpage);
   frame->pinned = true;
 }
 
-void vm_unpin_kpage(kpage){
+void vm_unpin_kpage(void *kpage){
   struct frame_table_entry *frame = vm_search_frametable(kpage);
   frame->pinned = false;
 }

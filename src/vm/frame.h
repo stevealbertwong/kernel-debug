@@ -37,7 +37,6 @@ void vm_frametable_init();
 void *vm_palloc_kpage(enum palloc_flags flags, void *upage);
 void vm_free_kpage(void *kpage);
 
+void vm_unpin_kpage(void *kpage);
 
-void vm_unpin_kpage(kpage);
-
-#endif
+#endif /* vm/frame.h */

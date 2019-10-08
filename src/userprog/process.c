@@ -656,7 +656,7 @@ setup_stack (void **esp)
 
 #ifdef VM
   // user stack is at 1st segment below PHYS_BASE (PHYS_BASE - PGSIZE)
-  kpage = vm_palloc_kpage (PAL_USER | PAL_ZERO, PHYS_BASE - PGSIZE, thread_current()->pagedir, true);
+  kpage = vm_palloc_kpage (PAL_USER | PAL_ZERO, PHYS_BASE - PGSIZE);
   // pin during installing supt: when evict there will be a spte to u() 
   vm_supt_install_frame (thread_current()->supt, PHYS_BASE - PGSIZE, kpage);
   // RMB to unpin() everytime after vm_palloc_kpage()  

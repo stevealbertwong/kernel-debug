@@ -208,7 +208,7 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
       case ON_SWAP:
         if(spte->writable && (pagedir_is_dirty(pagedir, upage) || spte->dirty)){ 
           
-          void *kpage = vm_palloc_kpage();          
+          void *kpage = vm_palloc_kpage(PAL_USER, upage);
           vm_swap_read_kpage_from_disk (spte->swap_index, kpage); // includes swap_free()
           file_write_at (f, kpage, PGSIZE, offset);
           vm_free_kpage(kpage);
