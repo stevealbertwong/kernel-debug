@@ -9,7 +9,7 @@
 
 // APIs: load, unload, evict 
 void* vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage);
-void vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
+bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
     void *upage, struct file *f, off_t offset, size_t bytes);
 bool vm_supt_evict_kpage(struct frame_table_entry *evict_candidate);
 

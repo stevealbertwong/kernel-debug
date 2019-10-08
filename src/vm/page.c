@@ -176,7 +176,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
  * - delete() upage's spte from supt
  * 
  */ 
-void vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
+bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
     void *upage, struct file *f, off_t offset, size_t bytes)
 {// args are stored in mmap_descriptor{}
     struct supt_entry *spte = vm_search_supt(supt, upage);
@@ -229,7 +229,8 @@ void vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
 
     }
     hash_delete(&supt, &spte->supt_elem); // delete() spte
-
+    
+    return true;
 }
 
 
@@ -293,7 +294,7 @@ vm_supt_evict_kpage(struct frame_table_entry *evict_candidate){
  * u() supt kpage is on filesystem(disk)
  * 
  * called when lazy loading -> e.g. mmap(), load_elf() elf code in disk
- * args are from mmap(), load_elf()
+ * args are from mmap() layer, load_elf() elf header
  * 
  */ 
 bool vm_supt_install_filesystem(struct hash *supt, void *upage, struct file *file, 

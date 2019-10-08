@@ -18,6 +18,8 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "vm/frame.h"
+#include "vm/page.h"
 
 typedef uint32_t Elf32_Word, Elf32_Addr, Elf32_Off;
 typedef uint16_t Elf32_Half;
@@ -389,7 +391,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   } 
 #ifdef VM
   // not in thread_create(): only user thread with elf has supt
-  t->supt = vm_supt_init(); // vs init_thread() ??
+  // t->supt = vm_supt_init(); // vs init_thread() ??
 #endif
 
 

@@ -55,6 +55,7 @@ struct thread
     bool waited;                        // wait() twice error
     struct file *elf_file;              // disable/allow write
     struct list fd_list;
+    struct list mmap_list;
     int total_fd;
 
     struct hash *supt;            // each thread's upage status
@@ -62,13 +63,26 @@ struct thread
 
   };
 
-// 1 fd == 1 "open file"
+// for mapping fid w file
 struct file_desc
 {
 	int id; // fd, index in fd_list
 	struct list_elem fd_list_elem;
 	struct file *f;
 	struct dir *d;
+};
+
+
+// for mapping mmapid w sptes, for munmap() only
+struct mmap_desc
+{
+	int id; 
+	struct list_elem mmap_list_elem;
+	void *upage;// starting spte
+  uint32_t file_size; // ending spte	
+  
+  //1 thd read() n mmap() same file, when munmap(), won't file_close() fd->file{}
+  struct file* dup_file; 
 };
 
 

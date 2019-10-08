@@ -160,17 +160,26 @@ init_thread (struct thread *t, const char *name, int priority)
     t->original_priority = priority;
   }
 
+  list_init(&t->fd_list);
+  list_init(&t->mmap_list);
 
-  t->pagedir = thread_current()->pagedir;
+#ifdef VM
+  t->supt = vm_supt_init();
+#endif
+
+  t->pagedir = thread_current()->pagedir; // ??
+
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
   intr_set_level (old_level);
 }
 
 
-
-// kernel thread create a user child thread, called only by process_execute() n testing code
-// allocate() page + populate() thread and stack + register() threads list
+/**
+ * kernel thread create a user child thread, called only by process_execute() n testing code
+ * allocate() page + populate() thread and stack + register() threads list
+ * 
+ */ 
 tid_t
 thread_create (const char *name, int priority,
                thread_func *function, void *aux) 
@@ -211,7 +220,6 @@ thread_create (const char *name, int priority,
   sema_init(&t->sema_elf_call_exit, 0); //store 1 blocked thd
 	sema_init(&t->sema_elf_exit_status, 0);
 	sema_init(&t->sema_load_elf, 0);
-  list_init(&t->fd_list);
 
 	t->elf_exit_status = 0;	// normal
 	t->exited = false;

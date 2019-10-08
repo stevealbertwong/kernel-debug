@@ -11,6 +11,9 @@
 #include "filesys/directory.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
+#include "vm/frame.h"
+#include "vm/page.h"
+
 
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1
@@ -18,7 +21,7 @@
 static void syscall_handler (struct intr_frame *);
 struct lock file_lock; // global file lock -> multi-threads access same file
 struct file_desc *get_file_desc(int fd);
-
+struct mmap_desc *get_mmap_desc(int mmapid);
 
 void
 syscall_init (void) 
@@ -157,7 +160,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 		case SYS_MUNMAP:
 			if (is_user_vaddr(argument + 1))
-				system_call_close(*(argument + 1));
+				system_call_munmap(*(argument + 1));
 			else
 				system_call_exit(-1);
 			break;
@@ -517,7 +520,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 		// write into file
 		struct file_desc* file_d = get_file_desc(fd);
 
-		if(file_d && file_d->f) {
+		if(file_d && file_d->f) { // previous buggy line
 			ret = file_write(file_d->f, buffer, size);
 		}else{
 			ret = -1;
@@ -706,15 +709,16 @@ get_file_desc(int fd)
 
 /***************************************************************/
 /**
- * directly map a file into RAM
+ * directly map an "opened" file into RAM
  * 
  * 1. given fd, get file_desc->file{} 
- * 		- needed for file_read() when lazy load
+ * 		- needed to store file{} in supt
  * 
  * 2. update supt to lazy load 
  * 		- NOT direct file_read()
+ * 		- upage:file_content mapping
  * 		- use file size to calculate num of pages needed
- * 		- add supt entry (filesystem)
+ * 		- for loop file pages, add supt entry (filesystem)
  * 
  * 3. add() to thread->mmap_list[]
  * 		- mmap{} index() RAM mapped file: VA to delete supt entry
@@ -722,10 +726,58 @@ get_file_desc(int fd)
  * different from unix mmap() syscall
  * https://www.poftut.com/mmap-tutorial-with-examples-in-c-and-cpp-programming-languages/
  */ 
-mmapid_t system_call_mmap(int fd, void *upage){
+int system_call_mmap(int fd, void *upage){
+	lock_acquire (&file_lock);
 
+	struct thread *curr = thread_current();
+	uint32_t mmapid;
+	struct mmap_desc *mmap_desc = (struct mmap_desc*) malloc(sizeof(struct mmap_desc));
+
+
+	// 1. given fd, duplicate file_desc->file{} 
+	struct file_desc *file_desc = get_file_desc(fd);
+	if(!file_desc){
+		PANIC("system_call_mmap() fd has no file_desc{} \n");
+	}		
+	// avoid double free() same file{}
+	mmap_desc->dup_file = file_reopen(file_desc->f); 
+	
+
+	// 2. update supt to lazy load 
+	size_t file_size = file_length(mmap_desc->dup_file);
+	size_t offset;
+	for (offset = 0; offset < file_size; offset += PGSIZE) {
+		void *elf_va = upage + offset; // user virtual addr
+
+		size_t read_bytes = (offset + PGSIZE < file_size ? PGSIZE : file_size - offset);
+		size_t zero_bytes = PGSIZE - read_bytes;
+
+		bool success = vm_supt_install_filesys(curr->supt, elf_va,
+			mmap_desc->dup_file, offset, read_bytes, zero_bytes, /*writable*/true);
+		
+		if (!success){
+			PANIC("system_call_mmap() vm_supt_install_filesys() failed \n");
+		}
+	}
+
+
+	// 3. add() to thread->mmap_list[]
+	int mmap_id;
+	if(list_empty(&curr->mmap_list)){
+		mmap_id = 1;
+	}else{
+		// last mmap_list[] + 1
+		mmap_id = list_entry(list_back(&curr->mmap_list), struct mmap_desc, mmap_list_elem)->id + 1;
+	}
+	mmap_desc->id = mmap_id;
+	mmap_desc->upage = upage;
+	mmap_desc->file_size = file_size;
+	list_push_back (&curr->mmap_list, &mmap_desc->mmap_list_elem);
+	
+	lock_release (&file_lock);
+
+	return mmap_id;
 }
-
 
 
 /**
@@ -734,9 +786,50 @@ mmapid_t system_call_mmap(int fd, void *upage){
  * 		- delete supt entry (filesystem)
  * 2. delete from thread->mmap_list[] 
  */
-system_call_munmap(mmapid_t mmapid){
+void
+system_call_munmap(int mmapid){
+	
+	lock_acquire (&file_lock);
+	
+	struct thread *curr = thread_current();
+	struct mmap_desc *mmap_desc = get_mmap_desc(mmapid);	
+    off_t offset;
+	size_t file_size = mmap_desc->file_size;
+
+    for(offset = 0; offset < file_size; offset += PGSIZE) {
+		void *starting_addr = mmap_desc->upage + offset; // upage
+		size_t bytes = (offset + PGSIZE < file_size ? PGSIZE : file_size - offset);
+		
+		bool success = vm_supt_unload_kpage(curr->supt, curr->pagedir,
+			starting_addr, mmap_desc->dup_file, offset, bytes);
+		
+		if(!success){
+			PANIC("system_call_munmap() vm_supt_unload_kpage() failed");
+		}
+	}
+
+	list_remove(&mmap_desc->mmap_list_elem);
+    file_close(mmap_desc->dup_file);
+    free(mmap_desc);
+
+	lock_release (&file_lock);
+}
 
 
+// given mmapid, for-loop mmap_list[] for mmap_desc{}
+struct mmap_desc *
+get_mmap_desc(int mmapid)
+{
+	struct mmap_desc *mmap_desc;
+	struct list_elem *e;
+	struct thread *t;
 
-
+	t = thread_current();
+	for (e = list_begin(&t->mmap_list); e != list_end(&t->mmap_list); e = list_next(e))
+	{
+		mmap_desc = list_entry(e, struct mmap_desc, mmap_list_elem);
+		if (mmap_desc->id == mmapid)
+			return mmap_desc;
+	}
+	return NULL;
 }

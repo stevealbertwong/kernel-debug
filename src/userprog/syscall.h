@@ -23,6 +23,10 @@ void system_call_seek(int fd, unsigned position);				//CallNumber: 10
 unsigned system_call_tell(int fd);								//CallNumber: 11
 void system_call_close(int fd);									//CallNumber: 12
 
+#ifdef VM
+int system_call_mmap(int fd, void *upage);
+void system_call_munmap(int mmapid);
+#endif
 
 
 #endif /* userprog/syscall.h */
