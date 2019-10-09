@@ -23,7 +23,8 @@ bool vm_supt_install_filesystem(struct hash *supt, void *upage, struct file *fil
 
 // getter setter
 struct supt_entry *vm_supt_search_supt(struct hash *supt, void *upage);
-bool vm_pin_upage(void *upage);
+bool vm_pin_upage(struct hash *supt, void *upage);
+bool vm_unpin_upage(struct hash *supt, void *upage);
 void vm_spte_set_dirty(struct supt_entry *spte);
 
 #endif

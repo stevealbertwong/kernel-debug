@@ -542,6 +542,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 
 /**
  * grow new stack for buffer
+ * called by syscall_read(), syscall_write()
  * 
  */ 
 void pin_and_grow_buffer(void *buffer, unsigned size){
@@ -555,7 +556,7 @@ void pin_and_grow_buffer(void *buffer, unsigned size){
 			vm_supt_install_zero_page(supt, upage); 
 		}		
 		vm_load_kpage_using_supt (supt, pagedir, upage);						
-		vm_pin_upage(upage);
+		vm_pin_upage(supt, upage);
 
 	}
 }
@@ -566,7 +567,7 @@ void unpin_buffer(void *buffer, unsigned size){
 	void *upage; // buffer == upage
 	for(upage = pg_round_down(buffer); upage < buffer + size; upage += PGSIZE)
 	{		
-		vm_unpin_upage(supt, pagedir, upage); 
+		vm_unpin_upage(supt, upage); 
 	}
 }
 
@@ -732,7 +733,6 @@ int system_call_mmap(int fd, void *upage){
 	lock_acquire (&file_lock);
 
 	struct thread *curr = thread_current();
-	uint32_t mmapid;
 	struct mmap_desc *mmap_desc = (struct mmap_desc*) malloc(sizeof(struct mmap_desc));
 
 
@@ -754,17 +754,17 @@ int system_call_mmap(int fd, void *upage){
 		size_t read_bytes = (offset + PGSIZE < file_size ? PGSIZE : file_size - offset);
 		size_t zero_bytes = PGSIZE - read_bytes;
 
-		bool success = vm_supt_install_filesys(curr->supt, elf_va,
+		bool success = vm_supt_install_filesystem(curr->supt, elf_va,
 			mmap_desc->dup_file, offset, read_bytes, zero_bytes, /*writable*/true);
 		
 		if (!success){
-			PANIC("system_call_mmap() vm_supt_install_filesys() failed \n");
+			PANIC("system_call_mmap() vm_supt_install_filesystem() failed \n");
 		}
 	}
 
 
 	// 3. add() to thread->mmap_list[]
-	int mmap_id;
+	uint32_t mmap_id;	
 	if(list_empty(&curr->mmap_list)){
 		mmap_id = 1;
 	}else{
@@ -795,8 +795,8 @@ system_call_munmap(int mmapid){
 	
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = get_mmap_desc(mmapid);	
-    off_t offset;
-	size_t file_size = mmap_desc->file_size;
+    uint32_t offset;
+	uint32_t file_size = mmap_desc->file_size;
 
     for(offset = 0; offset < file_size; offset += PGSIZE) {
 		void *starting_addr = mmap_desc->upage + offset; // upage

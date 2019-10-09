@@ -12,6 +12,7 @@
 
 #include "threads/synch.h"
 #include "threads/malloc.h"
+#include "threads/thread.h"
 #include "threads/palloc.h"
 #include "threads/vaddr.h"
 #include "userprog/pagedir.h"
@@ -475,8 +476,7 @@ vm_spte_set_dirty(struct supt_entry *spte){
 }
 
 bool 
-vm_pin_upage(upage){
-  struct hash *supt = thread_current()->supt;
+vm_pin_upage(struct hash *supt, void *upage){
   struct supt_entry *spte = vm_supt_search_supt(supt, upage);
   if((!spte->kpage) || (!spte)){
     PANIC("vm_pin_upage() failed, spte no kpage \n");
@@ -484,6 +484,14 @@ vm_pin_upage(upage){
   vm_pin_kpage(spte->kpage);
 }
 
+bool 
+vm_unpin_upage(struct hash *supt, void *upage){
+  struct supt_entry *spte = vm_supt_search_supt(supt, upage);
+  if((!spte->kpage) || (!spte)){
+    PANIC("vm_pin_upage() failed, spte no kpage \n");
+  }
+  vm_unpin_kpage(spte->kpage);
+}
 
 static unsigned
 hash_element_func(const struct hash_elem *elem, void *aux UNUSED)
