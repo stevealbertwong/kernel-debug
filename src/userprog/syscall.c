@@ -22,8 +22,8 @@ static void syscall_handler (struct intr_frame *);
 struct lock file_lock; // global file lock -> multi-threads access same file
 struct file_desc *get_file_desc(int fd);
 struct mmap_desc *get_mmap_desc(int mmapid);
-void pin_and_grow_buffer(void *buffer, unsigned size);
-void unpin_buffer(void *buffer, unsigned size);
+void pin_and_grow_buffer(const void *buffer, unsigned size);
+void unpin_buffer(const void *buffer, unsigned size);
 
 void
 syscall_init (void) 
@@ -155,14 +155,14 @@ syscall_handler (struct intr_frame *f UNUSED)
 #ifdef VM
 		case SYS_MMAP:
 			if (is_user_vaddr(argument + 1))
-				system_call_mmap(*(argument + 1));
+				system_call_mmap((int)*(argument + 1), (void *) *(argument + 2));
 			else
 				system_call_exit(-1);
 			break;
 
 		case SYS_MUNMAP:
 			if (is_user_vaddr(argument + 1))
-				system_call_munmap(*(argument + 1));
+				system_call_munmap((int)*(argument + 1));
 			else
 				system_call_exit(-1);
 			break;
@@ -531,7 +531,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
 	lock_release(&file_lock);
 
 #ifdef VM	
-	unpin_buffer(buffer);
+	unpin_buffer(buffer, size);
 #endif
 
 	return ret;
@@ -545,7 +545,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
  * called by syscall_read(), syscall_write()
  * 
  */ 
-void pin_and_grow_buffer(void *buffer, unsigned size){
+void pin_and_grow_buffer(const void *buffer, unsigned size){
 	struct hash *supt = thread_current()->supt;
   	uint32_t *pagedir = thread_current()->pagedir;
 	void *upage; // buffer == upage
@@ -561,9 +561,12 @@ void pin_and_grow_buffer(void *buffer, unsigned size){
 	}
 }
 
-void unpin_buffer(void *buffer, unsigned size){
+/**
+ * unpin upage's underlying kpage
+ * 
+ */ 
+void unpin_buffer(const void *buffer, unsigned size){
 	struct hash *supt = thread_current()->supt;
-  	uint32_t *pagedir = thread_current()->pagedir;
 	void *upage; // buffer == upage
 	for(upage = pg_round_down(buffer); upage < buffer + size; upage += PGSIZE)
 	{		

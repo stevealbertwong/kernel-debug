@@ -111,7 +111,7 @@ page_fault (struct intr_frame *f)
    if((fault_addr >= (esp - 32))){
       
       vm_supt_install_zero_page (thread_current()->supt, fault_page);
-      vm_load_page(thread_current()->supt, thread_current()->pagedir, fault_page);
+      vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page);
 
       return; // succeeds
 

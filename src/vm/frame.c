@@ -233,11 +233,17 @@ struct frame_table_entry* vm_clock_ptr_circular_loop(void)
 
 void vm_pin_kpage(void *kpage){
   struct frame_table_entry *frame = vm_search_frametable(kpage);
+  if(!frame){
+    PANIC("vm_pin_kpage() vm_search_frametable() failed ");
+  }
   frame->pinned = true;
 }
 
 void vm_unpin_kpage(void *kpage){
   struct frame_table_entry *frame = vm_search_frametable(kpage);
+  if(!frame){
+    PANIC("vm_unpin_kpage() vm_search_frametable() failed ");
+  }
   frame->pinned = false;
 }
 
