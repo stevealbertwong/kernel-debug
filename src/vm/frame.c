@@ -21,6 +21,11 @@ static struct list frame_table;
 static struct hash frame_table_hash; // for quick look up
 static struct lock frame_table_lock;
 static struct list_elem *clock_hand; // for circular loop when evict
+static unsigned frametable_hash_func(const struct hash_elem *elem, void *aux UNUSED);
+static bool frametable_less_func(const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED);
+struct frame_table_entry* vm_pick_kpage_to_evict();
+void vm_append_frame_table(void *kpage, void *upage);
+struct frame_table_entry* vm_search_frametable(void* kpage);
 
 /**
  * 1 global frame table (not each thread)
@@ -29,7 +34,7 @@ static struct list_elem *clock_hand; // for circular loop when evict
  */ 
 void vm_frametable_init(){  
   list_init (&frame_table);
-  hash_init (&frame_table_hash, frametable_hash_func, frametable_less_func, NULL););
+  hash_init (&frame_table_hash, frametable_hash_func, frametable_less_func, NULL);
   lock_init (&frame_table_lock);  
 }
 
@@ -111,12 +116,10 @@ vm_palloc_kpage(enum palloc_flags flags, void *upage)
  */ 
 struct frame_table_entry* 
 vm_pick_kpage_to_evict(){
-  struct thread *curr = thread_current();
-  
   lock_acquire (&frame_table_lock);
 
   size_t i;
-  for(i = 0; i <= hash_size(&frame_table) * 2; ++i) { // 2nd chance
+  for(i = 0; i <= hash_size(&frame_table_hash) * 2; ++i) { // 2nd chance
     struct frame_table_entry *evict_candidate = vm_clock_ptr_circular_loop(); // infinite
     if(evict_candidate == NULL){
       PANIC("vm_pick_kpage_to_evict() evict_candidate is null \n");
@@ -158,13 +161,13 @@ vm_free_kpage(void *kpage){
     PANIC("vm_free_kpage() no frame_table_entry of kpage \n");
   }
 
-  hash_delete (&frame_table, &e->frame_table_hash_elem);
+  hash_delete (&frame_table_hash, &e->frame_table_hash_elem);
   list_remove (&e->frame_table_elem);
   free(e);  
   if(!kpage){
     PANIC("vm_free_kpage() kpage is null \n");
   }
-  palloc_free(kpage);
+  palloc_free_page(kpage);
 
 }
 
@@ -254,16 +257,18 @@ vm_search_frametable(void* kpage){
   e_temp.kpage = kpage;
   struct hash_elem *h = hash_find (&frame_table_hash, &(e_temp.frame_table_hash_elem));
 
-  return hash_entry(h, struct frame_table_entry, helem);
+  return hash_entry(h, struct frame_table_entry, frame_table_hash_elem);
 }
 
 
 
 static unsigned frametable_hash_func(const struct hash_elem *elem, void *aux UNUSED)
 {
-  struct frame_table_entry *entry = hash_entry(elem, struct frame_table_entry, helem);
+  struct frame_table_entry *entry = hash_entry(elem, struct frame_table_entry, frame_table_hash_elem);
   return hash_bytes( &entry->kpage, sizeof entry->kpage );
 }
+
+
 static bool frametable_less_func(const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED)
 {
   struct frame_table_entry *a_entry = hash_entry(a, struct frame_table_entry, helem);
