@@ -370,6 +370,7 @@ int system_call_open(const char *file_name)
 		return file_desc->id;
 	}else{ // filename == null
 		system_call_exit(-1);
+		return -1;
 	}
 }
 
@@ -448,7 +449,7 @@ int system_call_read(int fd, void *buffer, unsigned size)
 		bytes_read = file_read(file_desc->f, buffer, size);
 		lock_release(&file_lock);
 #ifdef VM	
-		unpin_buffer(buffer);
+		unpin_buffer(buffer,size);
 #endif
 		return bytes_read;
 

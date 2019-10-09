@@ -71,7 +71,7 @@ page_fault (struct intr_frame *f)
   // 2. determine segfault/pagefault
   // 2.1 segfault obvious fault_addr
   // user mode access kernel addr / not present flag / null pointer
-  if ((is_kernel_vaddr(fault_addr) && user) || not_present ||  fault_addr <= 0){
+  if ((is_kernel_vaddr(fault_addr) && user) || not_present ||  !fault_addr ){
       system_call_exit(-1);
   }
   // 8MB stack limit
