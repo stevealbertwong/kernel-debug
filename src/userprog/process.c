@@ -157,8 +157,6 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   sema_down(&elf_thread->sema_load_elf); // wait child start_process()
   // printf("process.c process_execute() after sema_down \n");  
   
-  // palloc_free_page (full_cmdline_copy);
-
 	if (elf_thread->elf_exit_status == -1){
     PANIC("process_execute() elf_thread->elf_exit_status == -1 \n");
     palloc_free_page(full_cmdline_copy);
@@ -339,10 +337,10 @@ start_process (void *full_cmdline)
 
   // 4.1 free kernel process_execute() thread, quit kernel start_process() thread
   if (!success) { // load failed e.g. filename is null
+    PANIC("start_process() load() failed \n");
     elf_thread->elf_exit_status = -1; // error
     sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
-    palloc_free_page(cmdline_tokens);
-    PANIC("start_process() load() failed \n");
+    palloc_free_page(cmdline_tokens);    
     system_call_exit(-1);
   } else { // if success
     // 4.2 unblock kernel_thread after load_elf() + push kernel args to user_stack 
@@ -389,7 +387,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   // 1. init() pagedir + supt + file
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL){
-    printf("process.c pagedir_create() failed !!! \n");
+    PANIC("process.c pagedir_create() failed !!! \n");
     goto done;
   } 
 #ifdef VM
@@ -480,8 +478,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
                                  read_bytes, zero_bytes, writable)){
                                    printf("process.c load_segment() failed !!! \n");
                                    goto done;
-                                 }
-                 printf("load_segment() done \n");                                 
+                                 }                              
             }
           else{
             printf("process.c validate_segment() failed !!! \n");
@@ -503,6 +500,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   file_close (file);
+  if(!success){
+    PANIC("load() failed \n");
+  }
   return success;
 }
 
