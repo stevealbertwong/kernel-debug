@@ -25,7 +25,7 @@ static const size_t SECTORS_PER_PAGE = PGSIZE/BLOCK_SECTOR_SIZE;//8:4096/512
  * - use the BLOCK_SWAP block device for swapping 
  * - block_get_role(): obtain struct block that represents BLOCK_SWAP block device
  */ 
-vm_swap_init(){
+void vm_swap_init(void){
     // 1. device driver API: init() disk partition object in kernel pool
     swap_disk_partition = block_get_role(BLOCK_SWAP);
     if(swap_disk_partition == NULL) {

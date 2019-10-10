@@ -48,7 +48,7 @@ struct supt_entry{
   void *upage; // faulty VA == unique key (of each thread)
   
   enum kpage_status status; // VA's physical status
-  uint32_t content_bytes, zero_bytes; // kpage_size = occupied_bytes - zero_bytes
+  int32_t content_bytes, zero_bytes; // kpage_size = occupied_bytes - zero_bytes, int32_t to store error -1
 
   // ON FRAME
   void *kpage;//munmap(): free() kpage, delete() frametable, pagedir
@@ -73,7 +73,7 @@ struct supt_entry{
  */ 
 struct hash* vm_supt_init(void){
   struct hash *supt = (struct hash*) malloc(sizeof(struct hash));
-  hash_init(&supt, supt_hash_func, supt_less_func, NULL);
+  hash_init(supt, supt_hash_func, supt_less_func, NULL);
   return supt;
 }
 
@@ -147,7 +147,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
   }
   // fresh kpage is clean in pagedir
   pagedir_set_dirty(pagedir, kpage, false);
-  
+
   return kpage;
 };
 
