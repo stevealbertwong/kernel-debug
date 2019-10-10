@@ -59,6 +59,7 @@ page_fault (struct intr_frame *f)
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
   
+  printf("page_fault() is called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
   // 1. get faulty VA + error code from cr2 register
   // it may point to code/data, not necessarily instruction (intr_frame->eip)
   asm ("movl %%cr2, %0" : "=r" (fault_addr));
@@ -72,10 +73,12 @@ page_fault (struct intr_frame *f)
   // 2.1 segfault obvious fault_addr
   // user mode access kernel addr / not present flag / null pointer
   if ((is_kernel_vaddr(fault_addr) && user) || not_present ||  !fault_addr ){
+      PANIC("pagefault() segfault addr \n");
       system_call_exit(-1);
   }
   // 8MB stack limit
   if(!((PHYS_BASE - 0x800000) <= fault_addr && fault_addr < PHYS_BASE )){
+     PANIC("pagefault() 8MB stack limit segfault addr \n");
      system_call_exit(-1);
   }
 
@@ -110,8 +113,13 @@ page_fault (struct intr_frame *f)
    // 2.2.2 TEST: valid stack access, next contiguous memory page, within 32 bytes of stack ptr
    if((fault_addr >= (esp - 32))){
       
-      vm_supt_install_zero_page (thread_current()->supt, fault_page);
-      vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page);
+      if(!vm_supt_install_zero_page (thread_current()->supt, fault_page)){
+         PANIC("pagefault() vm_supt_install_zero_page() failed \n");
+      }
+      
+      if(!vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page)){
+         PANIC("pagefault() vm_load_kpage_using_supt() failed \n");
+      }
 
       return; // succeeds
 

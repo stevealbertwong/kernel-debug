@@ -399,7 +399,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file = filesys_open (file_name); // BUG!!!! 
   if (file == NULL) 
     {
-      printf ("load: %s: open failed\n", file_name);
+      PANIC ("load: %s: open failed\n", file_name);
       goto done; 
     }
 
@@ -413,7 +413,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       || ehdr.e_phentsize != sizeof (struct Elf32_Phdr)
       || ehdr.e_phnum > 1024) 
     {
-      printf ("load: %s: error loading executable\n", file_name);
+      PANIC ("load: %s: error loading executable\n", file_name);
       goto done; 
     }
 
@@ -424,14 +424,14 @@ load (const char *file_name, void (**eip) (void), void **esp)
       struct Elf32_Phdr phdr;
 
       if (file_ofs < 0 || file_ofs > file_length (file)){
-        printf("process.c file_length() failed !!! \n");
+        PANIC("process.c file_length() failed !!! \n");
         goto done;
 
       }        
       file_seek (file, file_ofs);
 
       if (file_read (file, &phdr, sizeof phdr) != sizeof phdr){
-        printf("process.c file_read() failed !!! \n");
+        PANIC("process.c file_read() failed !!! \n");
         goto done;
       }
         
@@ -472,7 +472,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
               // printf("load_segment() begin \n");   
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable)){
-                                   printf("process.c load_segment() failed !!! \n");
+                                   PANIC("process.c load_segment() failed !!! \n");
                                    goto done;
                                  }                              
             }
