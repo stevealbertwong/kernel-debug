@@ -7,6 +7,10 @@
  * -> shouldn't pinned be in frame ??
  */
 #include <hash.h>
+#include <debug.h>
+#include <stddef.h>
+#include <random.h>
+#include <stdio.h>
 #include <string.h>
 #include "lib/kernel/hash.h"
 
