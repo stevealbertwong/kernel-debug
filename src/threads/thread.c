@@ -104,9 +104,7 @@ thread_init (void)
 
   // initial_thread-wsie
   initial_thread = running_thread ();
-  printf("thread_init c  \n");
   init_thread (initial_thread, "main", PRI_DEFAULT);
-  printf("thread_init d  \n");
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 
