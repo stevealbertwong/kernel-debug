@@ -168,9 +168,9 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->mmap_list);
 
 #ifdef VM
-  printf("init_thread c  \n");
+  printf("init_thread ccccc  \n");
   t->supt = vm_supt_init();
-  printf("init_thread d  \n");
+  printf("init_thread dddddd  \n");
 #endif
 
   // t->pagedir = thread_current()->pagedir; // ??
