@@ -26,7 +26,6 @@ static bool     supt_less_func(const struct hash_elem *, const struct hash_elem 
 void* vm_load_kpage_from_filesystem(struct supt_entry *spte, void *kpage);
 void* vm_load_kpage_from_swap(struct supt_entry *spte, void *kpage);
 void* vm_load_kpage_all_zeros(void *kpage);
-struct supt_entry *vm_search_supt(struct hash *supt, void *upage);
 
 enum kpage_status {
   ALL_ZERO,         // All zeros
@@ -107,7 +106,7 @@ void*
 vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
 {
   // 1. search supt for where kpage is (RAM/Disk)
-  struct supt_entry *spte = vm_search_supt(supt, upage);
+  struct supt_entry *spte = vm_supt_search_supt(supt, upage);
   if(spte == NULL){
     PANIC("vm_load_kpage_using_supt() upage does not have spte entry \n");
   }
@@ -185,7 +184,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
 bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
     void *upage, struct file *f, off_t offset, size_t bytes)
 {// args are stored in mmap_descriptor{}
-    struct supt_entry *spte = vm_search_supt(supt, upage);
+    struct supt_entry *spte = vm_supt_search_supt(supt, upage);
     if(!spte || !spte->kpage){
       PANIC("vm_supt_unload_kpage() no spte \n");
     }
@@ -265,9 +264,9 @@ vm_supt_evict_kpage(struct frame_table_entry *evict_candidate){
   if(pagedir_is_dirty(owner->pagedir, evict_candidate->upage)){
 
     // vm_supt_set_dirty(f_evicted->t->supt, f_evicted->upage, is_dirty); // u() supt ??
-    struct supt_entry *spte = vm_search_supt(owner->supt, evict_candidate->upage);
+    struct supt_entry *spte = vm_supt_search_supt(owner->supt, evict_candidate->upage);
     if(!spte){
-      PANIC("vm_supt_evict_kpage() vm_search_supt() failed \n");
+      PANIC("vm_supt_evict_kpage() vm_supt_search_supt() failed \n");
     }
     spte->dirty = true;
 
@@ -306,7 +305,7 @@ vm_supt_evict_kpage(struct frame_table_entry *evict_candidate){
 bool vm_supt_install_filesystem(struct hash *supt, void *upage, struct file *file, 
     off_t offset, uint32_t content_bytes, uint32_t zero_bytes, bool writable)
 {  
-  // vm_search_supt(supt, upage); ??
+  // vm_supt_search_supt(supt, upage); ??
   struct supt_entry *spte = (struct supt_entry *) malloc(sizeof(struct supt_entry));
   if(!spte){
     PANIC("vm_supt_on_filesystem() malloc failed \n");
@@ -338,7 +337,7 @@ bool vm_supt_install_filesystem(struct hash *supt, void *upage, struct file *fil
  */ 
 bool vm_supt_install_swap(struct hash *supt, void *upage, uint32_t swap_index){
   // upage spte should have existed !!!!
-  struct supt_entry *spte = vm_search_supt(supt, upage);
+  struct supt_entry *spte = vm_supt_search_supt(supt, upage);
   if(spte == NULL) {
     PANIC("vm_supt_on_swap() upage does not exist in supt \n");
     return false;
@@ -360,7 +359,7 @@ bool vm_supt_install_swap(struct hash *supt, void *upage, uint32_t swap_index){
  * 
  */ 
 bool vm_supt_install_zero_page(struct hash *supt, void *upage){
-  // vm_search_supt(supt, upage); ??
+  // vm_supt_search_supt(supt, upage); ??
 
   struct supt_entry *spte = (struct supt_entry *) malloc(sizeof(struct supt_entry));
   if(!spte){
@@ -460,14 +459,14 @@ void* vm_load_kpage_all_zeros(void *kpage){
 /*******************************************************************/
 
 struct supt_entry *
-vm_search_supt(struct hash *supt, void *upage){
+vm_supt_search_supt(struct hash *supt, void *upage){
 
   struct supt_entry spte; // temp stack object, no need malloc() then free()
   spte.upage = upage;  
 
   struct hash_elem *elem = hash_find (supt, &spte.supt_elem);
   if(elem == NULL){
-    PANIC("vm_search_supt() failed to find spte\n");
+    PANIC("vm_supt_search_supt() failed to find spte\n");
     return NULL;
   } else{
     return hash_entry(elem, struct supt_entry, supt_elem);
@@ -481,7 +480,7 @@ vm_spte_set_dirty(struct supt_entry *spte){
 
 bool 
 vm_pin_upage(struct hash *supt, void *upage){
-  struct supt_entry *spte = vm_search_supt(supt, upage);
+  struct supt_entry *spte = vm_supt_search_supt(supt, upage);
   if((!spte->kpage) || (!spte)){
     PANIC("vm_pin_upage() failed, spte no kpage \n");
   }
@@ -491,7 +490,7 @@ vm_pin_upage(struct hash *supt, void *upage){
 
 bool 
 vm_unpin_upage(struct hash *supt, void *upage){
-  struct supt_entry *spte = vm_search_supt(supt, upage);
+  struct supt_entry *spte = vm_supt_search_supt(supt, upage);
   if((!spte->kpage) || (!spte)){
     PANIC("vm_pin_upage() failed, spte no kpage \n");
   }
