@@ -131,14 +131,18 @@ main (void)
 #endif
 
   /* Start thread scheduler and enable interrupts. */
+  printf("init.c startstart() \n");
   thread_start ();
   serial_init_queue ();
+  printf("init.c 0 \n");
   timer_calibrate ();
 
 #ifdef FILESYS
   /* Initialize file system. */
   ide_init ();
+  printf("init.c a \n");
   locate_block_devices ();
+  printf("init.c b \n");
   filesys_init (format_filesys);
 #endif
 
