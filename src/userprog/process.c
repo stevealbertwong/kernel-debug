@@ -391,7 +391,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   } 
 #ifdef VM
   // not in thread_create(): only user thread with elf has supt
-  // t->supt = vm_supt_init(); // vs init_thread() ??
+  // not in init_thread(): vm_supt_init() contains malloc(), X before "booting completes"  
+  printf("init_thread ccccc  \n");
+  t->supt = vm_supt_init(); // vs init_thread() ??
+  printf("init_thread dddddd  \n");
 #endif
 
 

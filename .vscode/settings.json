@@ -32,6 +32,7 @@
         "pagedir.h": "c",
         "page.h": "c",
         "frame.h": "c",
-        "swap.h": "c"
+        "swap.h": "c",
+        "atomic": "c"
     }
 }

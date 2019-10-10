@@ -167,12 +167,6 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->fd_list);
   list_init(&t->mmap_list);
 
-#ifdef VM
-  printf("init_thread ccccc  \n");
-  vm_supt_init();
-  printf("init_thread dddddd  \n");
-#endif
-
   // t->pagedir = thread_current()->pagedir; // ??
 
   old_level = intr_disable ();
