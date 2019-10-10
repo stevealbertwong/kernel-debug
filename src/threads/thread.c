@@ -574,13 +574,12 @@ schedule (void)
 /**
  * pop() 1st thd on ready_list based on donated priority
  */ 
-static struct thread * next_thread_to_run(void) {
-    struct list_elem *max;
-    
+static struct thread * next_thread_to_run(void) {        
     if (list_empty(&ready_list)) {
       return idle_thread;
     } else {
       return list_entry (list_pop_front (&ready_list), struct thread, elem);
+      // struct list_elem *max;
       // max = list_max(&ready_list, (list_less_func*) thread_more_func, NULL);
       // list_remove(max); // pop_max, but less overhead
       // return list_entry(max, struct thread, elem);
