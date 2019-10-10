@@ -469,7 +469,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
                 }
     
   // 3. based on header, palloc() kpage for code/text/bss + read() ELF into PA 
-              printf("load_segment() begin \n");   
+              // printf("load_segment() begin \n");   
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable)){
                                    printf("process.c load_segment() failed !!! \n");
@@ -477,7 +477,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
                                  }                              
             }
           else{
-            printf("process.c validate_segment() failed !!! \n");
+            PANIC("process.c validate_segment() failed !!! \n");
             goto done;
           }
           break;
@@ -485,11 +485,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
   // 4. palloc() user stack and index() at if_.esp
   if (!setup_stack (esp)){
-    printf("process.c setup_stack() failed !!! \n");
+    PANIC("process.c setup_stack() failed !!! \n");
     goto done;
   }    
-
-  printf("setup_stack() done \n");
 
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
   success = true;
