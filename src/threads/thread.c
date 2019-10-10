@@ -11,6 +11,8 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "vm/page.h"
+
 #include "userprog/process.h"
 #include "devices/timer.h"
 
@@ -173,7 +175,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
   t->pagedir = thread_current()->pagedir; // ??
   printf("init_thread e  \n");
-  
+
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
   intr_set_level (old_level);
