@@ -6,7 +6,7 @@
 #include <hash.h>
 #include "filesys/off_t.h"
 
-struct hash* vm_supt_init(struct thread *t);
+void vm_supt_init(struct thread *t);
 
 // APIs: load, unload, evict 
 void* vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage);
