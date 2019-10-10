@@ -63,7 +63,8 @@ uint32_t vm_swap_flush_kpage_to_disk(void* kpage){
     
     // 3. u() bitamp
     bitmap_set(free_swap_disk_pages, free_swap_disk_sector, true);
-
+    
+    return free_swap_disk_sector;
 }
 
 
@@ -86,6 +87,8 @@ bool vm_swap_read_kpage_from_disk(uint32_t bitmap_index, void *kpage){
 
     // 2. u() bitamp for free swap disk sector
     bitmap_set(free_swap_disk_pages, bitmap_index, true);
+    
+    return true;
 }
 
 void 

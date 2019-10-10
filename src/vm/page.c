@@ -431,7 +431,7 @@ void* vm_load_kpage_from_filesystem(struct supt_entry *spte, void *kpage){
 
 
 void* vm_load_kpage_from_swap(struct supt_entry *spte, void *kpage){
-  vm_swap_kpage_from_disk(spte->swap_index, kpage);  
+  vm_swap_read_kpage_from_disk(spte->swap_index, kpage);  
   return kpage;
 }
 
