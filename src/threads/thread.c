@@ -102,7 +102,9 @@ thread_init (void)
 
   // initial_thread-wsie
   initial_thread = running_thread ();
+  printf("thread_init c  \n");
   init_thread (initial_thread, "main", PRI_DEFAULT);
+  printf("thread_init d  \n");
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 
@@ -164,11 +166,14 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->mmap_list);
 
 #ifdef VM
+  printf("init_thread c  \n");
   t->supt = vm_supt_init();
+  printf("init_thread d  \n");
 #endif
 
   t->pagedir = thread_current()->pagedir; // ??
-
+  printf("init_thread e  \n");
+  
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
   intr_set_level (old_level);
