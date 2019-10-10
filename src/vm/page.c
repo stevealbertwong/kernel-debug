@@ -107,7 +107,7 @@ void*
 vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
 {
   // 1. search supt for where kpage is (RAM/Disk)
-  struct supt_entry *spte = vm_supt_search_supt(supt, upage);
+  struct supt_entry *spte = vm_search_supt(supt, upage);
   if(spte == NULL){
     PANIC("vm_load_kpage_using_supt() upage does not have spte entry \n");
   }
@@ -265,9 +265,9 @@ vm_supt_evict_kpage(struct frame_table_entry *evict_candidate){
   if(pagedir_is_dirty(owner->pagedir, evict_candidate->upage)){
 
     // vm_supt_set_dirty(f_evicted->t->supt, f_evicted->upage, is_dirty); // u() supt ??
-    struct supt_entry *spte = vm_supt_search_supt(owner->supt, evict_candidate->upage);
+    struct supt_entry *spte = vm_search_supt(owner->supt, evict_candidate->upage);
     if(!spte){
-      PANIC("vm_supt_evict_kpage() vm_supt_search_supt() failed \n");
+      PANIC("vm_supt_evict_kpage() vm_search_supt() failed \n");
     }
     spte->dirty = true;
 
@@ -481,7 +481,7 @@ vm_spte_set_dirty(struct supt_entry *spte){
 
 bool 
 vm_pin_upage(struct hash *supt, void *upage){
-  struct supt_entry *spte = vm_supt_search_supt(supt, upage);
+  struct supt_entry *spte = vm_search_supt(supt, upage);
   if((!spte->kpage) || (!spte)){
     PANIC("vm_pin_upage() failed, spte no kpage \n");
   }
@@ -491,7 +491,7 @@ vm_pin_upage(struct hash *supt, void *upage){
 
 bool 
 vm_unpin_upage(struct hash *supt, void *upage){
-  struct supt_entry *spte = vm_supt_search_supt(supt, upage);
+  struct supt_entry *spte = vm_search_supt(supt, upage);
   if((!spte->kpage) || (!spte)){
     PANIC("vm_pin_upage() failed, spte no kpage \n");
   }
