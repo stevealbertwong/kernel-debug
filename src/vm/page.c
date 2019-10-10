@@ -18,10 +18,15 @@
 #include "userprog/pagedir.h"
 #include "vm/page.h"
 #include "vm/frame.h"
+#include "vm/swap.h"
 #include "filesys/file.h"
 
-static unsigned hash_element_func(const struct hash_elem *elem, void *aux);
-static bool     hash_less_func(const struct hash_elem *, const struct hash_elem *, void *aux);
+static unsigned supt_hash_func(const struct hash_elem *elem, void *aux);
+static bool     supt_less_func(const struct hash_elem *, const struct hash_elem *, void *aux);
+void* vm_load_kpage_from_filesystem(struct supt_entry *spte, void *kpage);
+void* vm_load_kpage_from_swap(struct supt_entry *spte, void *kpage);
+void* vm_load_kpage_all_zeros(void *kpage);
+struct supt_entry *vm_search_supt(struct hash *supt, void *upage);
 
 enum kpage_status {
   ALL_ZERO,         // All zeros
@@ -66,9 +71,9 @@ struct supt_entry{
  * 1 thread == 1 supt, no global supt
  * supt in kernel pool 3-3.5GB PA
  */ 
-struct hash* vm_supt_init(){
+struct hash* vm_supt_init(void){
   struct hash *supt = (struct hash*) malloc(sizeof(struct hash));
-  hash_init(&supt, hash_element_func, hash_less_func, NULL);
+  hash_init(&supt, supt_hash_func, supt_less_func, NULL);
   return supt;
 }
 
@@ -132,7 +137,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
     PANIC("vm_load_kpage_using_supt() supt->status \n");
   }
 
-  unpin_kpage(kpage); // unpin once done file_read()
+  vm_unpin_kpage(kpage); // unpin once done file_read()
   
   // 3. u() supt + pagedir
   spte->status = ON_FRAME;
@@ -141,9 +146,9 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
     PANIC("vm_load_kpage_using_supt() pagedir_set_page() failed \n");
   }
   // fresh kpage is clean in pagedir
-  if(!pagedir_set_dirty(pagedir, kpage, false)){
-    PANIC("vm_load_kpage_using_supt() pagedir_set_dirty() failed \n");
-  }
+  pagedir_set_dirty(pagedir, kpage, false);
+  
+  return kpage;
 };
 
 
@@ -229,7 +234,7 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
 
 
     }
-    hash_delete(&supt, &spte->supt_elem); // delete() spte
+    hash_delete(supt, &spte->supt_elem); // delete() spte
     
     return true;
 }
@@ -315,7 +320,7 @@ bool vm_supt_install_filesystem(struct hash *supt, void *upage, struct file *fil
   spte->zero_bytes = zero_bytes;
   spte->writable = writable;
 
-  if(!hash_insert (&supt, &spte->supt_elem)){
+  if(!hash_insert (supt, &spte->supt_elem)){
     return true; // successfully inserted spte into supt
   }else{
     PANIC("vm_supt_on_filesystem() failed to insert into supt \n");
@@ -366,7 +371,7 @@ bool vm_supt_install_zero_page(struct hash *supt, void *upage){
   spte->dirty = false;
   spte->writable = true;
 
-  if(!hash_insert (&supt, &spte->supt_elem)){
+  if(!hash_insert (supt, &spte->supt_elem)){
     return true; // successfully inserted spte into supt
   }else{
     PANIC("vm_supt_zero_page() failed to insert into supt \n");
@@ -392,7 +397,7 @@ bool vm_supt_install_frame(struct hash *supt, void *upage, void *kpage){
   spte->dirty = false;
   spte->writable = true;
 
-  if(!hash_insert (&supt, &spte->supt_elem)){
+  if(!hash_insert (supt, &spte->supt_elem)){
     return true; // successfully inserted spte into supt
   }else{
     PANIC("vm_supt_zero_page() failed to insert into supt \n");
@@ -454,14 +459,13 @@ void* vm_load_kpage_all_zeros(void *kpage){
 
 /*******************************************************************/
 
-
 struct supt_entry *
-vm_supt_search_supt(struct hash *supt, void *upage){
+vm_search_supt(struct hash *supt, void *upage){
 
   struct supt_entry spte; // temp stack object, no need malloc() then free()
   spte.upage = upage;  
 
-  struct hash_elem *elem = hash_find (&supt, &spte.supt_elem);
+  struct hash_elem *elem = hash_find (supt, &spte.supt_elem);
   if(elem == NULL){
     PANIC("vm_search_supt() failed to find spte\n");
     return NULL;
@@ -482,6 +486,7 @@ vm_pin_upage(struct hash *supt, void *upage){
     PANIC("vm_pin_upage() failed, spte no kpage \n");
   }
   vm_pin_kpage(spte->kpage);
+  return true;
 }
 
 bool 
@@ -491,16 +496,20 @@ vm_unpin_upage(struct hash *supt, void *upage){
     PANIC("vm_pin_upage() failed, spte no kpage \n");
   }
   vm_unpin_kpage(spte->kpage);
+  return true;
 }
 
+
 static unsigned
-hash_element_func(const struct hash_elem *elem, void *aux UNUSED)
+supt_hash_func(const struct hash_elem *elem, void *aux UNUSED)
 {
   struct supt_entry *entry = hash_entry(elem, struct supt_entry, supt_elem);
   return hash_int( (int)entry->upage );
 }
+
+
 static bool
-hash_less_func(const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED)
+supt_less_func(const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED)
 {
   struct supt_entry *a_entry = hash_entry(a, struct supt_entry, supt_elem);
   struct supt_entry *b_entry = hash_entry(b, struct supt_entry, supt_elem);
