@@ -173,8 +173,7 @@ init_thread (struct thread *t, const char *name, int priority)
   printf("init_thread d  \n");
 #endif
 
-  t->pagedir = thread_current()->pagedir; // ??
-  printf("init_thread e  \n");
+  // t->pagedir = thread_current()->pagedir; // ??
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->all_elem);
