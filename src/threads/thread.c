@@ -169,7 +169,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
 #ifdef VM
   printf("init_thread ccccc  \n");
-  t->supt = vm_supt_init();
+  vm_supt_init(t);
   printf("init_thread dddddd  \n");
 #endif
 
