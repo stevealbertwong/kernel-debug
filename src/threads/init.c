@@ -104,17 +104,12 @@ main (void)
           init_ram_pages * PGSIZE / 1024);
 
   // Initialize memory system.
-  printf("aaaaaa \n");
   palloc_init (user_page_limit);
-  printf("bbbbbb \n");
   malloc_init ();
-  printf("ccccc \n");
   paging_init ();
 
 #ifdef VM
-  printf("init.c before vm_frametable_init() \n");
   vm_frametable_init();
-  printf("init.c after vm_frametable_init() \n");
 #endif
 
   /* Segmentation. */
@@ -134,25 +129,19 @@ main (void)
 #endif
 
   /* Start thread scheduler and enable interrupts. */
-  printf("init.c startstart() \n");
   thread_start ();
   serial_init_queue ();
-  printf("init.c 0 \n");
   timer_calibrate ();
 
 #ifdef FILESYS
   /* Initialize file system. */
   ide_init ();
-  printf("init.c a \n");
   locate_block_devices ();
-  printf("init.c b \n");
   filesys_init (format_filesys);
 #endif
 
 #ifdef VM
-  printf("init.c before vm_swap_init() \n");
   vm_swap_init ();
-  printf("init.c after vm_swap_init() \n");
 #endif
 
   printf ("Boot complete.\n");

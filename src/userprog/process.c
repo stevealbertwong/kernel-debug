@@ -392,12 +392,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
 #ifdef VM
   // not in thread_create(): only user thread with elf has supt
   // not in init_thread(): vm_supt_init() contains malloc(), X before "booting completes"  
-  printf("init_thread ccccc  \n");
   t->supt = vm_supt_init();
-  printf("init_thread dddddd  \n");
+  if(!t->supt){
+    PANIC("load() vm_supt_init() failed \n");
+  }
 #endif
-
-
     
   process_activate ();
   file = filesys_open (file_name); // BUG!!!! 
@@ -473,11 +472,13 @@ load (const char *file_name, void (**eip) (void), void **esp)
                 }
     
   // 3. based on header, palloc() kpage for code/text/bss + read() ELF into PA 
+              printf("load_segment() begin \n");   
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable)){
                                    printf("process.c load_segment() failed !!! \n");
                                    goto done;
                                  }
+                 printf("load_segment() done \n");                                 
             }
           else{
             printf("process.c validate_segment() failed !!! \n");
@@ -491,6 +492,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
     printf("process.c setup_stack() failed !!! \n");
     goto done;
   }    
+
+  printf("setup_stack() done \n");
+
   *eip = (void (*) (void)) ehdr.e_entry; // start addr
   success = true;
 
