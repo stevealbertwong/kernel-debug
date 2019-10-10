@@ -77,11 +77,11 @@ struct supt_entry{
 struct hash* vm_supt_init(void){
   printf("vm_supt_init 0  \n");
   // struct hash *supt = (struct hash*) malloc(sizeof(struct hash));
-  struct hash *supt;
+  struct hash supt;
   printf("vm_supt_init a  \n");
-  hash_init(supt, supt_hash_func, supt_less_func, NULL);
+  hash_init(&supt, supt_hash_func, supt_less_func, NULL);
   printf("vm_supt_init b \n");
-  return supt;
+  return &supt;
 }
 
 
