@@ -336,7 +336,6 @@ start_process (void *full_cmdline)
   // 3. palloc(), load() ELF + palloc() stack, index() at if_.esp
   // + init() pagedir, supt + notify kernel + deny_write(elf)
   success = load (elf_file, &if_.eip, &if_.esp);
-  printf("start_process() load() success is: %B \n",success);
 
   // 4.1 free kernel process_execute() thread, quit kernel start_process() thread
   if (!success) { // load failed e.g. filename is null
