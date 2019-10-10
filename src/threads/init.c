@@ -143,7 +143,9 @@ main (void)
 #endif
 
 #ifdef VM
+  printf("init.c before vm_swap_init() \n");
   vm_swap_init ();
+  printf("init.c after vm_swap_init() \n");
 #endif
 
   printf ("Boot complete.\n");
