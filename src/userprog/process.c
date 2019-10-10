@@ -601,9 +601,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         PANIC("load_segment() elf code VA already exists! \n");
       }
       // 2, lazy load (involves file_read())
-      vm_supt_install_filesystem(thread_current()->supt, upage,
+      bool success = vm_supt_install_filesystem(thread_current()->supt, upage,
             file, ofs, page_read_bytes, page_zero_bytes, writable);
-
+      if(!success){
+        PANIC("load_segment() vm_supt_install_filesystem failed \n");
+      }
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
@@ -617,12 +619,14 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       uint8_t *kpage = palloc_get_page (PAL_USER);
       if (kpage == NULL)
         {        
+        PANIC("load_segment() palloc_get_page() failed \n");  
         return false;
         }      
       
       // 3. read() file from disk into kpage
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
+          PANIC("load_segment() file_read() failed \n");  
           palloc_free_page (kpage);
           return false; 
         }
@@ -632,6 +636,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       // 5. u() pagedir
       if (!install_page (upage, kpage, writable)) 
         {
+          PANIC("load_segment() install_page() failed \n");  
           palloc_free_page (kpage);
           return false; 
         }
@@ -663,8 +668,13 @@ setup_stack (void **esp)
 #ifdef VM
   // user stack is at 1st segment below PHYS_BASE (PHYS_BASE - PGSIZE)
   kpage = vm_palloc_kpage (PAL_USER | PAL_ZERO, PHYS_BASE - PGSIZE);
+  if(!kpage){
+    PANIC("setup_stack() vm_palloc_kpage() failed \n");
+  }
   // pin during installing supt: when evict there will be a spte to u() 
-  vm_supt_install_frame (thread_current()->supt, PHYS_BASE - PGSIZE, kpage);
+  if(!vm_supt_install_frame (thread_current()->supt, PHYS_BASE - PGSIZE, kpage)){
+    PANIC("setup_stack() vm_supt_install_frame() failed \n");
+  }
   // RMB to unpin() everytime after vm_palloc_kpage()  
   vm_unpin_kpage(kpage); 
   
