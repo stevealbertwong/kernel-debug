@@ -339,7 +339,7 @@ start_process (void *full_cmdline)
     elf_thread->elf_exit_status = -1; // error
     sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
     palloc_free_page(cmdline_tokens);
-    // thread_exit ();
+    PANIC("start_process() load() failed \n");
     system_call_exit(-1);
   } else { // if success
     // 4.2 unblock kernel_thread after load_elf() + push kernel args to user_stack 
