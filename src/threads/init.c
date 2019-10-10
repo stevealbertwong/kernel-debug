@@ -97,17 +97,18 @@ main (void)
 
   /* Initialize ourselves as a thread so we can use locks,
      then enable console locking. */
-  printf("init.c  \n");
   thread_init ();
-  printf("init.c 9 \n");
   console_init ();  
 
   printf ("Pintos booting with %'"PRIu32" kB RAM...\n",
           init_ram_pages * PGSIZE / 1024);
 
   // Initialize memory system.
+  printf("aaaaaa \n");
   palloc_init (user_page_limit);
+  printf("bbbbbb \n");
   malloc_init ();
+  printf("ccccc \n");
   paging_init ();
 
 #ifdef VM

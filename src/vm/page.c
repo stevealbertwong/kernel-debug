@@ -80,12 +80,10 @@ struct supt_entry{
  * supt in kernel pool 3-3.5GB PA
  */ 
 struct hash *vm_supt_init(void){
-  printf("vm_supt_init 0  \n");
   struct hash *supt = (struct hash*) malloc(sizeof(struct hash));
-  // struct hash supt;
-  printf("vm_supt_init a  \n");
+  // printf("vm_supt_init a  \n");
   hash_init(supt, supt_hash_func, supt_less_func, NULL);
-  printf("vm_supt_init b \n");
+  // printf("vm_supt_init b \n");
   return supt;
 }
 

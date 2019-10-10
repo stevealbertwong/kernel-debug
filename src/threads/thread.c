@@ -123,8 +123,8 @@ thread_init (void)
 /**
  * init() normal thread (except initial_thread)
  * 
- * 
- * DONT call thread_current() here as initial_thread main() is BUGGY !!!!! 
+ * DONT call malloc() here !!!!!!!!
+ * init.c main() has not init() all data structure yet!!!!! 
  */ 
 static void
 init_thread (struct thread *t, const char *name, int priority)
