@@ -172,10 +172,6 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 /**
  * parent process_wait(process_exec()) 
  * parent wait() child exit() double sync
- * 
- * 1. elf_exit_status
- * 2. 
- * 
  */ 
 
 // parent wait for child die before it exits + child wait till parent receives its exit_status
@@ -191,13 +187,13 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	// 1. elf_exit_status exception cases: all reasons parent does not need to wait for child
 	// -> wrong child_tid / no parent child relationship / wait() twice error
 	if (elf_thread == NULL || elf_thread->parent != parent_thread || elf_thread->waited){
-    // printf("process.c process_wait() system error \n");
+    PANIC("process.c process_wait() system error \n");
     return -1;
   }
 		
   elf_thread->waited = true; // -> child error status / child already exited
 	if (elf_thread->elf_exit_status != 0 || elf_thread->exited == true){
-    // printf("process.c process_wait() exec() elf code already exited before wait() \n");
+    PANIC("process.c process_wait() exec() elf code already exited before wait() \n");
     return elf_thread->elf_exit_status;
   }
 
