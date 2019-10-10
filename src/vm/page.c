@@ -38,6 +38,11 @@ enum kpage_status {
   ON_FRAME          // for vm_unload_kpage(), not vm_load_kpage()
 };
 
+struct supt{
+  struct hash hashmap;
+};
+
+
 /**
  * data structure of each thread's VA's hardware status n position
  * -> 1 supt per thread
@@ -74,14 +79,14 @@ struct supt_entry{
  * 1 thread == 1 supt, no global supt
  * supt in kernel pool 3-3.5GB PA
  */ 
-void vm_supt_init(struct thread *t){
+struct supt *vm_supt_init(void){
   printf("vm_supt_init 0  \n");
-  // struct hash *supt = (struct hash*) malloc(sizeof(struct hash));
+  struct supt *supt = (struct supt*) malloc(sizeof(struct supt));
   // struct hash supt;
   printf("vm_supt_init a  \n");
-  hash_init(t->supt, supt_hash_func, supt_less_func, NULL);
+  hash_init(&supt->hashmap, supt_hash_func, supt_less_func, NULL);
   printf("vm_supt_init b \n");
-  // return &supt;
+  return supt;
 }
 
 
