@@ -15,6 +15,7 @@
 #include "threads/flags.h"
 #include "threads/init.h"
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
@@ -394,6 +395,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if(!t->supt){
     PANIC("load() vm_supt_init() failed \n");
   }
+  lock_init(t->supt_lock);
 #endif
     
   process_activate ();

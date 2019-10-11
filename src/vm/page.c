@@ -150,6 +150,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
   vm_unpin_kpage(kpage); // unpin once done file_read()
   
   // 3. u() supt + pagedir
+  
   spte->status = ON_FRAME;
   spte->kpage = kpage;
   if(!pagedir_set_page(pagedir, upage, kpage, spte->writable)){
