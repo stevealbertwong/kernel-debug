@@ -395,7 +395,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if(!t->supt){
     PANIC("load() vm_supt_init() failed \n");
   }
-  lock_init(t->supt_lock);
+  if(!t->supt_lock) lock_init(t->supt_lock);
 #endif
     
   process_activate ();
