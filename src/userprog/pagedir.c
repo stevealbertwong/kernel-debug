@@ -93,7 +93,6 @@ pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
   pte = lookup_page (pd, upage, true); // 3.42GB = 3.2GB, 0.01 0.02 0.03GB
   if (pte != NULL) // existing or new UPAGE pagedir entry
     {
-      printf("pagedir_set_page() upage:%x, kpage:%x \n", upage, kpage);
       ASSERT ((*pte & PTE_P) == 0); // present_bit == UPAGE must not already be mapped
       *pte = pte_create_user (kpage, writable); // *(3.42GB) = 0.7GB
       return true;

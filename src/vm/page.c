@@ -117,7 +117,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
   spte->status = ON_FRAME;
   spte->kpage = kpage;
   
-  printf("vm_load_page() upage:%x, kpage:%x \n", upage, kpage);
+  // printf("vm_load_page() upage:%x, kpage:%x \n", upage, kpage);
   if(!pagedir_set_page(pagedir, upage, kpage, spte->writable)){
     PANIC("vm_load_kpage_using_supt() pagedir_set_page() failed \n");
   }

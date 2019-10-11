@@ -67,7 +67,7 @@ page_fault (struct intr_frame *f)
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
   
-  printf("page_fault() is called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+   //   printf("page_fault() is called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
   // 1. get faulty VA + error code from cr2 register
   // it may point to code/data, not necessarily instruction (intr_frame->eip)
   asm ("movl %%cr2, %0" : "=r" (fault_addr));
@@ -106,13 +106,13 @@ page_fault (struct intr_frame *f)
 
    // 2.2.1 TEST: check if VA already regitered in supt 
    if(vm_supt_search_supt(thread_current()->supt, fault_page)){
-      printf("pagefault() supt has entry: status %d \n ", (vm_supt_search_supt(thread_current()->supt, fault_page))->status);
+      // printf("pagefault() supt has entry: status %d \n ", (vm_supt_search_supt(thread_current()->supt, fault_page))->status);
       vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page);
       return; // succeeds
 
    // 2.2.2 TEST: if not in supt, check if valid stack access
    } else {
-      printf("pagefault() supt DOES NOT has entry \n ");
+      // printf("pagefault() supt DOES NOT has entry \n ");
 
       if(!((PHYS_BASE - 0x800000) <= fault_addr && fault_addr < PHYS_BASE )){
          PANIC("pagefault() 8MB stack limit, 0xc0000000(PHYS_BASE: 3GB) - 0x800000 segfault addr \n");
