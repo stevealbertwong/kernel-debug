@@ -85,7 +85,7 @@ page_fault (struct intr_frame *f)
       PANIC("pagefault() segfault() user mode access kernel addr \n");
       system_call_exit(-1);     
   }
-  if(!not_present){ // not non-present pagedir page(allows stack growth), but read only pagedir page(kills immediately)
+  if(not_present){ // not non-present pagedir page(allows stack growth), but read only pagedir page(kills immediately)
       PANIC("pagefault() segfault() faulty addr not present in pagedir \n");
       system_call_exit(-1);
   } 
