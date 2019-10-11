@@ -132,18 +132,16 @@ page_fault (struct intr_frame *f)
 
       return; // succeeds
 
-   } else {
-      // ??
-	   f->eip = (void *) f->eax; 
-	   f->eax = 0xffffffff;
 
-      printf ("Seg fault at %p: %s error %s page in %s context.\n",
-               fault_addr,
-               not_present ? "not present" : "rights violation",
-               write ? "writing" : "reading",
-               user ? "user" : "kernel");
-      kill (f);    
-   }
+	//    f->eip = (void *) f->eax; 
+	//    f->eax = 0xffffffff;
+
+   //    printf ("Seg fault at %p: %s error %s page in %s context.\n",
+   //             fault_addr,
+   //             not_present ? "not present" : "rights violation",
+   //             write ? "writing" : "reading",
+   //             user ? "user" : "kernel");
+   //    kill (f);    
 
 #endif
 
