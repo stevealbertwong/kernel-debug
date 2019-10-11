@@ -150,7 +150,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
   vm_unpin_kpage(kpage); // unpin once done file_read()
   
   // 3. u() supt + pagedir
-  
+  lock_acquire(&thread_current()->supt_lock);
   spte->status = ON_FRAME;
   spte->kpage = kpage;
   if(!pagedir_set_page(pagedir, upage, kpage, spte->writable)){
@@ -158,7 +158,8 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
   }
   // fresh kpage is clean in pagedir
   pagedir_set_dirty(pagedir, kpage, false);
-
+  lock_release(&thread_current()->supt_lock);
+  
   return kpage;
 };
 
