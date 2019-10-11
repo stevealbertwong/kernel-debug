@@ -59,7 +59,7 @@ struct thread
     int total_fd;
 
     struct hash *supt;            // each thread's upage status
-    struct lock *supt_lock;       // each thread 1 supt lock
+    struct lock supt_lock;       // each thread 1 supt lock
     uint32_t *pagedir;                  // accessed, dirty bit
 
   };
