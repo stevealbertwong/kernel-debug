@@ -85,7 +85,7 @@ page_fault (struct intr_frame *f)
       PANIC("pagefault() segfault() user mode access kernel addr \n");
       system_call_exit(-1);     
   }
-  if(not_present){ // not non-present pagedir page(allows stack growth), but read only pagedir page(kills immediately)
+  if(!not_present){ // not non-present pagedir page(allows stack growth), but read only pagedir page(kills immediately)
       PANIC("pagefault() segfault() faulty addr not present in pagedir \n");
       system_call_exit(-1);
   } 
@@ -106,12 +106,14 @@ page_fault (struct intr_frame *f)
 
    // 2.2.1 TEST: check if VA already regitered in supt 
    if(vm_supt_search_supt(thread_current()->supt, fault_page)){
+      printf("pagefault() supt has entry \n ");
       vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page);
       return; // succeeds
 
    // 2.2.2 TEST: if not in supt, check if valid stack access
    } else {
-
+      printf("pagefault() supt DOES NOT has entry \n ");
+      
       if(!((PHYS_BASE - 0x800000) <= fault_addr && fault_addr < PHYS_BASE )){
          PANIC("pagefault() 8MB stack limit, 0xc0000000(PHYS_BASE: 3GB) - 0x800000 segfault addr \n");
          system_call_exit(-1);
