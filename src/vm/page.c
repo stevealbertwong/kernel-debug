@@ -76,6 +76,9 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
 {
   // 1. search supt for where kpage is (RAM/Disk)
   struct supt_entry *spte = vm_supt_search_supt(supt, upage);
+  if(spte->status == ON_FRAME) { // pagedir wont allow set pagedir twice 
+    return true;
+  }
   if(spte == NULL){
     PANIC("vm_load_kpage_using_supt() upage does not have spte entry \n");
   }
@@ -98,8 +101,9 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
     vm_load_kpage_all_zeros(kpage); // memset(0)
     break;
   case ON_FRAME:
-    // why page_fault() upage that is already on frame ??
-    // PANIC("vm_load_kpage_using_supt() upage's is already on frame, why load again to frame, page_fault() file_read() both should not be on frame \n");
+    // upage is PAGESIZE of many faulty addr, pagedir not be set twice
+    // e.g. load_elf() then read() access same upage    
+    PANIC("vm_load_kpage_using_supt() upage's is already on frame, why load again to frame, page_fault() file_read() both should not be on frame \n");
     break;
 
   default:
