@@ -108,6 +108,8 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
 
   vm_unpin_kpage(kpage); // unpin once done file_read()
   
+  printf("vm_load_page() %x, %x", upage, kpage);
+
   // 3. u() supt + pagedir
   lock_acquire(&thread_current()->supt_lock);
   spte->status = ON_FRAME;
