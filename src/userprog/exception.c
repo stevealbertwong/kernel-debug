@@ -54,7 +54,7 @@ static void page_fault (struct intr_frame *);
 static void
 page_fault (struct intr_frame *f) 
 {
-  bool not_present;  /* True: not-present page, false: writing r/o page. */
+  bool not_present;  /* True: not-present pagedir page cuasing page fault interrupt, false: writing read-only pagedir page causing page fault interrupt. */
   bool write;        /* True: access was write, false: access was read. */
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
@@ -71,12 +71,19 @@ page_fault (struct intr_frame *f)
   
   // 2. determine segfault/pagefault
   // 2.1 segfault obvious fault_addr
-  // user mode access kernel addr / not present flag / null pointer
-  if ((is_kernel_vaddr(fault_addr) && user) || not_present ||  !fault_addr ){
-      PANIC("pagefault() segfault addr \n");
+  // user mode access kernel addr / not present flag / null pointer  
+  if ((is_kernel_vaddr(fault_addr) && user)){
+      PANIC("pagefault() segfault() user mode access kernel addr \n");
+      system_call_exit(-1);     
+  }
+  if(!not_present){ // not non-present pagedir page(allows stack growth), but read only pagedir page(kills immediately)
+      PANIC("pagefault() segfault() faulty addr not present in pagedir \n");
+      system_call_exit(-1);
+  } 
+  if(!fault_addr){
+      PANIC("pagefault() segfault() faulty addr is null \n");
       system_call_exit(-1);
   }
-  // 8MB stack limit
   if(!((PHYS_BASE - 0x800000) <= fault_addr && fault_addr < PHYS_BASE )){
      PANIC("pagefault() 8MB stack limit segfault addr \n");
      system_call_exit(-1);
