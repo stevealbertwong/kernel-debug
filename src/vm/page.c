@@ -140,7 +140,8 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
     vm_load_kpage_all_zeros(kpage); // memset(0)
     break;
   case ON_FRAME:
-    PANIC("vm_load_kpage_using_supt() upage's is already on frame, why load again to frame, page_fault() file_read() both should not be on frame \n");
+    // why page_fault() upage that is already on frame ??
+    // PANIC("vm_load_kpage_using_supt() upage's is already on frame, why load again to frame, page_fault() file_read() both should not be on frame \n");
     break;
 
   default:
@@ -159,7 +160,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
   // fresh kpage is clean in pagedir
   pagedir_set_dirty(pagedir, kpage, false);
   lock_release(&thread_current()->supt_lock);
-  
+
   return kpage;
 };
 
