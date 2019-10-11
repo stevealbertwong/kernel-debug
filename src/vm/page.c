@@ -477,7 +477,7 @@ vm_supt_search_supt(struct hash *supt, void *upage){
 
   struct hash_elem *elem = hash_find (supt, &spte.supt_elem);
   if(elem == NULL){
-    PANIC("vm_supt_search_supt() failed to find spte\n");
+    // PANIC("vm_supt_search_supt() failed to find spte\n");
     return NULL;
   } else{
     return hash_entry(elem, struct supt_entry, supt_elem);

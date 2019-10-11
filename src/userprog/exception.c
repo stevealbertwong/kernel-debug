@@ -50,6 +50,14 @@ static void page_fault (struct intr_frame *);
  *    - TEST: valid stack access, next contiguous memory page, within 32 bytes of stack ptr
  *       - stack growth
  *       - casued by ELF code upages that are not lazyloaded
+ * 
+ * NOTE: possible stack grow scenarios: 
+ * - PUSH and PUSHA cause fault 4 and 32 bytes below stack pointer
+ * - elf may allocate stack space by decrementing stack ptr
+ * then write to a stack m bytes above current stack pointer
+ *    SUB $n, %esp
+ *    MOV ..., m(%esp) 
+ * 
  */ 
 static void
 page_fault (struct intr_frame *f) 
@@ -68,28 +76,23 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
-  
+
+#ifdef VM
   // 2. determine segfault/pagefault
   // 2.1 segfault obvious fault_addr
   // user mode access kernel addr / not present flag / null pointer  
   if ((is_kernel_vaddr(fault_addr) && user)){
-      PANIC("pagefault() segfault() user mode access kernel addr \n");
+      PANIC("pagefault() segfault() user mode access kernel addr %x\n", fault_addr);
       system_call_exit(-1);     
   }
   if(!not_present){ // not non-present pagedir page(allows stack growth), but read only pagedir page(kills immediately)
-      PANIC("pagefault() segfault() faulty addr not present in pagedir \n");
+      PANIC("pagefault() segfault() faulty addr not present in pagedir %x\n", fault_addr);
       system_call_exit(-1);
   } 
   if(!fault_addr){
-      PANIC("pagefault() segfault() faulty addr is null \n");
+      PANIC("pagefault() segfault() faulty addr is null %x\n", fault_addr);
       system_call_exit(-1);
   }
-  if(!((PHYS_BASE - 0x800000) <= fault_addr && fault_addr < PHYS_BASE )){
-     PANIC("pagefault() 8MB stack limit segfault addr \n");
-     system_call_exit(-1);
-  }
-
-#ifdef VM
 
    // 2.2 pagefault tests
    // obtain user elf's stack pointer (from intr_frame->esp or thread_current()->current_esp)   
@@ -102,28 +105,27 @@ page_fault (struct intr_frame *f)
    void* fault_page = (void*) pg_round_down(fault_addr);   
 
    // 2.2.1 TEST: check if VA already regitered in supt 
-   if(vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page)) {
+   if(vm_supt_search_supt(thread_current()->supt, fault_page)){
+      vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page);
       return; // succeeds
-   } else {
-      
-      // ??
-	   f->eip = (void *) f->eax; 
-	   f->eax = 0xffffffff;
 
-      printf ("Seg fault at %p: %s error %s page in %s context.\n",
-               fault_addr,
-               not_present ? "not present" : "rights violation",
-               write ? "writing" : "reading",
-               user ? "user" : "kernel");
-      kill (f);    
-   }
-   // 2.2.2 TEST: valid stack access, next contiguous memory page, within 32 bytes of stack ptr
-   if((fault_addr >= (esp - 32))){
-      
+   // 2.2.2 TEST: if not in supt, check if valid stack access
+   } else {
+
+      if(!((PHYS_BASE - 0x800000) <= fault_addr && fault_addr < PHYS_BASE )){
+         PANIC("pagefault() 8MB stack limit, 0xc0000000(PHYS_BASE: 3GB) - 0x800000 segfault addr %x\n", fault_addr);
+         system_call_exit(-1);
+      }
+      // fault above stack ptr or next contiguous memory page(within 32 bytes of stack ptr) 
+      if(!(fault_addr >= (esp - 32))){ 
+         PANIC("pagefault() exceeds next contiguous memory %x\n", fault_addr);
+         system_call_exit(-1);
+      }
+
+      // stack grow
       if(!vm_supt_install_zero_page (thread_current()->supt, fault_page)){
          PANIC("pagefault() vm_supt_install_zero_page() failed \n");
-      }
-      
+      }      
       if(!vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page)){
          PANIC("pagefault() vm_load_kpage_using_supt() failed \n");
       }
