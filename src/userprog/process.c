@@ -353,6 +353,7 @@ start_process (void *full_cmdline)
   // "assembly start" ps by simulating a return from interrupt i.e. jmp intr_exit(&if)
   // intr_exit() passes intr_frame{}/stack_frame to user ps 
   // pop to segment registers : intr_frame{}->%esp == cmdline stored on user_stack
+  printf("process.c start_process() change control to elf code !!!!!!!!!!!!!!!!!!! \n");
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
 
   palloc_free_page(cmdline_tokens);
