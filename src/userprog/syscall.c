@@ -547,6 +547,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
  * 
  */ 
 void pin_and_grow_buffer(const void *buffer, unsigned size){
+	printf("pin_and_grow_buffer() is called \n");
 	struct hash *supt = thread_current()->supt;
   	uint32_t *pagedir = thread_current()->pagedir;
 	void *upage; // buffer == upage
