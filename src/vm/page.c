@@ -77,7 +77,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
   // 1. search supt for where kpage is (RAM/Disk)
   struct supt_entry *spte = vm_supt_search_supt(supt, upage);
   if(spte->status == ON_FRAME) { // pagedir wont allow set pagedir twice 
-    return true;
+    return NULL;
   }
   if(spte == NULL){
     PANIC("vm_load_kpage_using_supt() upage does not have spte entry \n");

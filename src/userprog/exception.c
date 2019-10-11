@@ -128,9 +128,7 @@ page_fault (struct intr_frame *f)
       if(!vm_supt_install_zero_page (thread_current()->supt, fault_page)){
          PANIC("pagefault() vm_supt_install_zero_page() failed \n");
       }      
-      if(!vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page)){
-         PANIC("pagefault() vm_load_kpage_using_supt() failed \n");
-      }
+      vm_load_kpage_using_supt(thread_current()->supt, thread_current()->pagedir, fault_page);
 
       return; // succeeds
 
