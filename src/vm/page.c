@@ -31,48 +31,6 @@ void* vm_load_kpage_from_filesystem(struct supt_entry *spte, void *kpage);
 void* vm_load_kpage_from_swap(struct supt_entry *spte, void *kpage);
 void* vm_load_kpage_all_zeros(void *kpage);
 
-enum kpage_status {
-  ALL_ZERO,         // All zeros
-  ON_SWAP,          // disk, raw disk page
-  ON_FILESYS,       // disk, executable indexed by fs
-  ON_FRAME          // for vm_unload_kpage(), not vm_load_kpage()
-};
-
-// struct supt{
-//   struct hash hashmap;
-// };
-
-
-/**
- * data structure of each thread's VA's hardware status n position
- * -> 1 supt per thread
- * -> u() supt and page() + swap_out(), file_write()
- * -> abstract frametable(which abstracts pagedir and swap)
- * -> provides APIs for mmap(), munmap(), sys_read(), sys_write(), load_elf(), setup_user_stack(), page_fault()
- * -> APIs: vm_install_supt(), vm_load_supt(), vm_unload_supt()
- * 
- */ 
-struct supt_entry{
-  void *upage; // faulty VA == unique key (of each thread)
-  
-  enum kpage_status status; // VA's physical status
-  int32_t content_bytes, zero_bytes; // kpage_size = occupied_bytes - zero_bytes, int32_t to store error -1
-
-  // ON FRAME
-  void *kpage;//munmap(): free() kpage, delete() frametable, pagedir
-
-  // FILE SYSTEM 
-  // store args of load_elf() n mmap(), for file_read() when page_fault() later
-  struct file *file; // file_read() needs inode
-  off_t file_offset; // for file_seek(), offset of entire file upage mapped to if mmap(), determined by elf phdr if load_elf()
-  bool writable; // true if mmap(), determined by elf phdr if load_elf()
-  
-  // ON SWAP 
-  uint32_t swap_index; // file_read(), free() swap bitmap
-  bool dirty; // kpage evicted but not flush() to original file yet
-
-  struct hash_elem supt_elem; // supple_page_table == hashtable
-};
 
 
 /**

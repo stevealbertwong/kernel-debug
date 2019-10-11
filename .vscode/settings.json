@@ -33,6 +33,7 @@
         "page.h": "c",
         "frame.h": "c",
         "swap.h": "c",
-        "atomic": "c"
+        "atomic": "c",
+        "off_t.h": "c"
     }
 }
