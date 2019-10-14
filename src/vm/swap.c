@@ -13,6 +13,7 @@ static struct bitmap *free_swap_disk_pages;
 static struct block *swap_disk_partition; // device driver object in kernel pool
 static const size_t SECTORS_PER_PAGE = PGSIZE/BLOCK_SECTOR_SIZE;//8:4096/512
 
+static struct lock swap_lock;
 
 /**
  * called in init.c main()
@@ -38,6 +39,7 @@ void vm_swap_init(void){
         PANIC("vm_swap_init() failed \n");
     }
     bitmap_set_all(free_swap_disk_pages, true);
+    lock_init (&swap_lock);  
 }
 
 
@@ -51,9 +53,10 @@ void vm_swap_init(void){
  * NOTE: upage/kpage ?? depends if block_write() supports page_fault() ??
  */
 uint32_t vm_swap_flush_kpage_to_disk(void* kpage){
+    lock_acquire (&swap_lock);
     // 1. search() bitamp for free 1 disk sectors 
     size_t free_swap_disk_sector = bitmap_scan (free_swap_disk_pages, 
-        /*start*/0, /*cnt*/1, true); // 1 bit == 1 disk page, 8 disk sectors
+        /*start*/0, /*cnt*/1, true); // 1 bit == 1 disk page == 8 disk sectors
     if(!free_swap_disk_sector){
         PANIC("vm_swap_flush_kpage_to_disk() failed, no more swap disk space left \n");
     }
@@ -68,7 +71,8 @@ uint32_t vm_swap_flush_kpage_to_disk(void* kpage){
     
     // 3. u() bitamp
     bitmap_set(free_swap_disk_pages, free_swap_disk_sector, true);
-    
+    lock_release (&swap_lock);
+
     return free_swap_disk_sector;
 }
 
