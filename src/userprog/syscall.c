@@ -52,6 +52,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
 	int *syscall_number = f->esp;
 	int *argument = f->esp;
+	syscall_esp = f->esp;
 	int ret_val = 0;
 	// printf("syscall no: %d \n", *syscall_number);
 	// printf("syscall arg: %d \n", *(argument + 1));
@@ -548,6 +549,8 @@ int system_call_write(int fd, const void *buffer, unsigned size)
  * NOTE: buffer_addr might or might not grown stack in hardware pagefault() layer yet
  * i.e. not kernel/null/CPU flag/8MB stack/supt entry/next page
  * DEPENDS IF: buffer_addr "deref/electricity passed thru" yet !!!!
+ * 
+ * here buffer_addr not pagefault yet + registered in supt as fs ?? why fs
  */ 
 void pin_and_grow_buffer(const void *buffer, unsigned size){
 	// printf("pin_and_grow_buffer() is called \n");
@@ -556,12 +559,14 @@ void pin_and_grow_buffer(const void *buffer, unsigned size){
 	void *upage; // buffer == upage
 	for(upage = pg_round_down(buffer); upage < buffer + size; upage += PGSIZE)
 	{
-		// no need to grow stack again !!!!!!
-		// if(!vm_supt_search_supt(supt, upage)){
-		// 	vm_supt_install_zero_page(supt, upage); 
-		// }				
+		// grow stack for buffer_addr not in supt
+		if(!vm_supt_search_supt(supt, upage)){
+			if(((PHYS_BASE - 0x800000) <= upage && upage < PHYS_BASE )
+				&& (upage >= (syscall_esp - 32))){
+					vm_supt_install_zero_page(supt, upage); 
+				}
+		}
 		vm_load_kpage_using_supt (supt, pagedir, upage);
-		// printf("deref trick %d \n", upage); // deref 
 		vm_pin_upage(supt, upage);
 
 	}

@@ -7,6 +7,7 @@ typedef int pid_t;
 
 void syscall_init (void);
 
+void *syscall_esp; // syscall layer read() to grow stack
 
 //Implemented system calls
 void system_call_halt(void);									 //CallNumber: 0
