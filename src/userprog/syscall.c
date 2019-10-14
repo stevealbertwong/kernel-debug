@@ -547,7 +547,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
  * 
  * NOTE: buffer_addr already grown stack in hardware pagefault() layer
  * i.e. not kernel/null/CPU flag/8MB stack/supt entry/next page
- * BUT might be evicted since not pinned ??
+ * BUT kpage might be evicted since not pinned ??
  */ 
 void pin_and_grow_buffer(const void *buffer, unsigned size){
 	// printf("pin_and_grow_buffer() is called \n");
@@ -560,7 +560,7 @@ void pin_and_grow_buffer(const void *buffer, unsigned size){
 		// if(!vm_supt_search_supt(supt, upage)){
 		// 	vm_supt_install_zero_page(supt, upage); 
 		// }				
-		// vm_load_kpage_using_supt (supt, pagedir, upage);	// reload kpage even done in pagefault as 
+		// vm_load_kpage_using_supt (supt, pagedir, upage);
 		vm_pin_upage(supt, upage);
 
 	}

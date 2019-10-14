@@ -67,7 +67,7 @@ page_fault (struct intr_frame *f)
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
   
-  //   printf("page_fault() is called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+  printf("page_fault() is called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
   // 1. get faulty VA + error code from cr2 register
   // it may point to code/data, not necessarily instruction (intr_frame->eip)
   asm ("movl %%cr2, %0" : "=r" (fault_addr));
