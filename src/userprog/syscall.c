@@ -561,7 +561,7 @@ void pin_and_grow_buffer(const void *buffer, unsigned size){
 		// 	vm_supt_install_zero_page(supt, upage); 
 		// }				
 		// vm_load_kpage_using_supt (supt, pagedir, upage);
-		upage[0]; // deref 
+		printf("deref trick %d \n", upage); // deref 
 		vm_pin_upage(supt, upage);
 
 	}
