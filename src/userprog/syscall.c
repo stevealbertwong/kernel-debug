@@ -560,7 +560,7 @@ void pin_and_grow_buffer(const void *buffer, unsigned size){
 		// if(!vm_supt_search_supt(supt, upage)){
 		// 	vm_supt_install_zero_page(supt, upage); 
 		// }				
-		vm_load_kpage_using_supt (supt, pagedir, upage);	// reload kpage even done in pagefault as 
+		// vm_load_kpage_using_supt (supt, pagedir, upage);	// reload kpage even done in pagefault as 
 		vm_pin_upage(supt, upage);
 
 	}
