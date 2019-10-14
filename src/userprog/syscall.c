@@ -545,8 +545,7 @@ int system_call_write(int fd, const void *buffer, unsigned size)
  * grow new stack for buffer
  * called by syscall_read(), syscall_write()
  * 
- * NOTE: buffer_addr has already gone through pagefault() in hardware layer
- * i.e. if buffer_addr is within stack growth, already grown
+ * NOTE: buffer_addr already grown stack in hardware pagefault() layer
  */ 
 void pin_and_grow_buffer(const void *buffer, unsigned size){
 	// printf("pin_and_grow_buffer() is called \n");
@@ -555,13 +554,11 @@ void pin_and_grow_buffer(const void *buffer, unsigned size){
 	void *upage; // buffer == upage
 	for(upage = pg_round_down(buffer); upage < buffer + size; upage += PGSIZE)
 	{
-		// no need to grow stack !!!!!!
+		// no need to grow stack again !!!!!!
 		// if(!vm_supt_search_supt(supt, upage)){
 		// 	vm_supt_install_zero_page(supt, upage); 
-		// }
-		
-		// reload kpage even done in pagefault as might be evicted
-		vm_load_kpage_using_supt (supt, pagedir, upage);						
+		// }				
+		// vm_load_kpage_using_supt (supt, pagedir, upage);	// reload kpage even done in pagefault as might be evicted
 		vm_pin_upage(supt, upage);
 
 	}
