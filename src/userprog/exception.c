@@ -82,15 +82,15 @@ page_fault (struct intr_frame *f)
   // 2.1 segfault obvious fault_addr
   // user mode access kernel addr / not present flag / null pointer  
   if ((is_kernel_vaddr(fault_addr) && user)){
-      PANIC("pagefault() segfault() user mode access kernel addr \n");
+      // PANIC("pagefault() segfault() user mode access kernel addr \n");
       system_call_exit(-1);     
   }
   if(!not_present){ // not non-present pagedir page(allows stack growth), but read only pagedir page(kills immediately)
-      PANIC("pagefault() segfault() faulty addr not present in pagedir \n");
+      // PANIC("pagefault() segfault() faulty addr not present in pagedir \n");
       system_call_exit(-1);
   } 
   if(!fault_addr){
-      PANIC("pagefault() segfault() faulty addr is null \n");
+      // PANIC("pagefault() segfault() faulty addr is null \n");
       system_call_exit(-1);
   }
 
@@ -120,7 +120,7 @@ page_fault (struct intr_frame *f)
       }
       // fault above stack ptr or next contiguous memory page(within 32 bytes of stack ptr) 
       if(!(fault_addr >= (esp - 32))){ 
-         PANIC("pagefault() exceeds next contiguous memory \n");
+         // PANIC("pagefault() exceeds next contiguous memory \n");
          system_call_exit(-1);
       }
 
