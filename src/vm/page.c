@@ -88,7 +88,7 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
   if(kpage == NULL){
     PANIC("vm_load_kpage_using_supt() vm_palloc_kpage() failed \n"); 
   }
-  // printf("kpage loaded: %d \n", spte->status);
+  printf("kpage loaded: %d \n", spte->status);
   switch (spte->status)
   {
   case ON_FILESYS:
