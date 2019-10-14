@@ -2,6 +2,7 @@
 #include "threads/vaddr.h"
 #include "devices/block.h"
 #include "vm/swap.h"
+#include "threads/synch.h"
 
 /**
  * swap bitmap
@@ -12,7 +13,6 @@
 static struct bitmap *free_swap_disk_pages;
 static struct block *swap_disk_partition; // device driver object in kernel pool
 static const size_t SECTORS_PER_PAGE = PGSIZE/BLOCK_SECTOR_SIZE;//8:4096/512
-
 static struct lock swap_lock;
 
 /**
