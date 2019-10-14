@@ -401,7 +401,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file = filesys_open (file_name); // BUG!!!! 
   if (file == NULL) 
     {
-      // PANIC ("load: %s: open failed\n", file_name);
+      print ("load: %s: open failed\n", file_name);
       goto done; 
     }
 
