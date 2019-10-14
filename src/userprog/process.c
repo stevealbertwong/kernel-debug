@@ -333,8 +333,7 @@ start_process (void *full_cmdline)
   success = load (elf_file, &if_.eip, &if_.esp);
 
   // 4.1 free kernel process_execute() thread, quit kernel start_process() thread
-  if (!success) { // load failed e.g. filename is null
-    PANIC("start_process() load() failed \n");
+  if (!success) { // load failed e.g. filename is null    
     elf_thread->elf_exit_status = -1; // error
     sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
     palloc_free_page(cmdline_tokens);    
