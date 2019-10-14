@@ -34,6 +34,7 @@ void vm_swap_init(void){
     }
     // 2. init() bitmap according to disk partition object 
     size_t swap_total_pages = block_size(swap_disk_partition) / SECTORS_PER_PAGE;
+    printf("swap_total_pages %d \n", swap_total_pages);
     free_swap_disk_pages = bitmap_create(swap_total_pages);
     if(!free_swap_disk_pages){
         PANIC("vm_swap_init() failed \n");
