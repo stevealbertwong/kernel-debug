@@ -58,7 +58,7 @@ uint32_t vm_swap_flush_kpage_to_disk(void* kpage){
     size_t free_swap_disk_sector = bitmap_scan (free_swap_disk_pages, 
         /*start*/0, /*cnt*/1, true); // 1 bit == 1 disk page == 8 disk sectors
     if(!free_swap_disk_sector){
-        PANIC("vm_swap_flush_kpage_to_disk() failed, no more swap disk space left \n");
+        // PANIC("vm_swap_flush_kpage_to_disk() failed, no more swap disk space left \n");
     }
     // 2. block_write() 1 kpage to swap disk
     size_t i;
