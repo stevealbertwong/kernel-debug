@@ -1,4 +1,5 @@
 #include <bitmap.h>
+#include <stdio.h>
 #include "threads/vaddr.h"
 #include "devices/block.h"
 #include "vm/swap.h"
