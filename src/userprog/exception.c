@@ -67,7 +67,7 @@ page_fault (struct intr_frame *f)
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
   
-   //   printf("page_fault() is called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+  //   printf("page_fault() is called !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
   // 1. get faulty VA + error code from cr2 register
   // it may point to code/data, not necessarily instruction (intr_frame->eip)
   asm ("movl %%cr2, %0" : "=r" (fault_addr));
@@ -115,7 +115,7 @@ page_fault (struct intr_frame *f)
       // printf("pagefault() supt DOES NOT has entry \n ");
 
       if(!((PHYS_BASE - 0x800000) <= fault_addr && fault_addr < PHYS_BASE )){
-         PANIC("pagefault() 8MB stack limit, 0xc0000000(PHYS_BASE: 3GB) - 0x800000 segfault addr \n");
+         // PANIC("pagefault() 8MB stack limit, 0xc0000000(PHYS_BASE: 3GB) - 0x800000 segfault addr \n");
          system_call_exit(-1);
       }
       // fault above stack ptr or next contiguous memory page(within 32 bytes of stack ptr) 
