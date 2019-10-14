@@ -159,7 +159,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
   // printf("process.c process_execute() after sema_down \n");  
   
 	if (elf_thread->elf_exit_status == -1){
-    PANIC("process_execute() elf_thread->elf_exit_status == -1 \n");
+    // PANIC("process_execute() elf_thread->elf_exit_status == -1 \n");
     palloc_free_page(full_cmdline_copy);
     palloc_free_page (elf_file); 
     tid = TID_ERROR;
