@@ -545,9 +545,9 @@ int system_call_write(int fd, const void *buffer, unsigned size)
  * grow new stack for buffer
  * called by syscall_read(), syscall_write()
  * 
- * NOTE: buffer_addr already grown stack in hardware pagefault() layer
+ * NOTE: buffer_addr might or might not grown stack in hardware pagefault() layer yet
  * i.e. not kernel/null/CPU flag/8MB stack/supt entry/next page
- * BUT kpage might be evicted since not pinned ??
+ * DEPENDS IF: buffer_addr "deref/electricity passed thru" yet !!!!
  */ 
 void pin_and_grow_buffer(const void *buffer, unsigned size){
 	// printf("pin_and_grow_buffer() is called \n");
@@ -561,6 +561,7 @@ void pin_and_grow_buffer(const void *buffer, unsigned size){
 		// 	vm_supt_install_zero_page(supt, upage); 
 		// }				
 		// vm_load_kpage_using_supt (supt, pagedir, upage);
+		buffer[0]; // deref 
 		vm_pin_upage(supt, upage);
 
 	}
