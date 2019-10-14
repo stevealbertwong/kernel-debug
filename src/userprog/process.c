@@ -498,7 +498,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
  done:
   file_close (file);
   if(!success){
-    PANIC("load() failed \n");
+    // PANIC("load() failed \n");
   }
   return success;
 }
