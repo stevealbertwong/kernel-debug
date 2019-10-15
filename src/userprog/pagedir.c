@@ -89,6 +89,7 @@ pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
   ASSERT (is_user_vaddr (upage));
   ASSERT (vtop (kpage) >> PTSHIFT < init_ram_pages);
   ASSERT (pd != init_page_dir);
+  ASSERT (pd != NULL);  
 
   pte = lookup_page (pd, upage, true); // 3.42GB = 3.2GB, 0.01 0.02 0.03GB
   if (pte != NULL) // existing or new UPAGE pagedir entry
@@ -108,6 +109,7 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
 {
   uint32_t *pte;
   ASSERT (is_user_vaddr (uaddr));
+  ASSERT (pd != NULL);  
   pte = lookup_page (pd, uaddr, false); // 3.42GB = 3.2GB, 0.01 0.02 0.03GB
   if (pte != NULL && (*pte & PTE_P) != 0)    
     return pte_get_page (*pte) + pg_ofs (uaddr); // 3.7GB + offset bits
@@ -130,6 +132,7 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
 bool
 pagedir_is_dirty (uint32_t *pd, const void *vpage) 
 {
+  ASSERT (pd != NULL);  
   uint32_t *pte = lookup_page (pd, vpage, false);
   return pte != NULL && (*pte & PTE_D) != 0;
 }
@@ -138,6 +141,7 @@ pagedir_is_dirty (uint32_t *pd, const void *vpage)
 void
 pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty) 
 {
+  ASSERT (pd != NULL);  
   uint32_t *pte = lookup_page (pd, vpage, false);
   if (pte != NULL) 
     {
@@ -155,6 +159,7 @@ pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty)
 bool
 pagedir_is_accessed (uint32_t *pd, const void *vpage) 
 {
+  ASSERT (pd != NULL);  
   uint32_t *pte = lookup_page (pd, vpage, false);
   return pte != NULL && (*pte & PTE_A) != 0;
 }
@@ -163,6 +168,7 @@ pagedir_is_accessed (uint32_t *pd, const void *vpage)
 void
 pagedir_set_accessed (uint32_t *pd, const void *vpage, bool accessed) 
 {
+  ASSERT (pd != NULL);  
   uint32_t *pte = lookup_page (pd, vpage, false);
   if (pte != NULL) 
     {
@@ -228,7 +234,7 @@ pagedir_clear_page (uint32_t *pd, void *upage)
 
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (is_user_vaddr (upage));
-
+  ASSERT (pd != NULL);  
   pte = lookup_page (pd, upage, false);
   if (pte != NULL && (*pte & PTE_P) != 0)
     {
