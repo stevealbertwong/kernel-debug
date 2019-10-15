@@ -219,7 +219,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
  * 
  * child elf code block itself for parent process_wait() get its exit_status
  * 
- * future projects
+ * TODO:
  * thread->fd_list, thread->mmap_list, children_list->threads ??
  * dir_close(cur->cwd), vm_supt_destroy ??
  * 
@@ -231,10 +231,6 @@ process_exit (void)
 {	
   struct thread *child_thread = thread_current();
 	uint32_t *pd;
-  if (child_thread->elf_file != NULL){
-    file_allow_write(child_thread->elf_file);
-    file_close(child_thread->elf_file);
-  }
 
   // 1. child unblock parent to get its exit_status
 	while (!list_empty(&child_thread->sema_elf_call_exit.waiters)){
@@ -253,7 +249,15 @@ process_exit (void)
   }
 
 	// <---- child's restart point after parent gets it return status
-  
+  // NOW child could free() itself
+
+  if (child_thread->elf_file != NULL){
+    file_allow_write(child_thread->elf_file);
+    file_close(child_thread->elf_file);
+  }
+
+
+
   // 2. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
   // destroy current thread's pagedir, switch to kernel only pagedir
   pd = child_thread->pagedir;
@@ -263,6 +267,11 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+  
+  // 
+
+
+
 }
 
 
