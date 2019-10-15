@@ -252,9 +252,6 @@ vm_supt_evict_kpage(struct frame_table_entry *evict_candidate){
   pagedir_clear_page(owner->pagedir, evict_candidate->upage);  
 
   uint32_t swap_idx = vm_swap_flush_kpage_to_disk(evict_candidate->kpage);
-  if(!swap_idx){
-    PANIC("vm_supt_evict_kpage() vm_swap_flush_kpage_to_disk() failed \n");
-  }  
   vm_supt_install_swap(owner->supt, evict_candidate->upage, swap_idx);      
   vm_free_kpage(evict_candidate->kpage);
 
