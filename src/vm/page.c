@@ -226,8 +226,6 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
  *  - frametable
  *  - swap
  *  - palloc
- * 
- * NOTE: order does not matter ??
  */ 
 bool
 vm_supt_evict_kpage(struct frame_table_entry *evict_candidate){

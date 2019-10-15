@@ -64,7 +64,7 @@ uint32_t vm_swap_flush_kpage_to_disk(void* kpage){
         /*start*/0, /*cnt*/1, true); // 1 bit == 1 disk page == 8 disk sectors
     
     // printf("vm_swap_flush_kpage_to_disk() called, disk index: %d \n", starting_disk_sector_for_kpage);
-    if(starting_disk_sector_for_kpage > swap_total_pages){
+    if(starting_disk_sector_for_kpage > swap_total_pages){// BITMAP ERROR == 18446744073709551615UL
         PANIC("vm_swap_flush_kpage_to_disk() failed, no more swap disk space left \n");
     }
     // 2. block_write() 1 kpage to swap disk
@@ -77,7 +77,7 @@ uint32_t vm_swap_flush_kpage_to_disk(void* kpage){
     }
     
     // 3. u() bitamp
-    bitmap_set(free_swap_disk_pages, starting_disk_sector_for_kpage, true);
+    bitmap_set(free_swap_disk_pages, starting_disk_sector_for_kpage, false);
     lock_release (&swap_lock);
 
     return starting_disk_sector_for_kpage;
