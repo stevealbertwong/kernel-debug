@@ -58,11 +58,13 @@ void vm_swap_init(void){
 uint32_t vm_swap_flush_kpage_to_disk(void* kpage){
     
     lock_acquire (&swap_lock);
-    printf("vm_swap_flush_kpage_to_disk() called \n");
+    
     // 1. search() bitamp for free 1 disk sectors 
     size_t starting_disk_sector_for_kpage = bitmap_scan (free_swap_disk_pages, 
         /*start*/0, /*cnt*/1, true); // 1 bit == 1 disk page == 8 disk sectors
-    if(starting_disk_sector_for_kpage < swap_total_pages){
+    
+    printf("vm_swap_flush_kpage_to_disk() called, disk index: %d \n", starting_disk_sector_for_kpage);
+    if(starting_disk_sector_for_kpage > swap_total_pages){
         PANIC("vm_swap_flush_kpage_to_disk() failed, no more swap disk space left \n");
     }
     // 2. block_write() 1 kpage to swap disk
