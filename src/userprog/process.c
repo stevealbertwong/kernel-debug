@@ -277,7 +277,7 @@ process_exit (void)
       PANIC("process_exit() child_thread does not exist \n");
     }
     // 1.1 child thread has exited (should have blocked itself waiting for parent), unblock it
-    if (child_thread->exited == true){
+    if (child_thread->exited && !child_thread->freed){
      		printf("process_exit() child thread has exited, tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
         sema_up(&child_thread->sema_child_block_itself_before_free); 
     

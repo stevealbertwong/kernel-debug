@@ -56,6 +56,7 @@ struct thread
     int elf_exit_status;                // kernel knows whether user thread load_elf successfully 
     bool exited;                        // parent decide whether get child's status rn or wait
     bool waited;                        // wait() twice error
+    bool freed;                         // exited child that also free()ed its resource
     struct file *elf_file;              // disable/allow write
     struct list fd_list;
     struct list mmap_list;

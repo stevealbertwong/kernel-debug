@@ -223,6 +223,7 @@ thread_create (const char *name, int priority,
 	t->elf_exit_status = 0;	// normal
 	t->exited = false;
 	t->waited = false;
+  t->freed = false;
 	t->parent = thread_current();
   t->total_fd = 2;
   list_init(&t->children_threads);
@@ -273,6 +274,7 @@ thread_exit (void)
       lock_release(lock);
   }
   printf("thread_exit() totally DONE tid: %d \n\n\n", thread_current ()->tid);
+  thread_current()->freed = true;
   intr_disable ();
   list_remove (&thread_current()->all_elem);
   thread_current ()->status = THREAD_DYING;
