@@ -246,8 +246,8 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 void
 process_exit (void)
 {	
-  printf("process_exit() is called !!! \n");  
   struct thread *exiting_thread = thread_current(); 
+  printf("process_exit() is called !!! \n");  
 	uint32_t *pd;  
 
   // 1. clean() parent child relationship
@@ -255,15 +255,16 @@ process_exit (void)
     struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
     printf("exiting_thread has children !!!!!!\n");
 
+    struct thread *child_thread = list_entry(e, struct thread, children_threads_elem);
     // 1.1 child thread has exited (should have blocked itself waiting for parent), unblock it
-    if (list_entry(e, struct thread, children_threads_elem)->exited){
+    if (child_thread->exited){
      		printf("process_exit() child thread has exited, tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
-        sema_up(&(list_entry(e, struct thread, children_threads_elem))->sema_child_block_itself_before_free); 
+        sema_up(&child_thread->sema_child_block_itself_before_free); 
     
     // 1.2 child thread still running, make it orphan so it won't block to wait for parent
     } else {
       printf("process_exit() child thread still running tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
-      list_entry(e, struct thread, children_threads_elem)->parent = NULL;
+      child_thread->parent = NULL;
     }
   }
 
