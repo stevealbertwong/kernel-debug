@@ -1,5 +1,6 @@
 #include "list.h"
 #include "../debug.h"
+#include <stdio.h>
 
 /* Our doubly linked lists have two header elements: the "head"
    just before the first element and the "tail" just after the
@@ -264,6 +265,7 @@ list_pop_front (struct list *list)
     PANIC ("list_pop_front() no front \n");
   }
   list_remove (front);
+  printf("list_pop_front() done running");
   return front;
 }
 

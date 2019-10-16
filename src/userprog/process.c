@@ -263,10 +263,14 @@ process_exit (void)
   while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
     printf("exiting_thread has children !!!!!!\n");
     struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
+    printf("list_pop_front() is bug !!!!!!\n");
     if(!e){
       PANIC("process_exit() failed to remove children \n");
     }
     struct thread *child_thread = list_entry(e, struct thread, children_threads_elem);
+    if(!child_thread){
+      PANIC("process_exit() child_thread does not exist \n");
+    }
     // 1.1 child thread has exited (should have blocked itself waiting for parent), unblock it
     if (child_thread->exited){
      		printf("process_exit() child thread has exited, tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
