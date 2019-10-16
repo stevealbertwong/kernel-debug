@@ -274,7 +274,12 @@ thread_exit (void)
       lock_release(lock);
   }
   printf("thread_exit() totally DONE tid: %d \n\n\n", thread_current ()->tid);
+
+#ifdef VM  
   thread_current()->freed = true;
+  list_remove(&thread_current()->children_threads_elem);  
+#endif
+
   intr_disable ();
   list_remove (&thread_current()->all_elem);
   thread_current ()->status = THREAD_DYING;

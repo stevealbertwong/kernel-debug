@@ -285,8 +285,8 @@ process_exit (void)
     } else {
       printf("process_exit() child thread still running tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
       child_thread->parent = NULL;
-      list_remove(
-						&(list_entry(e, struct thread, children_threads_elem))->children_threads_elem);
+      // list_remove(
+			// 			&(list_entry(e, struct thread, children_threads_elem))->children_threads_elem);
     }
   }
 
