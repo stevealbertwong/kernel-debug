@@ -205,22 +205,22 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 
   // 2. child faster than parent, child block itself(not free() RAM space), so parent could access
 	if (child_thread->exited == true || child_thread->elf_exit_status){ // parent decide whether get child's status rn or wait
-    printf("process_wait() child faster than parent \n");
+    // printf("process_wait() child faster than parent \n");
     return child_thread->elf_exit_status;
   }
 
   // 3. parent wait(exec()) waits child elf code calls exit()
-  printf("process_wait() before sema_parent_block_itself_wait_for_child_exit_status \n");
+  // printf("process_wait() before sema_parent_block_itself_wait_for_child_exit_status \n");
   sema_down(&child_thread->sema_parent_block_itself_wait_for_child_exit_status); // parent_thread block itself -> child.sema.waiters[]
 	
   // <---- restart point, child is exiting, lets get its elf_exit_status
 	int ret = child_thread->elf_exit_status; // child wont exit until parent get return status from 
 	
-  printf("process_wait() sema_child_block_itself_before_free \n");
+  // printf("process_wait() sema_child_block_itself_before_free \n");
   sema_up(&child_thread->sema_child_block_itself_before_free); // unblock child, let child exit
 	child_thread->waited = true; // prevent wait() twice error
 	
-  printf("process_wait() is done, child exit_status: %d\n", ret);
+  // printf("process_wait() is done, child exit_status: %d\n", ret);
   return ret;
 }
 
@@ -255,8 +255,10 @@ void
 process_exit (void)
 {	
   struct thread *exiting_thread = thread_current(); 
-  printf("process_exit() is called by tid: %d!!! \n", exiting_thread->tid);
-	uint32_t *pd;  
+  // printf("process_exit() is called by tid: %d!!! \n", exiting_thread->tid);
+	
+  
+  uint32_t *pd;  
 
   // 1. parent responsbility
   // clean() parent child relationship
@@ -278,12 +280,12 @@ process_exit (void)
     }
     // 1.1 child thread has exited (should have blocked itself waiting for parent), unblock it
     if (child_thread->exited && !child_thread->freed){
-     		printf("process_exit() child thread has exited, tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
+     		// printf("process_exit() child thread has exited, tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
         sema_up(&child_thread->sema_child_block_itself_before_free); 
     
     // 1.2 child thread still running, make it orphan so it won't block to wait for parent
     } else if(!child_thread->exited && !child_thread->freed) {
-      printf("process_exit() child thread still running tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
+      // printf("process_exit() child thread still running tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
       child_thread->parent = NULL;
       // list_remove(
 			// 			&(list_entry(e, struct thread, children_threads_elem))->children_threads_elem);
@@ -294,32 +296,27 @@ process_exit (void)
     }
   }
 
-  printf("process_exit() before file allow write !!! \n");  
   // parent could immediately exec() child when it unblocks
   if (exiting_thread->elf_file != NULL){
     file_allow_write(exiting_thread->elf_file);
     file_close(exiting_thread->elf_file);
   }
 
-  printf("process_exit() before sema_up !!! \n");  
   // 2. child responsbility
   
   // child check if parent wait and unblock parent to get its exit_status
 	while (!list_empty(&exiting_thread->sema_parent_block_itself_wait_for_child_exit_status.waiters)){
-    printf("process_exit() before child check if parent wait and unblock parent to get its exit_status, tid: %d\n", exiting_thread->tid);
+    // printf("process_exit() before child check if parent wait and unblock parent to get its exit_status, tid: %d\n", exiting_thread->tid);
     sema_up(&exiting_thread->sema_parent_block_itself_wait_for_child_exit_status);
-    // printf("process.c process_exit() after sema_up \n");
   }
   
   exiting_thread->exited = true; // child to be unblocked by parent when parent exit()
 
-  printf("process_exit() before sema_down !!! \n");  
 	// child block itself whether parent waits
   // for parent to: free() data structure + get exit_status if parent process_wait()
 	if (exiting_thread->parent != NULL){ // not orphan
     printf("process_exit() child block itself whether parent waits, tid: %d\n", exiting_thread->tid);
 		sema_down(&exiting_thread->sema_child_block_itself_before_free);
-    // printf("process.c process_exit() after sema_down \n");
   }
 
 	// <---- child's restart point after parent gets it return status
@@ -331,7 +328,7 @@ process_exit (void)
   // destroy current thread's pagedir, switch to kernel only pagedir
   // vm_free_supt_frame_swap (exiting_thread->supt);
 
-  printf("process_exit() vm_free_supt_frame_swap !!! \n");  
+  // printf("process_exit() vm_free_supt_frame_swap !!! \n");  
 
   pd = exiting_thread->pagedir;
   if (pd != NULL) 
@@ -340,7 +337,9 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
-  printf("process_exit() is done !!!!!!!! \n");  
+  
+  
+  // printf("process_exit() is done !!!!!!!! \n");  
 }
 
 
