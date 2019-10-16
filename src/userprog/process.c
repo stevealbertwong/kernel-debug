@@ -261,8 +261,8 @@ process_exit (void)
   }
 
   // 1. clean() parent child relationship
-  while (!list_empty(exiting_thread->children_threads)){// grandchildren
-    struct list_elem *e = list_pop_front (exiting_thread->children_threads);
+  while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
+    struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
     
     // 1.1 if grandchild thread has exited (should have blocked itself waiting for parent), unblock it
     if (list_entry(e, struct thread, children_threads_elem)->exited){
