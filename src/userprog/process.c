@@ -253,7 +253,9 @@ process_exit (void)
   struct thread *exiting_thread = thread_current(); 
 	uint32_t *pd;  
   // 1. clean() parent child relationship
-  
+  if(list_empty(&(exiting_thread->children_threads))){
+    PANIC("exiting_thread has no children\n");
+  }
   // for (e = list_begin(&exiting_thread->children_threads);//grandchildren
 	// 			e != list_end(&exiting_thread->children_threads); e = list_next(e)){    
   while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
