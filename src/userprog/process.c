@@ -252,11 +252,14 @@ process_exit (void)
   // printf("process.c process_exit() is called !!! \n");  
   struct thread *exiting_thread = thread_current(); 
 	uint32_t *pd;
-
+	struct list_elem *e;
+  
   // 1. clean() parent child relationship
-  while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
-    struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
-    
+  // while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
+  //   struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
+
+  for (e = list_begin(&exiting_thread->children_threads);
+				e != list_end(&exiting_thread->children_threads); e = list_next(e)){    
     // 1.1 if grandchild thread has exited (should have blocked itself waiting for parent), unblock it
     if (list_entry(e, struct thread, children_threads_elem)->exited){
      		sema_up(&(list_entry(e, struct thread, children_threads_elem))->sema_child_block_itself_before_free); 
@@ -296,6 +299,7 @@ process_exit (void)
   // 2. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
   // destroy current thread's pagedir, switch to kernel only pagedir
   // vm_free_supt_frame_swap (exiting_thread->supt);
+  
 
   pd = exiting_thread->pagedir;
   if (pd != NULL) 
