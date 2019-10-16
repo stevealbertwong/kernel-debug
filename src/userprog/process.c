@@ -151,9 +151,6 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
     return child_tid;
   }  
   struct thread *child_thread = tid_to_thread(child_tid);
-  if(child_tid >= 0) {
-    list_push_back (&(thread_current()->children_threads), &(child_thread->children_threads_elem));
-  }
 
   // 3. wait() child start_process() done load ELF -> elf_exit_status
   // kernel_thread{} ready_list[] -> sema_load_elf[]  
@@ -252,12 +249,11 @@ process_exit (void)
   printf("process_exit() is called !!! \n");  
   struct thread *exiting_thread = thread_current(); 
 	uint32_t *pd;  
-  // 1. clean() parent child relationship
+
   if(list_empty(&(exiting_thread->children_threads))){
     PANIC("exiting_thread has no children\n");
   }
-  // for (e = list_begin(&exiting_thread->children_threads);//grandchildren
-	// 			e != list_end(&exiting_thread->children_threads); e = list_next(e)){    
+  // 1. clean() parent child relationship
   while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
     struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
     // 1.1 child thread has exited (should have blocked itself waiting for parent), unblock it
