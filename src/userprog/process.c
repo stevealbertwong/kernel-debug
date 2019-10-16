@@ -205,14 +205,15 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
   }
 
   // 3. parent wait(exec()) waits child elf code calls exit()
-  // printf("process.c process_wait() gets to sema_down() and starts waiting for exec() elf code \n");
+  printf("process_wait() before sema_parent_block_itself_wait_for_child_exit_status \n");
   sema_down(&child_thread->sema_parent_block_itself_wait_for_child_exit_status); // parent_thread block itself -> child.sema.waiters[]
 	
   // <---- restart point, child is exiting, lets get its elf_exit_status
 	int ret = child_thread->elf_exit_status; // child wont exit until parent get return status from 
-	// printf("process.c process_wait() gets to sema_down() about to sema_up and finish \n");
+	
+  printf("process_wait() sema_child_block_itself_before_free \n");
   sema_up(&child_thread->sema_child_block_itself_before_free); // unblock child, let child exit
-	// child_thread->waited = true; // prevent wait() twice error
+	child_thread->waited = true; // prevent wait() twice error
 	
   return ret;
 }
