@@ -187,8 +187,9 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
   struct thread *parent_thread, *child_thread; // kernel and kernel's child thread
 	parent_thread = thread_current();
 	child_thread = tid_to_thread(child_tid);
-  printf("process_wait() is called by parent tid: %d, child tid: %d\n", parent_thread->tid ,child_tid);
-	// 1. error checking
+  // printf("process_wait() is called by parent tid: %d, child tid: %d\n", parent_thread->tid ,child_tid);
+	
+  // 1. error checking
 	if (child_thread == NULL ){
     PANIC("process_wait() child already exited n free() itself or child return -1, child_tid: %d\n", child_tid);
     return -1;
@@ -315,7 +316,7 @@ process_exit (void)
 	// child block itself whether parent waits
   // for parent to: free() data structure + get exit_status if parent process_wait()
 	if (exiting_thread->parent != NULL){ // not orphan
-    printf("process_exit() child block itself whether parent waits, tid: %d\n", exiting_thread->tid);
+    // printf("process_exit() child block itself whether parent waits, tid: %d\n", exiting_thread->tid);
 		sema_down(&exiting_thread->sema_child_block_itself_before_free);
   }
 
