@@ -194,15 +194,17 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 
 	// 1. error checking
 	// -> wrong child_tid / no parent child relationship / wait() twice error
-	if (child_thread == NULL || child_thread->parent != parent_thread || child_thread->waited || child_thread->elf_exit_status != 0 ){
+	if (child_thread == NULL || child_thread->parent != parent_thread || child_thread->waited){
     // PANIC("process.c process_wait() thread error \n");
     return -1;
   }
-  child_thread->waited = true; // double wait() error
 
+#ifndef VM
+  child_thread->waited = true; // double wait() error
+#endif
 
   // 2. child faster than parent, child block itself(not free() RAM space), so parent could access
-	if (child_thread->exited == true){ // parent decide whether get child's status rn or wait
+	if ( child_thread->elf_exit_status != 0 || child_thread->exited == true){ // parent decide whether get child's status rn or wait
     return child_thread->elf_exit_status;
   }
 
