@@ -111,7 +111,7 @@ palloc_get_multiple (enum palloc_flags flags, size_t page_cnt)
 void
 palloc_free_page (void *page) 
 {
-  printf("palloc_free_page() called \n");
+  // printf("palloc_free_page() called \n");
   palloc_free_multiple (page, 1);
 }
 
