@@ -190,13 +190,17 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	child_thread = tid_to_thread(child_tid);
 
 	// 1. error checking
-	// wrong child_tid / no parent child relationship
-	if (child_thread == NULL || child_thread->parent != parent_thread ){
-    PANIC("process_wait() thread error \n");
+	if (child_thread == NULL ){
+    PANIC("process_wait() child already exited but also free() itself \n");
     return -1;
   }
+  if(child_thread->parent != parent_thread){
+    PANIC("process_wait() wrong parent child relationship \n");
+    return -1;
+  }
+  // double wait() error  
   if ( child_thread->waited) return -1;
-  child_thread->waited = true; // double wait() error
+  child_thread->waited = true; 
 
   // 2. child faster than parent, child block itself(not free() RAM space), so parent could access
 	if (child_thread->exited == true || child_thread->elf_exit_status){ // parent decide whether get child's status rn or wait
