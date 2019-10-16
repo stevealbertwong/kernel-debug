@@ -260,6 +260,9 @@ struct list_elem *
 list_pop_front (struct list *list)
 {
   struct list_elem *front = list_front (list);
+  if(!front){
+    PANIC ("list_pop_front() no front \n");
+  }
   list_remove (front);
   return front;
 }
