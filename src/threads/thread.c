@@ -227,7 +227,7 @@ thread_create (const char *name, int priority,
   t->total_fd = 2;
   if(t->parent != initial_thread){
     printf("thread_create() children attached \n");
-      list_push_back (&(thread_current()->children_threads), &(child_thread->children_threads_elem));
+      list_push_back (&(thread_current()->children_threads), &(t->children_threads_elem));
   }
 
   #endif
