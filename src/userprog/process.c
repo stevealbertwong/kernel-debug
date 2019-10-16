@@ -220,7 +220,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
   sema_up(&child_thread->sema_child_block_itself_before_free); // unblock child, let child exit
 	child_thread->waited = true; // prevent wait() twice error
 	
-  printf("process_wait() is done, child exit_status: \n", ret);
+  printf("process_wait() is done, child exit_status: %d\n", ret);
   return ret;
 }
 
@@ -255,7 +255,7 @@ void
 process_exit (void)
 {	
   struct thread *exiting_thread = thread_current(); 
-  printf("process_exit() is called by tid: %d!!! \n", exiting_thread);
+  printf("process_exit() is called by tid: %d!!! \n", exiting_thread->tid);
 	uint32_t *pd;  
 
   // 1. parent responsbility
