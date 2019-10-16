@@ -250,8 +250,8 @@ process_exit (void)
   struct thread *exiting_thread = thread_current(); 
 	uint32_t *pd;  
 
-  if(list_empty(&(exiting_thread->children_threads))){
-    printf("exiting_thread has no children\n");
+  if(!list_empty(&(exiting_thread->children_threads))){
+    printf("exiting_thread has children !!!!!!\n");
     // PANIC("exiting_thread has no children\n");
   }
   // 1. clean() parent child relationship
