@@ -47,7 +47,7 @@ struct thread
     int niceness;                       // mlfqs, inflat your recent_cpu, let other threads run
 
     struct thread *parent;              // check parent, child lineage, whether orphan (if orphan, child no need to block itself)
-    struct list *children_threads;      // process_exit() unblock child_threads that blocked itself
+    struct list children_threads;      // process_exit() unblock child_threads that blocked itself
     struct list_elem children_threads_elem; // process_exit() unblock child_threads that blocked itself
 
     struct semaphore sema_parent_block_itself_wait_for_child_exit_status;    // process_wait() -> store parent until all children exits

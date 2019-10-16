@@ -122,7 +122,7 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 {
   char *full_cmdline_copy, *elf_file;
   char *strtoken_ptr = NULL;
-  tid_t tid;
+  tid_t child_tid;
 
   // 1. parse() elf_file out of full_cmdline   
   full_cmdline_copy = palloc_get_page (0); // copy, otherwise race between process_execute() and start_process()
@@ -143,17 +143,18 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 
   // 2. spawn child user thread start_process() to "assembly start" ELF
   // load ELF + interrupt switch to start running
-  tid = thread_create (elf_file, PRI_DEFAULT, start_process, full_cmdline_copy);
-  if (tid == TID_ERROR){
+  child_tid = thread_create (elf_file, PRI_DEFAULT, start_process, full_cmdline_copy);
+  if (child_tid == TID_ERROR){
     PANIC("process_execute() start_process() failed \n");
     palloc_free_page(full_cmdline_copy);
     palloc_free_page (elf_file); 
-    return tid;
+    return child_tid;
   }  
-  struct thread *child_thread = tid_to_thread(tid);
-  if(tid >= 0) {
+  struct thread *child_thread = tid_to_thread(child_tid);
+  if(child_tid >= 0) {
     list_push_back (&(thread_current()->children_threads), &(child_thread->children_threads_elem));
   }
+
   // 3. wait() child start_process() done load ELF -> elf_exit_status
   // kernel_thread{} ready_list[] -> sema_load_elf[]  
   // printf("process.c process_execute() before sema_down, tid: %d\n", elf_thread->tid);
@@ -164,10 +165,10 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
     // PANIC("process_execute() elf_thread->elf_exit_status == -1 \n");
     palloc_free_page(full_cmdline_copy);
     palloc_free_page (elf_file); 
-    tid = TID_ERROR;
+    child_tid = TID_ERROR;
   }
 
-  return tid;
+  return child_tid;
 }
 
 
