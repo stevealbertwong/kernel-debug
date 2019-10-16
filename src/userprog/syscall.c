@@ -274,14 +274,15 @@ void system_call_exit(int status)
 		system_call_close(list_entry (e, struct file_desc, fd_list_elem)->id);
 	}
 
-#ifdef VM
-	while (!list_empty(&t->mmap_list))
-	{
-		e = list_begin(&t->mmap_list);
-		system_call_munmap(
-				list_entry (e, struct mmap_desc, mmap_list_elem)->id);
-	}
-#endif
+// #ifdef VM
+// 	while (!list_empty(&t->mmap_list))
+// 	{
+// 		e = list_begin(&t->mmap_list);
+// 		system_call_munmap(
+// 				list_entry (e, struct mmap_desc, mmap_list_elem)->id);
+// 	}
+// #endif
+
 	t->elf_exit_status = status;	
 	printf("%s: exit(%d)\n", t->name, t->elf_exit_status);	
 	thread_exit();
