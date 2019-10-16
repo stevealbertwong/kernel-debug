@@ -283,8 +283,7 @@ void system_call_exit(int status)
 	}
 #endif
 	t->elf_exit_status = status;	
-	printf("%s: exit(%d)\n", t->name, t->elf_exit_status);
-	
+	printf("%s: exit(%d)\n", t->name, t->elf_exit_status);	
 	thread_exit();
 }
 

@@ -305,7 +305,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
-  
+  printf("process_exit() is done !!!!!!!! \n");  
 }
 
 

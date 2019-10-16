@@ -149,7 +149,7 @@ main (void)
   run_actions (argv);
   /* Finish up. */
   shutdown ();
-  thread_exit (); // TODO !!!!!! process_exit()
+  thread_exit ();
 }
 
 
