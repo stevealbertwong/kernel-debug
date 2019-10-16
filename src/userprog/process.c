@@ -268,13 +268,14 @@ process_exit (void)
       child_thread->parent = NULL;
     }
   }
-
+  printf("process_exit() before file allow write !!! \n");  
   // parent could immediately exec() child when it unblocks
   if (exiting_thread->elf_file != NULL){
     file_allow_write(exiting_thread->elf_file);
     file_close(exiting_thread->elf_file);
   }
 
+  printf("process_exit() before sema_up !!! \n");  
   // 1. child check if parent wait and unblock parent to get its exit_status
 	while (!list_empty(&exiting_thread->sema_parent_block_itself_wait_for_child_exit_status.waiters)){
     printf("process_exit() before child check if parent wait and unblock parent to get its exit_status, tid: %d\n", exiting_thread->tid);
@@ -284,6 +285,7 @@ process_exit (void)
   
   exiting_thread->exited = true; // child to be unblocked by parent when parent exit()
 
+  printf("process_exit() before sema_down !!! \n");  
 	// 1. child block itself whether parent waits
   // for parent to: free() data structure + get exit_status if parent process_wait()
 	if (exiting_thread->parent != NULL){ // not orphan
@@ -298,7 +300,8 @@ process_exit (void)
   // 2. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
   // destroy current thread's pagedir, switch to kernel only pagedir
   // vm_free_supt_frame_swap (exiting_thread->supt);
-  
+
+  printf("process_exit() vm_free_supt_frame_swap !!! \n");  
 
   pd = exiting_thread->pagedir;
   if (pd != NULL) 
