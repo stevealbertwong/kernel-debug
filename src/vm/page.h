@@ -65,4 +65,6 @@ bool vm_pin_upage(struct hash *supt, void *upage);
 bool vm_unpin_upage(struct hash *supt, void *upage);
 void vm_spte_set_dirty(struct supt_entry *spte);
 
+// free()
+void vm_free_supt_frame_swap(struct hash *supt);
 #endif

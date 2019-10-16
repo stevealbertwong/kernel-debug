@@ -110,6 +110,5 @@ bool vm_swap_read_kpage_from_disk(uint32_t bitmap_index, void *kpage){
 void 
 vm_swap_free(uint32_t bitmap_index){
     bitmap_set(free_swap_disk_pages, bitmap_index, true);
-
 }
 

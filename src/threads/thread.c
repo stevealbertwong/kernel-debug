@@ -161,7 +161,8 @@ init_thread (struct thread *t, const char *name, int priority)
     t->priority = priority;
     t->original_priority = priority;
   }
-
+  
+  list_init(&t->children_threads);
   list_init(&t->fd_list);
   list_init(&t->mmap_list);
 
@@ -215,8 +216,8 @@ thread_create (const char *name, int priority,
   #ifdef USERPROG
 
   // process_wait() 
-  sema_init(&t->sema_elf_call_exit, 0); //store 1 blocked thd
-	sema_init(&t->sema_elf_exit_status, 0);
+  sema_init(&t->sema_parent_block_itself_wait_for_child_exit_status, 0); //store 1 blocked thd
+	sema_init(&t->sema_child_block_itself_before_free, 0);
 	sema_init(&t->sema_load_elf, 0);
 
 	t->elf_exit_status = 0;	// normal
@@ -237,9 +238,7 @@ thread_create (const char *name, int priority,
 /**
  * called by syscall.c sys_exit(int status) 
  * 
- * 1. palloc_free() pcb
- * 2. palloc_free() locks, thread_list, thread
- * 
+ * free() thread, lock level data structure
  * 
  */ 
 void
@@ -247,7 +246,7 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
-// 1. palloc_free() pcb
+  // free() ps, vm, fs level data structure
 #ifdef USERPROG
   process_exit ();
 #endif

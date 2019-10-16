@@ -150,15 +150,17 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
     palloc_free_page (elf_file); 
     return tid;
   }  
-
+  struct thread *child_thread = tid_to_thread(tid);
+  if(tid >= 0) {
+    list_push_back (&(thread_current()->children_threads), &(child_thread->children_threads_elem));
+  }
   // 3. wait() child start_process() done load ELF -> elf_exit_status
-  // kernel_thread{} ready_list[] -> sema_load_elf[]
-  struct thread *elf_thread = tid_to_thread(tid);
+  // kernel_thread{} ready_list[] -> sema_load_elf[]  
   // printf("process.c process_execute() before sema_down, tid: %d\n", elf_thread->tid);
-  sema_down(&elf_thread->sema_load_elf); // wait child start_process()
+  sema_down(&child_thread->sema_load_elf); // wait child start_process()
   // printf("process.c process_execute() after sema_down \n");  
   
-	if (elf_thread->elf_exit_status == -1){
+	if (child_thread->elf_exit_status == -1){
     // PANIC("process_execute() elf_thread->elf_exit_status == -1 \n");
     palloc_free_page(full_cmdline_copy);
     palloc_free_page (elf_file); 
@@ -172,106 +174,136 @@ process_execute (const char *full_cmdline) // kernel parent thread !!!!!!
 
 /**
  * parent process_wait(process_exec()) 
- * parent wait() child exit() double sync
+ * parent wait() on child, child could already/not yet exit() 
+ * 
+ * e.g. wait(exec("elf_file")) -> child thread runs ELF, parent thread runs wait()
+ * 
+ * STEPS:
+ * 1. error checking
+ * 2. child faster than parent, child block itself(not free() RAM space), so parent could access
+ * 3. parent wait(exec()) waits child elf code calls exit()
  */ 
-
-// parent wait for child die before it exits + child wait till parent receives its exit_status
-// e.g. wait(exec("elf_file")) -> child thread runs ELF, parent thread runs wait()
 int
 process_wait (tid_t child_tid) // child_tid == child thread's pid 
 {
 	// printf("process.c process_wait() starts running \n");
-  struct thread *elf_thread, *parent_thread;
+  struct thread *parent_thread, *child_thread; // kernel and kernel's child thread
 	parent_thread = thread_current();
-	elf_thread = tid_to_thread(child_tid);
+	child_thread = tid_to_thread(child_tid);
 
-	// 1. elf_exit_status exception cases: all reasons parent does not need to wait for child
+	// 1. error checking
 	// -> wrong child_tid / no parent child relationship / wait() twice error
-	if (elf_thread == NULL || elf_thread->parent != parent_thread || elf_thread->waited){
-    // PANIC("process.c process_wait() system error \n");
+	if (child_thread == NULL || child_thread->parent != parent_thread || child_thread->waited || child_thread->elf_exit_status != 0 ){
+    // PANIC("process.c process_wait() thread error \n");
     return -1;
   }
-		
-  elf_thread->waited = true; // -> child error status / child already exited
-	if (elf_thread->elf_exit_status != 0 || elf_thread->exited == true){
-    // PANIC("process.c process_wait() exec() elf code already exited before wait() \n");
-    return elf_thread->elf_exit_status;
+  child_thread->waited = true; // double wait() error
+
+
+  // 2. child faster than parent, child block itself(not free() RAM space), so parent could access
+	if (child_thread->exited == true){ // parent decide whether get child's status rn or wait
+    return child_thread->elf_exit_status;
   }
 
-  // 2. parent wait(exec()) waits child elf code calls exit()
+  // 3. parent wait(exec()) waits child elf code calls exit()
   // printf("process.c process_wait() gets to sema_down() and starts waiting for exec() elf code \n");
-  sema_down(&elf_thread->sema_elf_call_exit); // parent_thread block itself -> child.sema.waiters[]
+  sema_down(&child_thread->sema_parent_block_itself_wait_for_child_exit_status); // parent_thread block itself -> child.sema.waiters[]
 	
   // <---- restart point, child is exiting, lets get its elf_exit_status
-	int ret = elf_thread->elf_exit_status; // child wont exit until parent get return status from 
+	int ret = child_thread->elf_exit_status; // child wont exit until parent get return status from 
 	// printf("process.c process_wait() gets to sema_down() about to sema_up and finish \n");
-  sema_up(&elf_thread->sema_elf_exit_status); // unblock child, let child exit
-	elf_thread->waited = true; // prevent wait() twice error
+  sema_up(&child_thread->sema_child_block_itself_before_free); // unblock child, let child exit
+	child_thread->waited = true; // prevent wait() twice error
 	
   return ret;
 }
 
 
 /**
- * TODO !!!!!
- * parent children double synch (child "notify" parent)
- * notify == put parent thd back to ready_list
+ * called by thread_exit(), which is called by sys_exit(status) 
  * 
- * child elf code block itself for parent process_wait() get its exit_status
+ * STEPS:
+ * 1. parent responsbility first
+ *    1.1 unblock() every blocked children (every child block() itself)
+ *    1.2 clean() parent child relationship
+ *        - so child won't block itself 
  * 
- * TODO:
- * thread->fd_list, thread->mmap_list, children_list->threads ??
- * dir_close(cur->cwd), vm_supt_destroy ??
+ * 2. child responsiblity second
+ *    2.1 unblock() blocked waiting parent (might or might not wait())
+ *    2.2 every child block itself whether parent wait(), unless orphan
+ *        - slower parent gurantee to access child->exit_status,
+ *        - before faster child free() itself
  * 
+ * 3. free() ps, vm, fs level data structure
+ *    3.1 free() all resources (look at struct thread)
+ *    3.2 syscall_exit() vs thread_exit() vs process_exit() 
+ *        - syscall: fd_list, mmap_list
+ *        - thd: list->threads, lock_waiting_on, locks_acquired
+ *        - ps: elf_file, cwd, stack, pagedir, supt, frametable
+ *    3.3 free() before/after unblock parent
+ *        - parent could immediately exec() child when it unblocks
  * 
  * block itself first ?? so elf won't exit before wait ??
  */ 
 void
 process_exit (void)
 {	
-  struct thread *child_thread = thread_current();
+  // kernel's child thread !!!!!!
+  struct thread *exiting_thread = thread_current(); 
 	uint32_t *pd;
 
-  // 1. child unblock parent to get its exit_status
-	while (!list_empty(&child_thread->sema_elf_call_exit.waiters)){
+  // parent could immediately exec() child when it unblocks
+  if (exiting_thread->elf_file != NULL){
+    file_allow_write(exiting_thread->elf_file);
+    file_close(exiting_thread->elf_file);
+  }
+
+  // 1. clean() parent child relationship
+  while (!list_empty(exiting_thread->children_threads)){// grandchildren
+    struct list_elem *e = list_pop_front (exiting_thread->children_threads);
+    
+    // 1.1 if grandchild thread has exited (should have blocked itself waiting for parent), unblock it
+    if (list_entry(e, struct thread, children_threads_elem)->exited){
+     		sema_up(&(list_entry(e, struct thread, children_threads_elem))->sema_child_block_itself_before_free); 
+    
+    // 1.2 if grandchild thread still running, make it orphan so it won't block to wait for parent
+    } else {
+      list_entry(e, struct thread, children_threads_elem)->parent = NULL;
+    }
+  }
+
+  // 1. child check if parent wait and unblock parent to get its exit_status
+	while (!list_empty(&exiting_thread->sema_parent_block_itself_wait_for_child_exit_status.waiters)){
     // printf("process.c process_exit() before sema_up, tid: %d\n", child_thread->tid);
-    sema_up(&child_thread->sema_elf_call_exit);
+    sema_up(&exiting_thread->sema_parent_block_itself_wait_for_child_exit_status);
     // printf("process.c process_exit() after sema_up \n");
   }
   
-  child_thread->exited = true; // parent wont wait() on exited child
+  exiting_thread->exited = true; // child to be unblocked by parent when parent exit()
 
-	// 1. child elf code block itself for parent process_wait() get its exit_status
-	if (child_thread->parent != NULL){
+	// 1. child block itself whether parent waits
+  // for parent to: free() data structure + get exit_status if parent process_wait()
+	if (exiting_thread->parent != NULL){ // not orphan
     // printf("process.c process_exit() before sema_down, tid: %d\n", child_thread->tid);
-		sema_down(&child_thread->sema_elf_exit_status);
+		sema_down(&exiting_thread->sema_child_block_itself_before_free);
     // printf("process.c process_exit() after sema_down \n");
   }
 
 	// <---- child's restart point after parent gets it return status
-  // NOW child could free() itself
-
-  if (child_thread->elf_file != NULL){
-    file_allow_write(child_thread->elf_file);
-    file_close(child_thread->elf_file);
-  }
-
-
+  // NOW child could free() it's RAM space
 
   // 2. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
   // destroy current thread's pagedir, switch to kernel only pagedir
-  pd = child_thread->pagedir;
+  vm_free_supt_frame_swap (exiting_thread->supt);
+
+  pd = exiting_thread->pagedir;
   if (pd != NULL) 
     {
-      child_thread->pagedir = NULL; // timer interrupt can't switch back
+      exiting_thread->pagedir = NULL; // timer interrupt can't switch back
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
   
-  // 
-
-
-
 }
 
 
@@ -343,14 +375,14 @@ start_process (void *full_cmdline)
 
   // 4.1 free kernel process_execute() thread, quit kernel start_process() thread
   if (!success) { // load failed e.g. filename is null    
-    elf_thread->elf_exit_status = -1; // error
+    elf_thread->elf_exit_status = -1; // redundent ??
     sema_up(&elf_thread->sema_load_elf); // parent kernel thread back to ready_list
     palloc_free_page(cmdline_tokens);    
     system_call_exit(-1);
   } else { // if success
     // 4.2 unblock kernel_thread after load_elf() + push kernel args to user_stack 
     push_cmdline_to_stack(cmdline_tokens, argc,  &if_.esp);
-    elf_thread->elf_exit_status = 0;
+    elf_thread->elf_exit_status = 0; // redundent ??
     elf_thread->elf_file = filesys_open(elf_file);
 	  file_deny_write(elf_thread->elf_file); // +1 deny_write_cnt
     // printf("process.c start_process() before sema_up, tid: %d\n", elf_thread->tid);

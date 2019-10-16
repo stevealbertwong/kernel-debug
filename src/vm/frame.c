@@ -216,7 +216,6 @@ vm_append_frame_table(void *kpage, void *upage){
 }
 
 
-
 // move clock hand in circular list 
 struct frame_table_entry* vm_clock_ptr_circular_loop(void)
 {
