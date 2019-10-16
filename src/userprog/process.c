@@ -253,12 +253,6 @@ process_exit (void)
   struct thread *exiting_thread = thread_current(); 
 	uint32_t *pd;
 
-  // parent could immediately exec() child when it unblocks
-  if (exiting_thread->elf_file != NULL){
-    file_allow_write(exiting_thread->elf_file);
-    file_close(exiting_thread->elf_file);
-  }
-
   // 1. clean() parent child relationship
   while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
     struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
@@ -271,6 +265,12 @@ process_exit (void)
     } else {
       list_entry(e, struct thread, children_threads_elem)->parent = NULL;
     }
+  }
+
+  // parent could immediately exec() child when it unblocks
+  if (exiting_thread->elf_file != NULL){
+    file_allow_write(exiting_thread->elf_file);
+    file_close(exiting_thread->elf_file);
   }
 
   // 1. child check if parent wait and unblock parent to get its exit_status
