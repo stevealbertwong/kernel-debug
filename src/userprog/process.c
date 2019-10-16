@@ -282,11 +282,15 @@ process_exit (void)
         sema_up(&child_thread->sema_child_block_itself_before_free); 
     
     // 1.2 child thread still running, make it orphan so it won't block to wait for parent
-    } else {
+    } else if(!child_thread->exited && !child_thread->freed) {
       printf("process_exit() child thread still running tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
       child_thread->parent = NULL;
       // list_remove(
 			// 			&(list_entry(e, struct thread, children_threads_elem))->children_threads_elem);
+    
+    // 1.3 child exited and freed
+    } else{
+      // do nothing
     }
   }
 
