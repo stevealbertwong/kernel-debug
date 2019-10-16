@@ -162,7 +162,7 @@ init_thread (struct thread *t, const char *name, int priority)
     t->original_priority = priority;
   }
   
-  list_init(&t->children_threads);
+  // list_init(&t->children_threads);
   list_init(&t->fd_list);
   list_init(&t->mmap_list);
 
@@ -225,9 +225,10 @@ thread_create (const char *name, int priority,
 	t->waited = false;
 	t->parent = thread_current();
   t->total_fd = 2;
+  list_init(&t->children_threads);
   if(t->parent != initial_thread){
     printf("thread_create() children attached \n");
-      list_push_back (&(thread_current()->children_threads), &(t->children_threads_elem));
+    list_push_front (&(thread_current()->children_threads), &(t->children_threads_elem));
   }
 
   #endif
