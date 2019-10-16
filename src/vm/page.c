@@ -30,7 +30,7 @@ static bool     supt_less_func(const struct hash_elem *, const struct hash_elem 
 void* vm_load_kpage_from_filesystem(struct supt_entry *spte, void *kpage);
 void* vm_load_kpage_from_swap(struct supt_entry *spte, void *kpage);
 void* vm_load_kpage_all_zeros(void *kpage);
-
+static void free_spte_frame_swap_func(struct hash_elem *elem, void *aux UNUSED);
 
 
 /**
@@ -433,7 +433,7 @@ void* vm_load_kpage_all_zeros(void *kpage){
  * 4. free() supt
  */
 void vm_free_supt_frame_swap(struct hash *supt){
-  hash_destroy (&supt, free_spte_frame_swap_func);
+  hash_destroy (supt, free_spte_frame_swap_func);
   free (supt);
 }
 
