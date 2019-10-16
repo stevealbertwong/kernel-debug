@@ -265,7 +265,7 @@ list_pop_front (struct list *list)
     PANIC ("list_pop_front() no front \n");
   }
   list_remove (front);
-  printf("list_pop_front() done running");
+  // printf("list_pop_front() done running");
   return front;
 }
 
