@@ -263,7 +263,7 @@ process_exit (void)
   while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
     printf("exiting_thread has children !!!!!!\n");
     struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
-
+    printf("after list_pop_front !!!!!!\n");
     struct thread *child_thread = list_entry(e, struct thread, children_threads_elem);
     // 1.1 child thread has exited (should have blocked itself waiting for parent), unblock it
     if (child_thread->exited){
