@@ -295,7 +295,7 @@ process_exit (void)
 
   // 2. palloc_free() vm data structure, elf code(eip), stack n cmdline(esp)
   // destroy current thread's pagedir, switch to kernel only pagedir
-  vm_free_supt_frame_swap (exiting_thread->supt);
+  // vm_free_supt_frame_swap (exiting_thread->supt);
 
   pd = exiting_thread->pagedir;
   if (pd != NULL) 
