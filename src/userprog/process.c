@@ -191,7 +191,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 
 	// 1. error checking
 	if (child_thread == NULL ){
-    PANIC("process_wait() child already exited but also free() itself \n");
+    PANIC("process_wait() child already exited but also free() itself child_tid: %d\n", child_tid);
     return -1;
   }
   if(child_thread->parent != parent_thread){
