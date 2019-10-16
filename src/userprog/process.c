@@ -251,7 +251,8 @@ process_exit (void)
 	uint32_t *pd;  
 
   if(list_empty(&(exiting_thread->children_threads))){
-    PANIC("exiting_thread has no children\n");
+    printf("exiting_thread has no children\n");
+    // PANIC("exiting_thread has no children\n");
   }
   // 1. clean() parent child relationship
   while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
