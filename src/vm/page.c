@@ -447,10 +447,10 @@ free_spte_frame_swap_func(struct hash_elem *elem, void *aux UNUSED)
   if(!spte){
     PANIC("free_spte_frame_swap_func() spte does not exist");
   }
-  if (!spte->kpage) {
-    PANIC("free_spte_frame_swap_func() spte->kpage does not exist");
-  }
   if(spte->status == ON_FRAME){
+    if (!spte->kpage) {
+      PANIC("free_spte_frame_swap_func() on_frame spte->kpage does not exist \n");
+    }
     vm_free_kpage (spte->kpage);
   }
   else if(spte->status == ON_SWAP) {
