@@ -119,7 +119,7 @@ palloc_free_page (void *page)
 void
 palloc_free_multiple (void *pages, size_t page_cnt) 
 {
-  printf("palloc_free_multiple() called, size: %d\n", page_cnt);
+  // printf("palloc_free_multiple() called, size: %d\n", page_cnt);
   struct pool *pool;
   size_t page_idx;
   ASSERT (pg_ofs (pages) == 0);

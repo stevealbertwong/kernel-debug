@@ -434,6 +434,9 @@ void* vm_load_kpage_all_zeros(void *kpage){
  */
 void vm_free_supt_frame_swap(struct hash *supt){
   hash_destroy (supt, free_spte_frame_swap_func);
+  if(!supt){
+    printf("vm_free_supt_frame_swap() \n");
+  }
   free (supt);
 }
 
@@ -441,13 +444,19 @@ static void
 free_spte_frame_swap_func(struct hash_elem *elem, void *aux UNUSED)
 {
   struct supt_entry *spte = hash_entry(elem, struct supt_entry, supt_elem);
-  if (spte->kpage != NULL) {
-    ASSERT (spte->status == ON_FRAME);
+  if(!spte){
+    PANIC("free_spte_frame_swap_func() spte does not exist");
+  }
+  if (!spte->kpage) {
+    PANIC("free_spte_frame_swap_func() spte->kpage does not exist");
+  }
+  if(spte->status == ON_FRAME){
     vm_free_kpage (spte->kpage);
   }
   else if(spte->status == ON_SWAP) {
     vm_swap_free (spte->swap_index);
   }
+
   free (spte);
 }
 
