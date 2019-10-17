@@ -225,7 +225,6 @@ int system_call_wait(pid_t pid)
 {
 	// why no lock ?? double dead lock when called with exec() ??
 	int ret = process_wait(pid);
-	printf("system_call_wait()) done, status: %d, tid:%d \n", ret, thread_current()->tid);
 	return ret;
 }
 
