@@ -219,7 +219,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	
   printf("process_wait() sema_child_block_itself_before_free \n");
   sema_up(&child_thread->sema_child_block_itself_before_free); // unblock child, let child exit
-	child_thread->waited = true; // prevent wait() twice error
+	// child_thread->waited = true; // prevent wait() twice error
 	
   printf("process_wait() is done, child exit_status: %d\n", ret);
   return ret;
