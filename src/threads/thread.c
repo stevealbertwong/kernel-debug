@@ -277,10 +277,9 @@ thread_exit (void)
 
 #ifdef VM  
   thread_current()->freed = true;
-  if (thread_current() != NULL && thread_current()->parent != NULL){
+  // if (thread_current() != NULL && thread_current()->parent != NULL){
     if (thread_current()->parent != initial_thread){
       list_remove(&thread_current()->children_threads_elem);      
-    }
   }
 #endif
 
