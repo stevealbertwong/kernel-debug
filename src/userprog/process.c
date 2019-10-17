@@ -188,7 +188,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	parent_thread = thread_current();
 	child_thread = tid_to_thread(child_tid);
   printf("process_wait() is called by parent tid: %d, child tid: %d\n", parent_thread->tid ,child_tid);
-	printf("process_wait() is  by parent tid: %d, child tid: %d\n", parent_thread->tid ,child_tid);
+  
   // 1. error checking
   if (child_thread->waited){
     printf("process_wait() double wait() on same child thread error \n");
@@ -204,7 +204,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
     return -1;
   }
   printf("process_wait() done error checking \n");
-  
+
   // 2. child faster than parent, child block itself(not free() RAM space), so parent could access
 	if (child_thread->exited == true || child_thread->elf_exit_status !=0 ){ // parent decide whether get child's status rn or wait
     printf("process_wait() child faster than parent \n");
