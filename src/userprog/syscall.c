@@ -179,9 +179,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 	}
 	
 	// syscall return thru intr_frame{}, then intr_exit(),
-	// then back to user side syscall(), then user program
+	// then back to user side syscall(), then user program	
 	f->eax = ret_val;
-	printf("kernel return to user land: f->eax = ret_val \n");
+	// printf("kernel return to user land: f->eax = ret_val \n");
 }
 
 
@@ -225,7 +225,7 @@ int system_call_wait(pid_t pid)
 {
 	// why no lock ?? double dead lock when called with exec() ??
 	int ret = process_wait(pid);
-	printf("system_call_wait()) done, status: %d, tid:%d", ret, thread_current()->tid);
+	printf("system_call_wait()) done, status: %d, tid:%d \n", ret, thread_current()->tid);
 	return ret;
 }
 

@@ -188,14 +188,14 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	parent_thread = thread_current();
 	child_thread = tid_to_thread(child_tid);
   printf("process_wait() is called by parent tid: %d, child tid: %d\n", parent_thread->tid ,child_tid);
-  
+
   // 1. error checking
   if (child_thread->waited){
     printf("process_wait() double wait() on same child thread error \n");
     return -1;
   } 
   child_thread->waited = true; 
-	if (child_thread == NULL ){
+  if (child_thread == NULL){
     printf("process_wait() child already exited n free() itself or child return -1, child_tid: %d\n", child_tid);
     return -1;
   }
@@ -218,7 +218,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
   // <---- restart point, child is exiting, lets get its elf_exit_status
 	int ret = child_thread->elf_exit_status; // child wont exit until parent get return status from 
 	
-  printf("process_wait() sema_child_block_itself_before_free \n");
+  printf("process_wait() sema_child_block_itself_before_free parentid: %d, child_id:%d \n", parent_thread->tid ,child_tid);
   sema_up(&child_thread->sema_child_block_itself_before_free); // unblock child, let child exit
 	// child_thread->waited = true; // prevent wait() twice error
 	
