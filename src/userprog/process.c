@@ -196,7 +196,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
   } 
   child_thread->waited = true; 
 	if (child_thread == NULL ){
-    // PANIC("process_wait() child already exited n free() itself or child return -1, child_tid: %d\n", child_tid);
+    PANIC("process_wait() child already exited n free() itself or child return -1, child_tid: %d\n", child_tid);
     return -1;
   }
   if(child_thread->parent != parent_thread){
@@ -286,6 +286,7 @@ process_exit (void)
     
     // 1.3 child already exited and freed
     } else{ // shouldn't happen, child already deleted itself from parent->child_list
+      printf("process_exit() child thread already exited and freed tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
       // do nothing
     }
   }
