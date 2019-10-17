@@ -309,7 +309,7 @@ process_exit (void)
 	// child block itself whether parent waits
   // for parent to: free() data structure + get exit_status if parent process_wait()
 	if (exiting_thread->parent != NULL){ // not orphan
-    printf("process_exit() child block itself whether parent waits, tid: %d, parent_id:\n", exiting_thread->tid, exiting_thread->parent->tid);
+    printf("process_exit() child block itself whether parent waits, tid: %d, parent_id: %d\n", exiting_thread->tid, exiting_thread->parent->tid);
 		sema_down(&exiting_thread->sema_child_block_itself_before_free);
   }
 
