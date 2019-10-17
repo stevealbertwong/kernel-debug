@@ -119,6 +119,7 @@ palloc_free_page (void *page)
 void
 palloc_free_multiple (void *pages, size_t page_cnt) 
 {
+  printf("palloc_free_multiple() called, size: %d\n", page_cnt);
   struct pool *pool;
   size_t page_idx;
   ASSERT (pg_ofs (pages) == 0);
@@ -138,6 +139,7 @@ palloc_free_multiple (void *pages, size_t page_cnt)
   memset (pages, 0xcc, PGSIZE * page_cnt);
 #endif
 
+  // bitmap_all() == every bit is true
   ASSERT (bitmap_all (pool->used_map, page_idx, page_cnt));
   bitmap_set_multiple (pool->used_map, page_idx, page_cnt, false);
 }
