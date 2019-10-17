@@ -191,7 +191,7 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
 	
   // 1. error checking
   if (child_thread->waited){
-    // PANIC("process_wait() double wait() on same child thread error \n");
+    PANIC("process_wait() double wait() on same child thread error \n");
     return -1;
   } 
   child_thread->waited = true; 
