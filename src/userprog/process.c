@@ -190,19 +190,19 @@ process_wait (tid_t child_tid) // child_tid == child thread's pid
   // printf("process_wait() is called by parent tid: %d, child tid: %d\n", parent_thread->tid ,child_tid);
 	
   // 1. error checking
+  if (child_thread->waited){
+    // PANIC("process_wait() double wait() on same child thread error \n");
+    return -1;
+  } 
+  child_thread->waited = true; 
 	if (child_thread == NULL ){
-    PANIC("process_wait() child already exited n free() itself or child return -1, child_tid: %d\n", child_tid);
+    // PANIC("process_wait() child already exited n free() itself or child return -1, child_tid: %d\n", child_tid);
     return -1;
   }
   if(child_thread->parent != parent_thread){
     PANIC("process_wait() wrong parent child relationship \n");
     return -1;
   }
-  if (child_thread->waited){
-    PANIC("process_wait() double wait() on same child thread error \n");
-    return -1;
-  } 
-  child_thread->waited = true; 
 
   // 2. child faster than parent, child block itself(not free() RAM space), so parent could access
 	if (child_thread->exited == true || child_thread->elf_exit_status){ // parent decide whether get child's status rn or wait
@@ -266,12 +266,6 @@ process_exit (void)
   struct list_elem *e;
 	for (e = list_begin(&thread_current()->children_threads);
 				e != list_end(&thread_current()->children_threads); e = list_next(e)){
-
-  // while (!list_empty(&(exiting_thread->children_threads))){// grandchildren
-    // printf("exiting_thread has children !!!!!!\n");
-    // struct list_elem *e = list_pop_front (&(exiting_thread->children_threads));
-    // printf("list_pop_front() is bug !!!!!!\n");
-    
     if(!e){
       PANIC("process_exit() failed to remove children \n");
     }
@@ -288,11 +282,10 @@ process_exit (void)
     } else if(!child_thread->exited && !child_thread->freed) {
       // printf("process_exit() child thread still running tid: %d \n", list_entry(e, struct thread, children_threads_elem)->tid);  
       child_thread->parent = NULL;
-      // list_remove(
-			// 			&(list_entry(e, struct thread, children_threads_elem))->children_threads_elem);
+      // list_remove(&(list_entry(e, struct thread, children_threads_elem))->children_threads_elem);
     
-    // 1.3 child exited and freed
-    } else{
+    // 1.3 child already exited and freed
+    } else{ // shouldn't happen, child already deleted itself from parent->child_list
       // do nothing
     }
   }
