@@ -227,10 +227,10 @@ thread_create (const char *name, int priority,
 	t->parent = thread_current();
   t->total_fd = 2;
   list_init(&t->children_threads);
-  if(t->parent != initial_thread){
+  // if(t->parent != initial_thread){
     // printf("thread_create() children attached, parent_id: %d, child_id: %d \n", t->parent->tid, t->tid);
     list_push_back(&(thread_current()->children_threads), &(t->children_threads_elem));
-  }
+  // }
 
   #endif
 
