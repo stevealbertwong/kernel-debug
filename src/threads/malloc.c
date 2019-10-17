@@ -200,8 +200,7 @@ free (void *p)
         }
       else
         {
-          /* It's a big block.  Free its pages. */
-          printf("free() called \n");
+          /* It's a big block.  Free its pages. */          
           palloc_free_multiple (a, a->free_cnt);
           return;
         }
