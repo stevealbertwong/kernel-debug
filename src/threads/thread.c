@@ -253,8 +253,8 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
-  // free() ps, vm, fs level data structure
 #ifdef USERPROG
+  // free() ps, vm, fs level data structure
   process_exit ();
 #endif
 
@@ -273,7 +273,7 @@ thread_exit (void)
       struct lock *lock = list_entry(e, struct lock, thread_locks_list_elem);
       lock_release(lock);
   }
-  // printf("thread_exit() totally DONE tid: %d \n\n\n", thread_current ()->tid);
+  printf("thread_exit() totally DONE tid: %d \n\n\n", thread_current ()->tid);
 
 #ifdef VM  
   thread_current()->freed = true;
