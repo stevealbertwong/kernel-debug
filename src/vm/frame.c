@@ -159,17 +159,23 @@ vm_pick_kpage_to_evict(void){
  */ 
 void
 vm_free_kpage(void *kpage){
+  if(!kpage){
+    PANIC("vm_free_kpage() kpage is null \n");
+  }  
   struct frame_table_entry *e = vm_search_frametable(kpage);
   if(!e){
     PANIC("vm_free_kpage() no frame_table_entry of kpage \n");
   }
-
-  hash_delete (&frame_table_hash, &e->frame_table_hash_elem);
-  list_remove (&e->frame_table_elem);
-  free(e);  
-  if(!kpage){
-    PANIC("vm_free_kpage() kpage is null \n");
+  
+  if(!hash_delete (&frame_table_hash, &e->frame_table_hash_elem)){
+    PANIC("vm_free_kpage() remove from frame_table_hash failed \n");
   }
+  
+  if(!list_remove (&e->frame_table_elem)){
+    PANIC("vm_free_kpage() remove from frame_table failed \n");
+  } 
+  
+  free(e);  
   palloc_free_page(kpage);
 
 }
