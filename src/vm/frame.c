@@ -130,6 +130,9 @@ vm_pick_kpage_to_evict(void){
     }
     
     struct thread *owner = evict_candidate->owner_thread;
+    if(!owner){
+      PANIC("vm_pick_kpage_to_evict() frame_table_entry->owner_thread has exit and freed \n");
+    }
     // 2nd chance: set accessed bit to 0, evict next time
     // BUG: pagedir_is_accessed(thread_current()->pagedir) ??
     if(pagedir_is_accessed(owner->pagedir, evict_candidate->upage)){
