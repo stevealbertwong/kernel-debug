@@ -178,6 +178,7 @@ vm_free_kpage(void *kpage){
   free(e);  
   // printf("vm_free_kpage() after free() \n");  
   palloc_free_page(kpage);
+  palloc_free_page(kpage);
   // printf("vm_free_kpage() after palloc_free_page() \n");
 
 }
