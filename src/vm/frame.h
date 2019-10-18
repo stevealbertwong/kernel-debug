@@ -36,6 +36,7 @@ struct frame_table_entry{
 void vm_frametable_init(void);
 void *vm_palloc_kpage(enum palloc_flags flags, void *upage);
 void vm_free_kpage(void *kpage);
+void vm_free_frame_table_entry(void *kpage);
 
 void vm_pin_kpage(void *kpage);
 void vm_unpin_kpage(void *kpage);

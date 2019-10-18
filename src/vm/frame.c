@@ -92,7 +92,7 @@ vm_palloc_kpage(enum palloc_flags flags, void *upage)
   
   // 2.2 u() frametable and pagedir for fresh kpage    
   vm_append_frame_table(kpage, upage);    
-  
+
   return kpage;    
 }
 
@@ -178,7 +178,27 @@ vm_free_kpage(void *kpage){
   // printf("vm_free_kpage() before free() \n");
   free(e);  
   palloc_free_page(kpage);
+}
 
+void
+vm_free_frame_table_entry(void *kpage){
+  if(kpage_already_freed(kpage, 1)){
+    PANIC("vm_free_kpage() kpage_already_freed() \n");
+  }  
+  struct frame_table_entry *e = vm_search_frametable(kpage);
+  if(!e){
+    PANIC("vm_free_kpage() no frame_table_entry of kpage \n");
+  }
+  
+  if(!hash_delete (&frame_table_hash, &e->frame_table_hash_elem)){
+    PANIC("vm_free_kpage() remove from frame_table_hash failed \n");
+  }
+  
+  if(!list_remove (&e->frame_table_elem)){
+    PANIC("vm_free_kpage() remove from frame_table failed \n");
+  } 
+  // printf("vm_free_kpage() before free() \n");
+  free(e);  
 }
 
 /*******************************************************************/

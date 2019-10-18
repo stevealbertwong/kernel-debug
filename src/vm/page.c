@@ -454,7 +454,8 @@ free_spte_frame_swap_func(struct hash_elem *elem, void *aux UNUSED)
     if (!spte->kpage) {
       PANIC("free_spte_frame_swap_func() on_frame spte->kpage does not exist \n");
     }
-    vm_free_kpage (spte->kpage);
+    // BUG!!! don't free() kpage, leave kpage for pagedir_destroy() to free()
+    vm_free_frame_table_entry (spte->kpage); 
   }
   else if(spte->status == ON_SWAP) {
     vm_swap_free (spte->swap_index);
