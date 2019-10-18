@@ -217,9 +217,12 @@ pagedir_destroy (uint32_t *pd)
         
         for (pte = pt; pte < pt + PGSIZE / sizeof *pte; pte++)
           if (*pte & PTE_P) 
+            printf("destroy pte\n");
             palloc_free_page (pte_get_page (*pte));
+        printf("destroy pt\n");
         palloc_free_page (pt);
       }
+  printf("destroy pd\n");
   palloc_free_page (pd);
 }
 
