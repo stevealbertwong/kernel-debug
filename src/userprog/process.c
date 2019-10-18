@@ -320,10 +320,10 @@ process_exit (void)
 
   // 3. free() vm, fs data structure
   // destroy current thread's pagedir, switch to kernel only pagedir
-  printf("process_exit() vm_free_supt_frame_swap !!! \n");  
+  printf("process_exit() vm_free_supt_frame_swap exiting_thread tid: !!! \n", exiting_thread->tid);  
   vm_free_supt_frame_swap (exiting_thread->supt);
 
-  printf("process_exit() destroy pagedir !!! \n");  
+  printf("process_exit() destroy pagedir exiting_thread tid: !!! \n", exiting_thread->tid);  
 
   pd = exiting_thread->pagedir;
   if (pd != NULL) 
@@ -334,7 +334,7 @@ process_exit (void)
     }
   
   
-  printf("process_exit() is done !!!!!!!! \n");  
+  printf("process_exit() is done !!!!!!!! exiting_thread tid: !!! \n", exiting_thread->tid);  
 }
 
 
