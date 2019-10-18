@@ -177,6 +177,7 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
       case ON_FRAME:
         // original mmap() file writable        
         if(spte->writable && (pagedir_is_dirty(pagedir, upage) || spte->dirty)){
+            printf("vm_supt_unload_kpage() flushing dirty page \n");
             file_seek(f, offset);
             file_write(f, spte->kpage, bytes); // upage/kpage ??
             // file_write_at (f, spte->upage, bytes, offset);
@@ -193,7 +194,9 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
           
           void *kpage = vm_palloc_kpage(PAL_USER, upage);
           vm_swap_read_kpage_from_disk (spte->swap_index, kpage); // includes swap_free()
-          file_write_at (f, kpage, PGSIZE, offset);
+          if(!file_write_at (f, kpage, PGSIZE, offset)){
+            PANIC("vm_supt_unload_kpage() flush() swap failed \n");;
+          }
           vm_free_kpage(kpage);
           
           // alternatively(kernel pool): 
@@ -211,8 +214,10 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
 
 
     }
-    hash_delete(supt, &spte->supt_elem); // delete() spte
-    
+    if(!hash_delete(supt, &spte->supt_elem)){
+      PANIC("vm_supt_unload_kpage() delete() spte failed \n");
+    }
+
     return true;
 }
 
