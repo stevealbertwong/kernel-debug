@@ -320,9 +320,10 @@ process_exit (void)
 
   // 3. free() vm, fs data structure
   // destroy current thread's pagedir, switch to kernel only pagedir
+  printf("process_exit() vm_free_supt_frame_swap !!! \n");  
   vm_free_supt_frame_swap (exiting_thread->supt);
 
-  // printf("process_exit() vm_free_supt_frame_swap !!! \n");  
+  printf("process_exit() destroy pagedir !!! \n");  
 
   pd = exiting_thread->pagedir;
   if (pd != NULL) 
@@ -333,7 +334,7 @@ process_exit (void)
     }
   
   
-  // printf("process_exit() is done !!!!!!!! \n");  
+  printf("process_exit() is done !!!!!!!! \n");  
 }
 
 
@@ -763,8 +764,7 @@ setup_stack (void **esp)
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
         *esp = PHYS_BASE;
-      else
-        // PANIC("install page failed \n");  
+      else 
         palloc_free_page (kpage);
     }
   return success;
