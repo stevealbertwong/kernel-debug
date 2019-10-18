@@ -820,8 +820,14 @@ system_call_munmap(int mmapid){
 
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = get_mmap_desc(mmapid);	
-	if(!mmap_desc || !mmap_desc->file_size || !mmap_desc->upage){
+	if(!mmap_desc ){
 		PANIC("system_call_munmap() mmap_desc is null");
+	}
+	if(!mmap_desc->file_size ){
+		PANIC("system_call_munmap() mmap_desc->filesize is null");
+	}
+	if(!mmap_desc->upage){
+		PANIC("system_call_munmap() mmap_desc->upage is null");
 	}
     uint32_t offset;
 	uint32_t file_size = mmap_desc->file_size;
