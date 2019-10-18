@@ -159,8 +159,8 @@ vm_pick_kpage_to_evict(void){
  */ 
 void
 vm_free_kpage(void *kpage){
-  if(!kpage){
-    PANIC("vm_free_kpage() kpage is null \n");
+  if(kpage_already_freed(kpage, 1)){
+    PANIC("vm_free_kpage() kpage_already_freed() \n");
   }  
   struct frame_table_entry *e = vm_search_frametable(kpage);
   if(!e){
@@ -176,13 +176,7 @@ vm_free_kpage(void *kpage){
   } 
   // printf("vm_free_kpage() before free() \n");
   free(e);  
-  // printf("vm_free_kpage() after free() \n");  
   palloc_free_page(kpage);
-  if(!kpage){
-    PANIC("vm_free_kpage() kpage is null \n");
-  }
-  palloc_free_page(kpage);
-  // printf("vm_free_kpage() after palloc_free_page() \n");
 
 }
 

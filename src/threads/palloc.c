@@ -139,9 +139,35 @@ palloc_free_multiple (void *pages, size_t page_cnt)
   memset (pages, 0xcc, PGSIZE * page_cnt);
 #endif
 
-  // bitmap_all() == every bit is true
+  // assert kpage is in used_pool: bitmap_all() == every bit is true
   ASSERT (bitmap_all (pool->used_map, page_idx, page_cnt));
   bitmap_set_multiple (pool->used_map, page_idx, page_cnt, false);
+}
+
+
+
+
+bool
+kpage_already_freed (void *pages, size_t page_cnt) 
+{
+  // printf("palloc_free_multiple() called, size: %d\n", page_cnt);
+  struct pool *pool;
+  size_t page_idx;
+  ASSERT (pg_ofs (pages) == 0);
+  if (pages == NULL || page_cnt == 0)
+    return;
+
+  if (page_from_pool (&kernel_pool, pages))
+    pool = &kernel_pool;
+  else if (page_from_pool (&user_pool, pages))
+    pool = &user_pool;
+  else
+    NOT_REACHED ();
+
+  page_idx = pg_no (pages) - pg_no (pool->base);
+
+  // not in used pool
+  return (!bitmap_all (pool->used_map, page_idx, page_cnt));
 }
 
 
