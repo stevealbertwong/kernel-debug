@@ -92,6 +92,7 @@ vm_palloc_kpage(enum palloc_flags flags, void *upage)
   
   // 2.2 u() frametable and pagedir for fresh kpage    
   vm_append_frame_table(kpage, upage);    
+  
   return kpage;    
 }
 

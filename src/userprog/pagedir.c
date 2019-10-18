@@ -119,17 +119,10 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
 }
 
 /***************************************************************************************
- * key APIs to u() pagedir
- * (used in project 3)
- * - frame.c evict_frame()
- * - supt.c 
- * - 
- * 
- * 
+ * key APIs to u() pagedir bits (used in project 3)
  * 
  * 
 *************************************************************************************/
-// unchanged
 bool
 pagedir_is_dirty (uint32_t *pd, const void *vpage) 
 {
@@ -138,7 +131,6 @@ pagedir_is_dirty (uint32_t *pd, const void *vpage)
   return pte != NULL && (*pte & PTE_D) != 0;
 }
 
-// unchanged
 void
 pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty) 
 {
@@ -156,7 +148,7 @@ pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty)
     }
 }
 
-// unchanged
+// pte's accessed bit is on 
 bool
 pagedir_is_accessed (uint32_t *pd, const void *vpage) 
 {
@@ -165,7 +157,7 @@ pagedir_is_accessed (uint32_t *pd, const void *vpage)
   return pte != NULL && (*pte & PTE_A) != 0;
 }
 
-// unchanged
+// set pte's accessed bit to be on/off
 void
 pagedir_set_accessed (uint32_t *pd, const void *vpage, bool accessed) 
 {

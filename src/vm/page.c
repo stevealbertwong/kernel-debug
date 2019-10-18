@@ -217,10 +217,13 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
 }
 
 /**
+ * called by frametable evict() algo
+ * 
+ * supt u() vm data structure
  *  - pagedir
  *  - supt
- *  - frametable
  *  - swap
+ *  - frametable
  *  - palloc
  */ 
 bool
@@ -231,7 +234,7 @@ vm_supt_evict_kpage(struct frame_table_entry *evict_candidate){
   }
   
   // dirty pages, record CPU dirty bit(pagedir) in supt, only certain are meant to make changes to original file
-  // flush dirty pages only when unmmap() !!!! 
+  // flush() dirty pages not now but later when unmmap() !!!! 
   // BUG: pagedir_is_dirty(kpage) ??
   if(pagedir_is_dirty(owner->pagedir, evict_candidate->upage)){
 
