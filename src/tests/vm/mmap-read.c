@@ -10,8 +10,8 @@ void
 test_main (void)
 {
   char *actual = (char *) 0x10000000;
-  int handle;
-  mapid_t map;
+  int handle;// file_descriptor_id
+  mapid_t map; // mmap_id
   size_t i;
 
   CHECK ((handle = open ("sample.txt")) > 1, "open \"sample.txt\"");

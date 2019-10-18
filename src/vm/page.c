@@ -177,7 +177,13 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
 
       // 2.2 mmap() file already page fault, kpage in RAM (FRAME):
       case ON_FRAME:
-        // original mmap() file writable        
+        if(pagedir_is_dirty(pagedir, upage)){
+          printf("vm_supt_unload_kpage() pagedir_is_dirty !! \n");
+        }
+        if(spte->dirty){
+          printf("vm_supt_unload_kpage() spte->dirty !! \n");
+        }
+
         if(spte->writable && (pagedir_is_dirty(pagedir, upage) || spte->dirty)){
             printf("vm_supt_unload_kpage() flushing dirty page \n");
             file_seek(f, offset);
@@ -213,8 +219,6 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
       case ALL_ZERO:
         PANIC("vm_unload_upage_delete_supt() mmap() upage not supposed to be all zeros \n");
         break;
-
-
     }
     if(!hash_delete(supt, &spte->supt_elem)){
       PANIC("vm_supt_unload_kpage() delete() spte failed \n");
