@@ -820,6 +820,9 @@ system_call_munmap(int mmapid){
 
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = get_mmap_desc(mmapid);	
+	if(!mmap_desc || !mmap_desc->file_size || !mmap_desc->upage){
+		PANIC("system_call_munmap() mmap_desc is null");
+	}
     uint32_t offset;
 	uint32_t file_size = mmap_desc->file_size;
 
@@ -835,7 +838,10 @@ system_call_munmap(int mmapid){
 		}
 	}
 
-	list_remove(&mmap_desc->mmap_list_elem);
+	if(!list_remove(&mmap_desc->mmap_list_elem)){
+		PANIC("system_call_munmap() failed to remove mmap_desc from t->mmap_list \n");
+	};
+
     file_close(mmap_desc->dup_file);
     free(mmap_desc);
 
