@@ -753,6 +753,7 @@ get_file_desc(int fd)
  */ 
 int system_call_mmap(int fd, void *upage){
 	lock_acquire (&file_lock);
+	printf("system_call_mmap() starts \n");
 
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = (struct mmap_desc*) malloc(sizeof(struct mmap_desc));
@@ -800,6 +801,7 @@ int system_call_mmap(int fd, void *upage){
 	
 	lock_release (&file_lock);
 
+	printf("system_call_mmap() ends \n");
 	return mmap_id;
 }
 
@@ -814,7 +816,8 @@ void
 system_call_munmap(int mmapid){
 	
 	lock_acquire (&file_lock);
-	
+	printf("system_call_munmap() starts \n");
+
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = get_mmap_desc(mmapid);	
     uint32_t offset;
@@ -836,6 +839,7 @@ system_call_munmap(int mmapid){
     file_close(mmap_desc->dup_file);
     free(mmap_desc);
 
+	printf("system_call_munmap() ends \n");
 	lock_release (&file_lock);
 }
 
