@@ -158,10 +158,12 @@ vm_load_kpage_using_supt(struct hash *supt, uint32_t *pagedir, void *upage)
  * - delete() swap bitmap 
  * - delete() upage's spte from supt
  * 
+ * NOTE: args are stored in mmap_descriptor{}
  */ 
 bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
     void *upage, struct file *f, off_t offset, size_t bytes)
-{// args are stored in mmap_descriptor{}
+{
+    printf("vm_supt_unload_kpage() starts \n");
     struct supt_entry *spte = vm_supt_search_supt(supt, upage);
     if(!spte || !spte->kpage){
       PANIC("vm_supt_unload_kpage() no spte \n");
@@ -217,7 +219,7 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
     if(!hash_delete(supt, &spte->supt_elem)){
       PANIC("vm_supt_unload_kpage() delete() spte failed \n");
     }
-
+    printf("vm_supt_unload_kpage() ends \n");
     return true;
 }
 
