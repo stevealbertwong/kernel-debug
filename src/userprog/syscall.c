@@ -753,7 +753,7 @@ get_file_desc(int fd)
  */ 
 int system_call_mmap(int fd, void *upage){
 	
-	if (upage == NULL || pg_ofs(upage) != 0 || fd <= 1) return -1;  	
+	if (upage == NULL || pg_ofs(upage) != 0 || fd <= 1) return -1;
 	
 	lock_acquire (&file_lock);
 	struct thread *curr = thread_current();
@@ -782,11 +782,13 @@ int system_call_mmap(int fd, void *upage){
 
 		size_t read_bytes = (offset + PGSIZE < file_size ? PGSIZE : file_size - offset);
 		size_t zero_bytes = PGSIZE - read_bytes;
-
-		if(!vm_supt_search_supt(curr->supt, elf_va)){
+		
+		// all upage to be mmap() should not exist already
+		if(vm_supt_search_supt(curr->supt, elf_va)){ 
 			lock_release (&file_lock);
 			return -1;
 		}
+
 		bool success = vm_supt_install_filesystem(curr->supt, elf_va,
 			mmap_desc->dup_file, offset, read_bytes, zero_bytes, /*writable*/true);
 		
