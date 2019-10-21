@@ -752,10 +752,10 @@ get_file_desc(int fd)
  * https://www.poftut.com/mmap-tutorial-with-examples-in-c-and-cpp-programming-languages/
  */ 
 int system_call_mmap(int fd, void *upage){
-	lock_acquire (&file_lock);
-	// printf("system_call_mmap() starts \n");
+	
 	if (upage == NULL || pg_ofs(upage) != 0 || fd <= 1) return -1;  	
-
+	
+	lock_acquire (&file_lock);
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = (struct mmap_desc*) malloc(sizeof(struct mmap_desc));
 
@@ -772,7 +772,10 @@ int system_call_mmap(int fd, void *upage){
 
 	// 2. update supt to lazy load 
 	size_t file_size = file_length(mmap_desc->dup_file);
-	if(file_size ==0) return -1;
+	if(file_size ==0) {
+		lock_release (&file_lock);
+		return -1;
+	}
 	size_t offset;
 	for (offset = 0; offset < file_size; offset += PGSIZE) {
 		void *elf_va = upage + offset; // user virtual addr
@@ -781,6 +784,7 @@ int system_call_mmap(int fd, void *upage){
 		size_t zero_bytes = PGSIZE - read_bytes;
 
 		if(!vm_supt_search_supt(curr->supt, elf_va)){
+			lock_release (&file_lock);
 			return -1;
 		}
 		bool success = vm_supt_install_filesystem(curr->supt, elf_va,
