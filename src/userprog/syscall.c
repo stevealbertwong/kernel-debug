@@ -754,6 +754,7 @@ get_file_desc(int fd)
 int system_call_mmap(int fd, void *upage){
 	lock_acquire (&file_lock);
 	// printf("system_call_mmap() starts \n");
+	if (upage == NULL || pg_ofs(upage) != 0 || fd <= 1) return -1;  	
 
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = (struct mmap_desc*) malloc(sizeof(struct mmap_desc));
@@ -771,6 +772,7 @@ int system_call_mmap(int fd, void *upage){
 
 	// 2. update supt to lazy load 
 	size_t file_size = file_length(mmap_desc->dup_file);
+	if(file_size ==0) return -1;
 	size_t offset;
 	for (offset = 0; offset < file_size; offset += PGSIZE) {
 		void *elf_va = upage + offset; // user virtual addr
@@ -778,6 +780,9 @@ int system_call_mmap(int fd, void *upage){
 		size_t read_bytes = (offset + PGSIZE < file_size ? PGSIZE : file_size - offset);
 		size_t zero_bytes = PGSIZE - read_bytes;
 
+		if(!vm_supt_search_supt(curr->supt, elf_va)){
+			return -1;
+		}
 		bool success = vm_supt_install_filesystem(curr->supt, elf_va,
 			mmap_desc->dup_file, offset, read_bytes, zero_bytes, /*writable*/true);
 		
