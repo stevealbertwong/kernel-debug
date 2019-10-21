@@ -758,7 +758,6 @@ int system_call_mmap(int fd, void *upage){
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = (struct mmap_desc*) malloc(sizeof(struct mmap_desc));
 
-
 	// 1. given fd, duplicate file_desc->file{} 
 	struct file_desc *file_desc = get_file_desc(fd);
 	if(!file_desc){
@@ -766,7 +765,9 @@ int system_call_mmap(int fd, void *upage){
 	}		
 	// avoid double free() same file{}
 	mmap_desc->dup_file = file_reopen(file_desc->f); 
-	
+	if(!mmap_desc->dup_file){
+		PANIC("system_call_mmap() mmap_desc->dup_file is null \n");
+	}
 
 	// 2. update supt to lazy load 
 	size_t file_size = file_length(mmap_desc->dup_file);
@@ -785,7 +786,6 @@ int system_call_mmap(int fd, void *upage){
 		}
 	}
 
-
 	// 3. add() to thread->mmap_list[]
 	uint32_t mmap_id;	
 	if(list_empty(&curr->mmap_list)){
@@ -798,7 +798,8 @@ int system_call_mmap(int fd, void *upage){
 	mmap_desc->upage = upage;
 	mmap_desc->file_size = file_size;
 	list_push_back (&curr->mmap_list, &mmap_desc->mmap_list_elem);
-	
+	printf("system_call_mmap() mmap_desc appended mmap_id:%d, mmap_list size:%d\n", mmap_id, list_size(&curr->mmap_list));
+
 	lock_release (&file_lock);
 
 	printf("system_call_mmap() ends \n");
