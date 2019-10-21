@@ -165,7 +165,7 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
 {
     // printf("vm_supt_unload_kpage() starts \n");
     struct supt_entry *spte = vm_supt_search_supt(supt, upage);
-    if(!spte || !spte->kpage){
+    if(!spte){
       PANIC("vm_supt_unload_kpage() no spte \n");
     }
     switch (spte->status){
