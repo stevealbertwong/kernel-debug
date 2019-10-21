@@ -753,7 +753,7 @@ get_file_desc(int fd)
  */ 
 int system_call_mmap(int fd, void *upage){
 	lock_acquire (&file_lock);
-	printf("system_call_mmap() starts \n");
+	// printf("system_call_mmap() starts \n");
 
 	struct thread *curr = thread_current();
 	struct mmap_desc *mmap_desc = (struct mmap_desc*) malloc(sizeof(struct mmap_desc));
@@ -798,11 +798,9 @@ int system_call_mmap(int fd, void *upage){
 	mmap_desc->upage = upage;
 	mmap_desc->file_size = file_size;
 	list_push_back (&curr->mmap_list, &mmap_desc->mmap_list_elem);
-	printf("system_call_mmap() mmap_desc appended mmap_id:%d, mmap_list size:%d\n", mmap_id, list_size(&curr->mmap_list));
+	// printf("system_call_mmap() mmap_desc appended mmap_id:%d, mmap_list size:%d\n", mmap_id, list_size(&curr->mmap_list));
 
 	lock_release (&file_lock);
-
-	printf("system_call_mmap() ends \n");
 	return mmap_id;
 }
 
@@ -818,7 +816,7 @@ system_call_munmap(int mmapid){
 	
 	lock_acquire (&file_lock);
 	struct thread *curr = thread_current();
-	printf("system_call_munmap() starts: mmapid:%d, mmaplistsize:%d \n", mmapid, list_size(&curr->mmap_list));
+	// printf("system_call_munmap() starts: mmapid:%d, mmaplistsize:%d \n", mmapid, list_size(&curr->mmap_list));
 
 	struct mmap_desc *mmap_desc = get_mmap_desc(mmapid);	
 	if(!mmap_desc ){
@@ -852,7 +850,7 @@ system_call_munmap(int mmapid){
     file_close(mmap_desc->dup_file);
     free(mmap_desc);
 
-	printf("system_call_munmap() ends \n");
+	// printf("system_call_munmap() ends \n");
 	lock_release (&file_lock);
 }
 
