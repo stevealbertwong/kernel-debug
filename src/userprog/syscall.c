@@ -817,9 +817,9 @@ void
 system_call_munmap(int mmapid){
 	
 	lock_acquire (&file_lock);
-	printf("system_call_munmap() starts \n");
-
 	struct thread *curr = thread_current();
+	printf("system_call_munmap() starts: mmapid:%d, mmaplistsize:%d \n", mmapid, list_size(&curr->mmap_list));
+
 	struct mmap_desc *mmap_desc = get_mmap_desc(mmapid);	
 	if(!mmap_desc ){
 		PANIC("system_call_munmap() mmap_desc is null");
