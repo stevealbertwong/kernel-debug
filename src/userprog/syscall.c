@@ -762,8 +762,9 @@ int system_call_mmap(int fd, void *upage){
 	// 1. given fd, duplicate file_desc->file{} 
 	struct file_desc *file_desc = get_file_desc(fd);
 	if(!file_desc){
-		PANIC("system_call_mmap() fd has no file_desc{} \n");
-	}		
+		lock_release (&file_lock);
+		return -1;
+	}	
 	// avoid double free() same file{}
 	mmap_desc->dup_file = file_reopen(file_desc->f); 
 	if(!mmap_desc->dup_file){
