@@ -185,7 +185,7 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
         // }
 
         if(spte->writable && (pagedir_is_dirty(pagedir, upage) || spte->dirty)){
-            printf("vm_supt_unload_kpage() flushing dirty page \n");
+            // printf("vm_supt_unload_kpage() flushing dirty page \n");
             file_seek(f, offset);
             file_write(f, spte->kpage, bytes); // upage/kpage ??
             // file_write_at (f, spte->upage, bytes, offset);
