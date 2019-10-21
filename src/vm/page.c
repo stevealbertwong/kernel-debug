@@ -177,12 +177,12 @@ bool vm_supt_unload_kpage(struct hash *supt, uint32_t *pagedir,
 
       // 2.2 mmap() file already page fault, kpage in RAM (FRAME):
       case ON_FRAME:
-        if(pagedir_is_dirty(pagedir, upage)){ // bug: wrong upage ??
-          printf("vm_supt_unload_kpage() pagedir_is_dirty !! \n");
-        }
-        if(spte->dirty){
-          printf("vm_supt_unload_kpage() spte->dirty !! \n");
-        }
+        // if(pagedir_is_dirty(pagedir, upage)){ // bug: wrong upage ??
+        //   printf("vm_supt_unload_kpage() pagedir_is_dirty !! \n");
+        // }
+        // if(spte->dirty){
+        //   printf("vm_supt_unload_kpage() spte->dirty !! \n");
+        // }
 
         if(spte->writable && (pagedir_is_dirty(pagedir, upage) || spte->dirty)){
             printf("vm_supt_unload_kpage() flushing dirty page \n");
