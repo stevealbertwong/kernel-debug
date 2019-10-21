@@ -156,7 +156,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 #ifdef VM
 		case SYS_MMAP:
 			if (is_user_vaddr(argument + 1))
-				system_call_mmap((int)*(argument + 1), (void *) *(argument + 2));
+				ret_val = system_call_mmap((int)*(argument + 1), (void *) *(argument + 2));
 			else
 				system_call_exit(-1);
 			break;
