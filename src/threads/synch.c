@@ -296,7 +296,9 @@ lock_acquire (struct lock *lock)
   struct lock *current_lock = lock;
   struct thread *t_holder = lock->holder; // current holder thread
   struct thread *t_current = thread_current();
-  enum intr_level old_level = intr_disable();
+  
+  // KEY!!!!! locked region will NOT be timer interrupted !!!!
+  enum intr_level old_level = intr_disable(); 
 
   t_current->lock_waiting_on = lock;
 

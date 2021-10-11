@@ -1,3 +1,9 @@
+/**
+ * class scope:
+ * - r() w() file_chunk from disk
+ * 
+ * 
+ */ 
 #include "filesys/file.h"
 #include <debug.h>
 #include "filesys/inode.h"
@@ -12,13 +18,7 @@ struct file
 
 
 /***************************************************************/
-// APIs 
-
-
-
-
-
-
+// APIs
 
 
 
@@ -26,6 +26,38 @@ struct file
 
 
 /***************************************************************/
+
+off_t
+file_read (struct file *file, void *buffer, off_t size) 
+{
+  off_t bytes_read = inode_read_direntry_or_filechunk (file->inode, buffer, size, file->pos);
+  file->pos += bytes_read;
+  return bytes_read;
+}
+
+off_t
+file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs) 
+{
+  return inode_read_direntry_or_filechunk (file->inode, buffer, size, file_ofs);
+}
+
+off_t
+file_write (struct file *file, const void *buffer, off_t size) 
+{
+  off_t bytes_written = inode_write_direntry_or_filechunk (file->inode, buffer, size, file->pos);
+  file->pos += bytes_written;
+  return bytes_written;
+}
+
+
+off_t
+file_write_at (struct file *file, const void *buffer, off_t size,
+               off_t file_ofs) 
+{
+  return inode_write_direntry_or_filechunk (file->inode, buffer, size, file_ofs);
+}
+
+
 
 struct file *
 file_open (struct inode *inode) 
@@ -46,13 +78,6 @@ file_open (struct inode *inode)
     }
 }
 
-struct file *
-file_reopen (struct file *file) 
-{
-  return file_open (inode_reopen (file->inode));
-}
-
-/* Closes FILE. */
 void
 file_close (struct file *file) 
 {
@@ -64,58 +89,21 @@ file_close (struct file *file)
     }
 }
 
-/* Returns the inode encapsulated by FILE. */
-struct inode *
-file_get_inode (struct file *file) 
+struct file *
+file_reopen (struct file *file) 
 {
-  return file->inode;
+  return file_open (inode_reopen (file->inode));
 }
 
-off_t
-file_read (struct file *file, void *buffer, off_t size) 
-{
-  off_t bytes_read = inode_read_at (file->inode, buffer, size, file->pos);
-  file->pos += bytes_read;
-  return bytes_read;
-}
+/***************************************************************/
+// helpers
 
-off_t
-file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs) 
-{
-  return inode_read_at (file->inode, buffer, size, file_ofs);
-}
 
-/* Writes SIZE bytes from BUFFER into FILE,
-   starting at the file's current position.
-   Returns the number of bytes actually written,
-   which may be less than SIZE if end of file is reached.
-   (Normally we'd grow the file in that case, but file growth is
-   not yet implemented.)
-   Advances FILE's position by the number of bytes read. */
-off_t
-file_write (struct file *file, const void *buffer, off_t size) 
-{
-  off_t bytes_written = inode_write_at (file->inode, buffer, size, file->pos);
-  file->pos += bytes_written;
-  return bytes_written;
-}
 
-/* Writes SIZE bytes from BUFFER into FILE,
-   starting at offset FILE_OFS in the file.
-   Returns the number of bytes actually written,
-   which may be less than SIZE if end of file is reached.
-   (Normally we'd grow the file in that case, but file growth is
-   not yet implemented.)
-   The file's current position is unaffected. */
-off_t
-file_write_at (struct file *file, const void *buffer, off_t size,
-               off_t file_ofs) 
-{
-  return inode_write_at (file->inode, buffer, size, file_ofs);
-}
 
-/* Prevents write operations on FILE's underlying inode
-   until file_allow_write() is called or FILE is closed. */
+
+
+/***************************************************************/
 void
 file_deny_write (struct file *file) 
 {
@@ -127,9 +115,6 @@ file_deny_write (struct file *file)
     }
 }
 
-/* Re-enables write operations on FILE's underlying inode.
-   (Writes might still be denied by some other file that has the
-   same inode open.) */
 void
 file_allow_write (struct file *file) 
 {
@@ -166,4 +151,11 @@ file_tell (struct file *file)
 {
   ASSERT (file != NULL);
   return file->pos;
+}
+
+
+struct inode *
+file_get_inode (struct file *file) 
+{
+  return file->inode;
 }

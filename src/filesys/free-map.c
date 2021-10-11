@@ -78,10 +78,10 @@ free_map_init (void)
 void
 free_map_create (void) 
 {
-  if (!inode_create (FREE_MAP_SECTOR, bitmap_file_size (free_map)))
+  if (!inode_create_inode_disk_reserve_disk (FREE_MAP_SECTOR, bitmap_file_size (free_map)))
     PANIC ("free map creation failed");
 
-  free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
+  free_map_file = file_open (inode_open_inode_read_inode_disk (FREE_MAP_SECTOR));
   if (free_map_file == NULL)
     PANIC ("can't open free map");
   if (!bitmap_write (free_map, free_map_file))
@@ -99,7 +99,7 @@ free_map_release (block_sector_t sector, size_t cnt)
 void
 free_map_open (void) 
 {
-  free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
+  free_map_file = file_open (inode_open_inode_read_inode_disk (FREE_MAP_SECTOR));
   if (free_map_file == NULL)
     PANIC ("can't open free map");
   if (!bitmap_read (free_map, free_map_file))

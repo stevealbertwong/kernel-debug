@@ -169,6 +169,43 @@ syscall_handler (struct intr_frame *f UNUSED)
 			break;
 #endif
 
+#ifdef filesys
+
+		case SYS_CHDIR:
+			if (is_user_vaddr(argument + 1))
+				ret_val = system_call_chdir((int)*(argument + 1), (void *) *(argument + 2));
+			else
+				system_call_exit(-1);
+			break;
+
+		case SYS_MKDIR:
+			if (is_user_vaddr(argument + 1))
+				ret_val = system_call_mkdir((int)*(argument + 1), (void *) *(argument + 2));
+			else
+				system_call_exit(-1);
+			break;
+
+		case SYS_READDIR:
+			if (is_user_vaddr(argument + 1))
+				ret_val = system_call_readdir((int)*(argument + 1), (void *) *(argument + 2));
+			else
+				system_call_exit(-1);
+			break;
+		
+		case SYS_ISDIR:
+			if (is_user_vaddr(argument + 1))
+				ret_val = system_call_isdir((int)*(argument + 1), (void *) *(argument + 2));
+			else
+				system_call_exit(-1);
+			break;
+		
+		case SYS_INUMBER:
+			if (is_user_vaddr(argument + 1))
+				ret_val = system_call_inode_number((int)*(argument + 1), (void *) *(argument + 2));
+			else
+				system_call_exit(-1);
+			break;
+#endif
 		default:
 			system_call_exit(-1);
 		}
@@ -603,7 +640,7 @@ bool system_call_create(const char *file_name, unsigned initial_size)
 	if (file_name != NULL)
 	{
 		lock_acquire(&file_lock);
-		bool success = filesys_create(file_name, initial_size);
+		bool success = filesys_create(file_name, initial_size, false);
 		lock_release(&file_lock);
 		return success;
 	}
@@ -883,4 +920,47 @@ get_mmap_desc(int mmapid)
 			return mmap_desc;
 	}
 	return NULL;
+}
+
+
+
+/***************************************************************/ 
+// FS kernel side syscalls implementation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/***************************************************************/
+
+bool system_call_chdir(void *path_name){
+	fs_chdir(path_name);
+}
+
+bool system_call_mkdir(void *path_name){
+
+}
+
+bool system_call_readdir(void *path_name){
+
+}
+
+bool system_call_isdir(void *path_name){
+
+}
+
+bool system_call_inode_number(void *path_name){
+
 }

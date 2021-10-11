@@ -34,6 +34,13 @@
         "frame.h": "c",
         "swap.h": "c",
         "atomic": "c",
-        "off_t.h": "c"
+        "off_t.h": "c",
+        "typeinfo": "c",
+        "typeindex": "c",
+        "inode.h": "c",
+        "stdbool.h": "c",
+        "hash_map": "c",
+        "hashtable": "c",
+        "type_traits": "c"
     }
 }
